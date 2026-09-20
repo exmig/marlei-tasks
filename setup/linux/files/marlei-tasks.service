@@ -1,0 +1,36 @@
+[Unit]
+Description=MARLEI Tasks Web-Oberflaeche
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=marlei-tasks
+Group=marlei-tasks
+WorkingDirectory=/opt/marlei-tasks
+EnvironmentFile=/etc/marlei-tasks.env
+# NUR AUF 127.0.0.1, und der Port ist ein anderer als Boots 8080: Von
+# aussen kommt man ueber nginx herein. Wer die Anwendung direkt erreichbar
+# machen will, aendert das hier -- und weiss dann, was er tut.
+ExecStart=/opt/marlei-tasks/venv/bin/uvicorn app:app --host 127.0.0.1 --port 18081
+Restart=on-failure
+RestartSec=3
+
+# Absicherung: Die Anwendung braucht Schreibzugriff auf ihre eigene Ablage
+# und auf den Ausgang des Exports. Sonst nichts.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/marlei-tasks
+# Der Ausgang darf woanders liegen -- etwa in einem Git-Repository, damit
+# der Bestand eine Versionsgeschichte bekommt. Das Minus heisst: Fehlt der
+# Pfad, ist das kein Grund, den Dienst nicht zu starten. install.sh traegt
+# hier nach, was in MARLEI_EXPORT steht.
+ReadWritePaths=-/var/lib/marlei-tasks/ausgang
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+{# WAS DAHINTERSTECKT mahnt und sperrt nicht -- die Ursache kann man
+   nachtragen, sobald man sie versteht, und sperren gehoert zu dem, was
+   nicht nachwachsen kann. Aber die Einordnung sagt auch, woran dieses
+   Produkt scheitert, wenn das Feld leer bleibt: Dann ist es wieder eine
+   Liste mit Extraschritten. Deshalb dieser Befund. #}
+<p>
+  In <strong>{{ befund.projekt }}</strong> {{ "steht" if befund.zahl == 1
+  else "stehen" }} {{ befund.zahl }} {{ "Aufgabe" if befund.zahl == 1
+  else "Aufgaben" }} ohne <em>Was dahintersteckt</em> da.
+</p>
+<p>
+  <strong>Die Ursache ist der Kernwert dieser Ebene</strong> — der Satz,
+  der in keinem der Ursprungseinträge stand. Bleibt das Feld leer, ist
+  aus der Sammlung nur eine Liste mit Extraschritten geworden.
+</p>
+<p class="kartenfuss">
+  Zwei Sätze genügen. Beim Zusammenlegen ist das Feld vorbelegt — hier
+  wird es nachgetragen.
+</p>

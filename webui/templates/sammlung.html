@@ -1,0 +1,809 @@
+{% extends "base.html" %}
+{% block title %}Sammlung &mdash; MARLEI Tasks{% endblock %}
+
+{# Der zweite gebaute Reiter -- und der erste mit zwei Ansichten.
+
+   EINTRAGEN UND DURCHSICHT SIND KEINE BEQUEMLICHKEIT. Drei Regeln
+   laufen auf die Durchsicht zu, nicht auf das Eintragen: Die Prioritaet
+   steht auf dem Strich, *bis eine Durchsicht sie vergibt*; der Abschluss
+   entscheidet sich dort; und ein neuer Bereich kommt bei einer
+   Durchsicht dazu. Eine einzige Ansicht stellte dem Eintragenden Felder
+   hin, die er nicht fuellen soll.
+
+   Eintragen ist die Startansicht -- dasselbe Prinzip wie die
+   Reiterleiste: Haeufigkeit im Betrieb. Eingetragen wird taeglich,
+   durchgesehen alle paar Wochen.
+
+   Warum so: docs/aufbau.md, Abschnitt 3. #}
+{% block content %}
+
+{% macro kat(k) -%}
+<span class="badge {{ 'missing' if k == 'FEHLER' else 'teils' }}">{{ k }}</span>
+{%- endmacro %}
+
+{% macro prioabzeichen(p) -%}
+<span class="badge {{ 'teils' if p == '—' else 'prio' }}">{{ p }}</span>
+{%- endmacro %}
+
+{% macro menge(n, eins, viele) -%}
+{{ n }} {{ eins if n == 1 else viele }}
+{%- endmacro %}
+
+{# Eine Zahl von Tagen als Kachel.
+
+   NULL TAGE HEISST HEUTE, und so steht es da. Aufgefallen beim ersten
+   Blick auf die gebaute Seite: In der Kachel stand *"0 Tage seit der
+   letzten Durchsicht"* -- eine Zahl, die stimmt, und ein Satz, den
+   niemand sagt. Ein Strich heisst dagegen *nie* und nicht *null*. #}
+{% macro tagezahl(tage) -%}
+{% if tage is none %}—{% elif tage == 0 %}heute{% else %}{{ tage }}
+<span class="muted">{{ "Tag" if tage == 1 else "Tage" }}</span>{% endif %}
+{%- endmacro %}
+
+{# Wie lange etwas liegt, als Satzstueck. Der Kopf der Spalte heisst
+   "Liegt seit", deshalb steht hier der Dativ -- und "heute" statt
+   "0 Tagen": Null Tage ist keine Zeitangabe, die jemand sagt. #}
+{% macro liegt(tage) -%}
+{% if tage is none %}—{% elif tage == 0 %}heute{% elif tage == 1 %}1 Tag{% else %}{{ tage }} Tagen{% endif %}
+{%- endmacro %}
+
+{% if not projekt %}
+{# OHNE PROJEKT HAT DIESER REITER NICHTS ZU ZEIGEN, und das steht da,
+   statt eine leere Seite hinzustellen, die aussieht wie ein Fehler. #}
+<section>
+  <div class="kartenkopf"><h2>Sammlung</h2></div>
+  <p class="hint">
+    <strong>Es ist kein Projekt gewählt.</strong> Die Sammlung gehört
+    einem Projekt — ohne Auswahl gäbe es keinen Ort, an dem ein Eintrag
+    landet.
+  </p>
+  <p class="kartenfuss">
+    Gewählt wird auf dem Reiter <a href="/">Projekte</a>, in der
+    Projektübersicht.
+  </p>
+</section>
+
+{% else %}
+
+{# ==================================================================
+   DIE SAMMLUNGSÜBERSICHT -- seit dem 19.09.2026 die erste Karte, wie
+   auf Aufgaben und Meilensteinen.
+
+   Bis dahin stand der Umschalter als lose Zeile ueber den Karten (am
+   07.09.2026 so bestaetigt). Beim Wechsel zwischen den Reitern sprang
+   damit der Blick: Aufgaben und Meilensteine beginnen mit ihrer
+   Uebersicht, die Sammlung mit zwei Knoepfen. Jetzt stehen sie IN einer
+   Karte -- und damit die Karte keine leere Huelle um zwei Knoepfe ist,
+   traegt sie die Zahlen, nach denen man die Ansicht waehlt.
+
+   Der Umschalter gilt weiter fuer die ganze Seite; er steht nur in der
+   Karte, die sie anfuehrt. #}
+<section id="sammlungsuebersicht">
+  <div class="kartenkopf">
+    <h2>Sammlungsübersicht</h2>
+    {% include "_projektmarke.html" %}
+    <span class="muted small" role="status">
+      {{ menge(zahlen.offen, "Eintrag", "Einträge") }}</span>
+    <a class="kartenhilfe" href="/hilfe#sammlung-uebersicht"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% if not projekt.bereiche %}
+  {# Ohne Bereich kann nichts eingetragen werden -- er ist NOT NULL, und
+     das ist keine Formalie: Er ist die Achse, nach der spaeter sortiert
+     wird. Gesagt wird es hier und nicht erst im abgewiesenen Formular. #}
+  <p class="hint">
+    <strong>Dieses Projekt hat noch keinen Bereich.</strong> Ein Eintrag
+    braucht genau einen — er ist die Achse, nach der später sortiert wird.
+    Angelegt werden Bereiche in der Karte des Projekts unter
+    <a href="/">Projekte</a>.
+  </p>
+  {% endif %}
+
+  <div class="row ansichten">
+    <a class="knopf {{ 'gewaehlt' if ansicht == 'eintragen' }}"
+       href="/sammlung?ansicht=eintragen">Eintragen</a>
+    <a class="knopf {{ 'gewaehlt' if ansicht == 'durchsicht' }}"
+       href="/sammlung?ansicht=durchsicht">Durchsicht</a>
+    <span class="muted small">
+      {% if ansicht == 'eintragen' %}
+      Was auffällt, kommt hier hinein — drei Angaben, der Rest steht schon da.
+      {% else %}
+      Hier bekommt ein Eintrag seine Priorität, wird gebündelt oder fällt weg.
+      {% endif %}
+    </span>
+  </div>
+
+  {# DIE ZAHLENZEILE: das, wonach man zwischen den beiden Ansichten
+     waehlt. Eine Zeile und keine Kacheln -- die Kacheln stehen in der
+     Durchsicht unter "Was am laengsten liegt", und zweimal dieselben
+     Kacheln hiessen, dass eine davon nichts zu sagen hat. #}
+  <p class="sammlungszahlen muted small">
+    <strong>{{ zahlen.ohne_prio }}</strong> ohne Priorität ·
+    <strong>{{ zahlen.luecken }}</strong> FEHLER mit fehlenden Angaben ·
+    {% if zahlen.durchsicht_her is none %}noch nie durchgesehen
+    {%- elif zahlen.durchsicht_her == 0 %}heute durchgesehen
+    {%- elif zahlen.durchsicht_her == 1 %}gestern durchgesehen
+    {%- else %}zuletzt durchgesehen vor {{ zahlen.durchsicht_her }} Tagen{% endif %}
+  </p>
+</section>
+
+{% if ansicht == 'eintragen' %}
+{# ==================================================================
+   ANSICHT EINTRAGEN
+   ================================================================== #}
+
+<section id="neuer-eintrag">
+  <div class="kartenkopf">
+    <h2>Neuer Eintrag</h2>
+    <a class="kartenhilfe" href="/hilfe#sammlung-eintragen"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  <form method="post" action="/sammlung/neu">
+    <dl class="angaben">
+      <div>
+        <dt><label for="titel">Titel</label></dt>
+        <dd class="weit">
+          <input type="text" id="titel" name="titel" class="feld" required
+                 autocomplete="off" placeholder="Was ist aufgefallen?"
+                 {% if not projekt.bereiche %}disabled{% endif %}>
+        </dd>
+      </div>
+      {# Zwei Knoepfe statt einer Auswahlliste: Es sind genau zwei, und
+         der eine zieht fuenf Felder nach sich. Was so viel entscheidet,
+         soll man sehen, ohne es aufzuklappen. #}
+      <div>
+        <dt>Kategorie</dt>
+        <dd>
+          <div class="row schalter" id="kategorie">
+            {% for k in kategorien %}
+            <label class="wahl {{ 'gewaehlt' if loop.first }}">
+              <input type="radio" name="kategorie" value="{{ k }}"
+                     {% if loop.first %}checked{% endif %}> {{ k }}</label>
+            {% endfor %}
+            <span class="muted small">— ein <strong>FEHLER</strong> fragt
+              unten nach fünf Angaben mehr</span>
+          </div>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="bereich">Bereich</label></dt>
+        <dd>
+          <select id="bereich" name="bereich" required
+                  {% if not projekt.bereiche %}disabled{% endif %}>
+            <option value="">— wählen —</option>
+            {% for b in projekt.bereiche %}
+            <option value="{{ b.id }}">{{ b.wert }}</option>
+            {% endfor %}
+          </select>
+          {# EIN Bereich, keine Mehrfachauswahl: *Bei Mehrfachnennung
+             sortiert die Achse nichts mehr.* Und ein NEUER Bereich kommt
+             bei einer Durchsicht dazu, nicht beim Eintragen -- deshalb
+             steht hier kein Feld zum Anlegen, sondern ein Weg dorthin. #}
+          <span class="muted small">— genau einer; ein neuer Bereich
+            entsteht unter <a href="/">Projekte</a></span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="beschreibung">Beschreibung</label></dt>
+        <dd class="weit">
+          <textarea id="beschreibung" name="beschreibung" rows="3" class="feld"
+                    placeholder="Darf leer bleiben — aber die Bündelprobe sucht hier, nicht im Titel"></textarea>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="datum">Eingetragen am</label></dt>
+        <dd>
+          {# ANDERS ALS BEIM PROJEKT TRAEGT DAS FELD EINE VORGABE: heute.
+             Beim Projekt waere ein erfundenes Datum schlimmer als eine
+             Nachfrage -- ein Projekt kann Monate alt sein. Ein Eintrag
+             der Sammlung entsteht an dem Tag, an dem etwas auffaellt;
+             hier ist heute keine Erfindung, sondern der Normalfall. Und
+             docs/datenhaltung.md nennt das Eintragsdatum ausdruecklich unter
+             den sinnvollen Vorgaben. #}
+          <input type="date" id="datum" name="eingetragen" class="datumsfeld"
+                 value="{{ heute }}" required>
+          <span class="muted small">— hier steht heute, anders als beim
+            Projekt: Was auffällt, fällt heute auf</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="ursprung">Ursprung</label></dt>
+        <dd class="weit">
+          <input type="text" id="ursprung" name="ursprung" class="feld"
+                 placeholder="wer, wann, woraus — z. B. »beim Abnahmelauf von A-017, 05.09.2026«">
+        </dd>
+      </div>
+    </dl>
+
+    {# ---------------------------------------------------------------
+       DIE FUENF FEHLERANGABEN. Sie stehen als eigene Felder da statt
+       als leerer Kasten -- und sie SPERREN NICHT. Ein unvollstaendiger
+       FEHLER wird ein Befund, kein abgewiesenes Formular.
+
+       Hier stossen zwei eigene Regeln aneinander: *die Huerde beim
+       Eintragen ist niedrig* gegen *fuenf Angaben*. Eine Regel, deren
+       Weg teuer ist, wird umgangen -- deshalb sichtbar und benannt,
+       aber nicht erzwungen.
+
+       Ohne JavaScript steht der Block immer da. Das ist der richtige
+       Rueckfall: fuenf Felder zu viel ist besser als fuenf Felder, die
+       niemand findet.
+       --------------------------------------------------------------- #}
+    <div class="fehlerblock" id="fehlerangaben" hidden>
+      <h3>Fünf Angaben, die ein {{ kat("FEHLER") }} braucht</h3>
+      <p class="muted small">
+        Keine davon ist Pflicht. Fehlt eine, steht der Eintrag danach als
+        <em>Befund</em> über der Seite — er wird nicht abgewiesen.
+      </p>
+      <dl class="angaben">
+        {% for spalte, aufschrift in fehlerangaben %}
+        <div>
+          <dt><label for="neu-{{ spalte }}">{{ aufschrift }}</label></dt>
+          <dd class="weit">
+            <input type="text" id="neu-{{ spalte }}" name="{{ spalte }}"
+                   class="feld"
+                   {% if spalte == 'fehler_warum_nicht' %}placeholder="Was keinen Grund hat, gehört behoben und nicht eingetragen"{% endif %}>
+          </dd>
+        </div>
+        {% endfor %}
+      </dl>
+    </div>
+
+    <div class="row kartenknoepfe">
+      <button type="submit" {% if not projekt.bereiche %}disabled{% endif %}>Eintragen</button>
+      {# Wohin es kommt, an dem Knopf, der es anlegt -- der Augenblick, in
+         dem ein falsch gewaehltes Projekt Schaden anrichtet. Die Marke in
+         der ersten Karte ist dann oft weggescrollt, den Knopf sieht man. #}
+      <span class="muted small landet">— landet in
+        <strong>{{ gewaehlt.kennung }} {{ gewaehlt.name }}</strong></span>
+    </div>
+  </form>
+
+  <p class="kartenfuss">
+    Priorität und Abschluss stehen hier nicht: Die Priorität bleibt auf
+    <code>—</code>, bis eine <a href="/sammlung?ansicht=durchsicht">Durchsicht</a>
+    sie vergibt. An einer rohen Beobachtung arbeitet niemand — deshalb hat
+    ein Eintrag auch keinen Status.
+  </p>
+</section>
+
+<section id="sammlung">
+  <div class="kartenkopf">
+    <h2>Sammlung</h2>
+    <span class="muted small" role="status">
+      {{ menge(eintraege | length, "Eintrag", "Einträge") }}{% if suche %} gefunden{% endif %}
+    </span>
+    {# Die Suche steht dauerhaft da, nicht erst ab einer Listenlaenge:
+       Ein Bedienelement, das kommt und geht, lehrt eine Regel, die es
+       nicht gibt. Sie gehoert zur Karte, nicht zur Seite. #}
+    <form method="get" action="/sammlung" class="inline">
+      <input type="hidden" name="ansicht" value="eintragen">
+      <input type="search" name="suche" class="kartensuche" value="{{ suche }}"
+             placeholder="Suchen…" title="Sucht in Titel und Beschreibung">
+    </form>
+    <a class="kartenhilfe" href="/hilfe#sammlung-liste"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% for t in eintraege %}
+  {# ``offen`` ist die eine Karte, die gerade als Formular dasteht --
+     ihre Nummer kommt aus der Adresse. ``kartenweg`` haelt die Suche
+     fest: Wer aus einer gefilterten Liste heraus bearbeitet, will
+     danach wieder die gefilterte Liste sehen und nicht alle. #}
+  {% set offen = bearbeiten == t.id %}
+  {% set kartenweg = "/sammlung?ansicht=eintragen" ~ ("&suche=" ~ suche|urlencode if suche else "") %}
+  <details class="eintragskarte" id="eintrag-{{ t.id }}"{% if offen %} open{% endif %}>
+    <summary>
+      <div class="bezeichnung">
+        <code class="projektkennung">{{ t.kennung }}</code>
+        {# ANDERS ALS BEIM PROJEKT IST DER TITEL HIER KEIN EINGABEFELD,
+           obwohl er sich aendern laesst: Das geschieht im
+           Bearbeiten-Schritt unten, nicht im Vorbeigehen. Ein Feld in
+           der Zusammenfassung waere beides zugleich -- und ein Klick
+           hinein klappte die Karte zu, weil <summary> ihn als
+           Aufklappen liest. #}
+        <span class="titelzeile">{{ t.titel }}</span>
+      </div>
+      <span class="badge bereich">{{ t.bereich }}</span>
+      {{ kat(t.kategorie) }}
+      {{ prioabzeichen(t.prio) }}
+      {% if t.fehlt %}
+      <span class="badge missing">{{ menge(t.fehlt | length, "Angabe fehlt", "Angaben fehlen") }}</span>
+      {% endif %}
+    </summary>
+
+    {% if offen %}
+    {# ---- DER BEARBEITEN-SCHRITT ------------------------------------
+       Dieselbe Karte, nur als Formular -- und sie steht offen, weil man
+       sonst erst aufklappen muesste, was man gerade angefordert hat.
+
+       ES IST GENAU EINE. Der Schritt steht als Nummer in der Adresse
+       (?bearbeiten=), wie der Loeschschritt bei den Projekten und der
+       Buendelschritt hier daneben: eine Ansicht, kein Zustand. Wer neu
+       laedt, sieht dasselbe; wer weggeht, laesst nichts liegen. Zwei
+       offene Formulare auf einer Seite hiessen dagegen, dass wer das
+       eine speichert, das andere mitschickt.
+
+       Das Eintragsdatum steht als Text und nicht als Feld: Daran misst
+       sich, wie lange etwas liegt. Die Sperre steht ausserdem in
+       TOPIC_AENDERBAR -- hier waere sie nur eine Bitte. #}
+    <form method="post" action="/sammlung/speichern">
+      <input type="hidden" name="ansicht" value="eintragen">
+      <dl class="angaben">
+        <div>
+          <dt><label for="titel-{{ t.id }}">Titel</label></dt>
+          <dd class="weit">
+            <input type="text" id="titel-{{ t.id }}" name="titel:{{ t.id }}"
+                   class="feld" value="{{ t.titel }}" required
+                   autocomplete="off">
+          </dd>
+        </div>
+        <div>
+          <dt>Kategorie</dt>
+          <dd>
+            <div class="row schalter">
+              {% for k in kategorien %}
+              <label class="wahl {{ 'gewaehlt' if k == t.kategorie }}">
+                <input type="radio" name="kategorie:{{ t.id }}" value="{{ k }}"
+                       {% if k == t.kategorie %}checked{% endif %}> {{ k }}</label>
+              {% endfor %}
+              {% if t.kategorie != 'FEHLER' %}
+              <span class="muted small">— wird daraus ein
+                <strong>FEHLER</strong>, stehen die fünf Angaben beim
+                nächsten Aufmachen da</span>
+              {% endif %}
+            </div>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="bereich-{{ t.id }}">Bereich</label></dt>
+          <dd>
+            <select id="bereich-{{ t.id }}" name="bereich_id:{{ t.id }}" required>
+              {% for b in projekt.bereiche %}
+              <option value="{{ b.id }}"
+                      {% if b.id == t.bereich_id %}selected{% endif %}>{{ b.wert }}</option>
+              {% endfor %}
+            </select>
+            <span class="muted small">— genau einer; ein neuer Bereich
+              entsteht unter <a href="/">Projekte</a></span>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="beschreibung-{{ t.id }}">Beschreibung</label></dt>
+          <dd class="weit">
+            <textarea id="beschreibung-{{ t.id }}" name="beschreibung:{{ t.id }}"
+                      rows="3" class="feld">{{ t.beschreibung }}</textarea>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="schaerfen-{{ t.id }}">Beim Schärfen</label></dt>
+          <dd class="weit">
+            <textarea id="schaerfen-{{ t.id }}" name="schaerfen:{{ t.id }}"
+                      rows="3" class="feld">{{ t.schaerfen }}</textarea>
+          </dd>
+        </div>
+        {# Die fuenf nur beim FEHLER -- dieselbe Regel wie in der
+           Textfassung darunter: Bei einer IDEE gaebe es sie nicht zu
+           fuellen, und fuenf leere Zeilen sind kein Hinweis. #}
+        {% if t.kategorie == 'FEHLER' %}
+        {% for spalte, aufschrift in fehlerangaben %}
+        <div>
+          <dt><label for="{{ spalte }}-{{ t.id }}">{{ aufschrift }}</label></dt>
+          <dd class="weit">
+            <input type="text" id="{{ spalte }}-{{ t.id }}"
+                   name="{{ spalte }}:{{ t.id }}" class="feld"
+                   value="{{ t[spalte] }}"{% if not t[spalte] %}
+                   placeholder="fehlt — nachtragen"{% endif %}>
+          </dd>
+        </div>
+        {% endfor %}
+        {% endif %}
+        <div>
+          <dt><label for="ursprung-{{ t.id }}">Ursprung</label></dt>
+          <dd class="weit">
+            <input type="text" id="ursprung-{{ t.id }}" name="ursprung:{{ t.id }}"
+                   class="feld" value="{{ t.ursprung }}">
+          </dd>
+        </div>
+        <div>
+          <dt>Eingetragen am</dt>
+          <dd>{{ t.eingetragen_deutsch }}
+            <span class="muted small">— steht fest: daran misst sich, wie
+              lange der Eintrag liegt</span></dd>
+        </div>
+      </dl>
+      <div class="row kartenknoepfe">
+        <button type="submit">Speichern</button>
+        <a class="knopf zurueck" href="{{ kartenweg }}#eintrag-{{ t.id }}">Abbrechen</a>
+      </div>
+    </form>
+
+    {% else %}
+    <form method="post" action="/sammlung/speichern">
+      <input type="hidden" name="ansicht" value="eintragen">
+      <dl class="angaben">
+        {% if t.beschreibung %}
+        <div><dt>Beschreibung</dt>
+          <dd class="weit umbrechen">{{ t.beschreibung }}</dd></div>
+        {% endif %}
+        {% if t.schaerfen %}
+        <div><dt>Beim Schärfen</dt>
+          <dd class="weit umbrechen">{{ t.schaerfen }}</dd></div>
+        {% endif %}
+        {# Die fuenf nur beim FEHLER -- bei einer IDEE gaebe es sie nicht
+           zu fuellen, und fuenf leere Zeilen sind kein Hinweis, sondern
+           Laerm. Was dasteht, steht als Text; was fehlt, als Feld: So
+           sieht man in einem Blick, was noch aussteht. #}
+        {% if t.kategorie == 'FEHLER' %}
+        {% for spalte, aufschrift in fehlerangaben %}
+        <div>
+          <dt>{{ aufschrift }}</dt>
+          <dd class="weit umbrechen">
+            {% if t[spalte] %}{{ t[spalte] }}
+            {% else %}
+            <input type="text" name="{{ spalte }}:{{ t.id }}" class="feld"
+                   placeholder="fehlt — nachtragen">
+            {% endif %}
+          </dd>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% if t.ursprung %}
+        <div><dt>Ursprung</dt><dd class="weit umbrechen">{{ t.ursprung }}</dd></div>
+        {% endif %}
+        <div><dt>Eingetragen am</dt>
+          <dd>{{ t.eingetragen_deutsch }}
+            <span class="muted small">— liegt seit {{ liegt(t.liegt_seit) }}</span></dd></div>
+      </dl>
+      <div class="row kartenknoepfe">
+        {% if t.fehlt %}
+        <button type="submit">Nachtragen</button>
+        {% endif %}
+        <a class="knopf" href="{{ kartenweg }}&amp;bearbeiten={{ t.id }}#eintrag-{{ t.id }}"
+           title="Titel, Einordnung und Texte dieses Eintrags ändern">Bearbeiten</a>
+      </div>
+    </form>
+    {% endif %}
+
+    {% if t.fehlt %}
+    <p class="kartenfuss">
+      Solange etwas fehlt, steht dieser Eintrag oben als Befund. Er ist
+      trotzdem da — <em>die fünf Angaben mahnen, sie sperren nicht.</em>
+    </p>
+    {% elif t.prio == '—' %}
+    <p class="kartenfuss">
+      Priorität vergibt die
+      <a href="/sammlung?ansicht=durchsicht">Durchsicht</a>.
+    </p>
+    {% endif %}
+  </details>
+  {% else %}
+  <p class="muted">
+    {% if suche %}
+    Nichts gefunden zu <strong>{{ suche }}</strong> —
+    <a href="/sammlung?ansicht=eintragen">alle zeigen</a>.
+    {% else %}
+    Noch nichts eingetragen. Was auffällt, kommt oben hinein.
+    {% endif %}
+  </p>
+  {% endfor %}
+
+  <p class="kartenfuss">
+    Die Suche oben geht über Titel <em>und</em> Beschreibung. Das ist die
+    Bündelprobe: Zwei Einträge, die zusammengehören, erkennt man selten am
+    Titel. Was einen Abschluss hat, steht hier nicht mehr — es ist im
+    Archiv.
+  </p>
+</section>
+
+{% else %}
+{# ==================================================================
+   ANSICHT DURCHSICHT
+   ================================================================== #}
+
+{% if markiert %}
+{# ---------------------------------------------------------------
+   DER BUENDELSCHRITT. Er fragt nach dem gemeinsamen Bild, bevor er
+   anlegt -- das ist laut Einordnung die Kernfunktion des Produkts,
+   und ein Knopf, der stillschweigend anlegt, waere sie nicht.
+
+   Das Feld "Was dahintersteckt" ist vorbelegt und keine Pflicht: Die
+   Ursache kann man nachtragen, ein leeres Feld wird ein Befund.
+   *Sperren gehoert zu dem, was nicht nachwachsen kann* -- eine
+   Begruendung waechst nach.
+   --------------------------------------------------------------- #}
+<section id="buendeln">
+  <div class="kartenkopf">
+    <h2>Zusammenlegen</h2>
+    <span class="muted small">{{ menge(markiert | length, "Eintrag", "Einträge") }}</span>
+  </div>
+  <p class="hint">
+    <strong>Aus diesen Einträgen wird eine Aufgabe.</strong> Sie bekommen
+    danach den Abschluss <em>aufgabe</em> und stehen im Archiv — das ist
+    kein Verwerfen: <em>Es ist nicht fertig, es zieht um.</em>
+  </p>
+  <ul class="muted buendelliste">
+    {% for t in markiert %}
+    <li><code>{{ t.kennung }}</code> {{ t.titel }}
+      <span class="small">— {{ t.bereich }}, {{ t.kategorie }}, liegt seit
+        {{ liegt(t.liegt_seit) }}</span></li>
+    {% endfor %}
+  </ul>
+  <form method="post" action="/sammlung/zusammenlegen">
+    {% for t in markiert %}
+    <input type="hidden" name="mark" value="{{ t.id }}">
+    {% endfor %}
+    <dl class="angaben">
+      <div>
+        <dt><label for="b-titel">Titel der Aufgabe</label></dt>
+        <dd class="weit">
+          <input type="text" id="b-titel" name="titel" class="feld" required
+                 autocomplete="off" autofocus
+                 placeholder="Eine Ursache statt mehrerer Beobachtungen">
+        </dd>
+      </div>
+      <div>
+        <dt><label for="b-dahinter">Was dahintersteckt</label></dt>
+        <dd class="weit">
+          <textarea id="b-dahinter" name="dahinter" rows="5" class="feld"
+>{% for t in markiert %}{{ t.kennung }}: {{ t.titel }}
+{% if t.beschreibung %}{{ t.beschreibung }}
+{% endif %}{% endfor %}</textarea>
+          <span class="feldhinweis muted small">Vorbelegt aus den
+            Einträgen. Darf stehen bleiben, darf leer werden: Die Ursache
+            kann man nachtragen, und ein leeres Feld wird ein Befund.</span>
+        </dd>
+      </div>
+
+      {# ---- DAS EINE PFLICHTFELD --------------------------------------
+         GEFRAGT WIRD NACH ZWEIERLEI: dem gemeinsamen Bild und der
+         Abnahme -- und zwar in dem Augenblick, in dem das Denken gerade
+         stattgefunden hat. Das ist die einzige Gelegenheit, zu der
+         beides billig ist; sie spaeter nachzufordern hiesse, sie nie zu
+         bekommen.
+
+         Sie sperrt, waehrend "Was dahintersteckt" darueber nur mahnt.
+         Kein Widerspruch, sondern die Grenze zwischen zwei Arten von
+         Pflichtfeld: Die Ursache macht die Aufgabe vollstaendiger, die
+         Abnahme macht sie erst zu einer. #}
+      <div class="pflichtfeld">
+        <dt><label for="b-abnahme">Wann es abgenommen ist</label>
+          <span class="badge missing">Pflicht</span></dt>
+        <dd class="weit">
+          <textarea id="b-abnahme" name="abnahme" rows="4" class="feld" required
+                    placeholder="Eine Zeile je Punkt — woran man feststellt, dass es fertig ist"></textarea>
+          <span class="feldhinweis muted small">Eine Zeile wird ein
+            Häkchen. <strong>Lässt sie sich nicht beschreiben, ist es
+            keine Aufgabe</strong> — dann bleiben die Einträge, wo sie
+            sind; der Knopf daneben tut genau das.</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="b-arbeit">Was getan werden muss</label></dt>
+        <dd class="weit">
+          <textarea id="b-arbeit" name="arbeit" rows="3" class="feld"
+                    placeholder="Eine Zeile je Schritt — darf leer bleiben und wächst beim Arbeiten"></textarea>
+        </dd>
+      </div>
+    </dl>
+    <div class="row kartenknoepfe">
+      <button type="submit">Aufgabe anlegen</button>
+      {# DER ZWEITE GUELTIGE AUSGANG, und ohne ihn schadet die Sperre
+         mehr, als sie nuetzt: Ein Pflichtfeld ohne Fluchtweg erzeugt
+         keine besseren Daten, sondern Fuellsel -- wer nicht weiterkommt
+         und nicht zurueckkann, tippt irgendetwas hinein. Genau das steht
+         in der Regel: *dann gehoert sie zurueck in den Backlog.* Es ist
+         kein Scheitern. #}
+      <a href="/sammlung?ansicht=durchsicht" class="knopf zurueck"
+         title="Die Einträge bleiben, wo sie sind — geschärft wird später">
+        Das schaffe ich nicht — zurück in die Sammlung</a>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+<section id="durchsicht">
+  <div class="kartenkopf">
+    <h2>Durchsicht</h2>
+    <span class="muted small" role="status">
+      {{ menge(eintraege | length, "Eintrag", "Einträge") }}{% if suche %} gefunden{% endif %}
+    </span>
+    <form method="get" action="/sammlung" class="inline">
+      <input type="hidden" name="ansicht" value="durchsicht">
+      <input type="search" name="suche" class="kartensuche" value="{{ suche }}"
+             placeholder="Suchen…" title="Sucht in Titel und Beschreibung">
+    </form>
+    <a class="kartenhilfe" href="/hilfe#sammlung-durchsicht"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% if eintraege %}
+  {# Als Tabelle und nicht als Karten: Hier wird VERGLICHEN -- welche
+     liegen am laengsten, welche gehoeren zusammen, was hat noch keine
+     Prioritaet. Aufgeklappte Karten kann man nicht nebeneinanderlegen.
+
+     Die Knoepfe stehen in der Kopfzeile ueber der Spalte, fuer die sie
+     gelten: Zusammenlegen ueber den Kaestchen, Speichern ueber den
+     Prioritaeten. Dasselbe Muster wie WOL und Loeschen in Boot -- beim
+     dritten Mal muss niemand mehr raten, wozu ein Kaestchen gehoert. #}
+  <form method="post" action="/sammlung/zusammenlegen" id="buendelform"></form>
+  <form method="post" action="/sammlung/speichern" id="prioform">
+    <input type="hidden" name="ansicht" value="durchsicht">
+  </form>
+  <table class="eng">
+    <thead>
+      <tr>
+        <th class="markspalte">
+          <button type="submit" form="buendelform" class="ghost"
+                  title="Macht aus den markierten Einträgen eine Aufgabe und fragt nach dem gemeinsamen Bild">Zusammenlegen</button>
+        </th>
+        <th>Kennung</th>
+        <th>Eintrag</th>
+        <th>Kategorie</th>
+        <th class="priospalte">
+          Priorität
+          <button type="submit" form="prioform" id="prio-speichern"
+                  title="Vergebene Prioritäten übernehmen und die Durchsicht vermerken">Speichern</button>
+        </th>
+        <th class="nowrap">Liegt seit</th>
+        <th class="abschlussspalte">Abschluss</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in eintraege %}
+      <tr>
+        <td class="markspalte">
+          <input type="checkbox" name="mark" value="{{ t.id }}" form="buendelform"
+                 aria-label="{{ t.kennung }} zum Zusammenlegen markieren">
+        </td>
+        <td><code>{{ t.kennung }}</code></td>
+        <td>
+          <a href="/sammlung?ansicht=eintragen#eintrag-{{ t.id }}">{{ t.titel }}</a>
+          <div class="muted small">{{ t.bereich }}{% if t.fehlt %} ·
+            <span class="warnung">{{ menge(t.fehlt | length, "Angabe fehlt", "Angaben fehlen") }}</span>{% endif %}</div>
+        </td>
+        <td>{{ kat(t.kategorie) }}</td>
+        <td class="priospalte">
+          <select name="prio:{{ t.id }}" form="prioform" data-war="{{ t.prio }}"
+                  aria-label="Priorität für {{ t.kennung }}">
+            {% for p in prios %}
+            <option {% if p == t.prio %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td class="nowrap">
+          {# Ab zehn Tagen bekommt die Zahl Gewicht -- das ist die
+             Liegeprobe, an der Zeile abgelesen. #}
+          <span class="liegt {{ 'lang' if t.liegt_seit is not none and t.liegt_seit >= 10 }}">{{ liegt(t.liegt_seit) }}</span>
+        </td>
+        <td class="abschlussspalte">
+          <form method="post" action="/sammlung/zusammenlegen" class="inline">
+            <input type="hidden" name="mark" value="{{ t.id }}">
+            <button type="submit" class="ghost"
+                    title="Macht aus diesem einen Eintrag eine Aufgabe">→ Aufgabe</button>
+          </form>
+          <form method="post" action="/sammlung/verwerfen" class="inline"
+                onsubmit="return confirm('{{ t.kennung }} verwerfen? Der Eintrag steht danach im Archiv.')">
+            <input type="hidden" name="id" value="{{ t.id }}">
+            <button type="submit" class="danger">verwerfen</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">
+    {% if suche %}
+    Nichts gefunden zu <strong>{{ suche }}</strong> —
+    <a href="/sammlung?ansicht=durchsicht">alle zeigen</a>.
+    {% else %}
+    Nichts durchzusehen. Was auffällt, kommt unter
+    <a href="/sammlung?ansicht=eintragen">Eintragen</a> hinein.
+    {% endif %}
+  </p>
+  {% endif %}
+
+  <p class="kartenfuss">
+    <strong>Zusammenlegen ist die Kernfunktion</strong> — der Knopf macht
+    aus den markierten Einträgen eine Aufgabe und fragt dabei nach dem
+    gemeinsamen Bild. <em>→ Aufgabe</em> tut dasselbe mit einem einzigen.
+    Beides ist kein Abschluss im Sinne von fertig: Der Eintrag zieht um
+    und bekommt <strong>keine</strong> Zeile im Quittungsbuch —
+    <em>verwerfen</em> bekommt eine.
+  </p>
+</section>
+
+<section id="was-liegt">
+  <div class="kartenkopf">
+    <h2>Was am längsten liegt</h2>
+    <a class="kartenhilfe" href="/hilfe#sammlung-liegen"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  <div class="kacheln">
+    <div class="kachel"><span class="zahl">{{ zahlen.ohne_prio }}</span>
+      <span class="muted small">ohne Priorität</span></div>
+    <div class="kachel">
+      <span class="zahl">{{ tagezahl(zahlen.aeltester) }}</span>
+      <span class="muted small">der älteste ohne Priorität</span></div>
+    <div class="kachel"><span class="zahl">{{ zahlen.luecken }}</span>
+      <span class="muted small">FEHLER mit fehlenden Angaben</span></div>
+    <div class="kachel">
+      <span class="zahl">{{ tagezahl(zahlen.durchsicht_her) }}</span>
+      <span class="muted small">seit der letzten Durchsicht</span></div>
+  </div>
+  <p class="kartenfuss">
+    {% if zahlen.durchsicht_her is none %}
+    Eine Durchsicht hat es hier noch nicht gegeben — <em>Speichern</em>
+    oben vermerkt sie, auch wenn nichts anders dasteht.
+    {% else %}
+    Vermerkt wird eine Durchsicht auch dann, wenn nichts geändert wurde:
+    Die Zahl misst das Hinsehen, nicht das Ändern.
+    {% endif %}
+    Dieselbe Quelle speist die Liegeprobe — nur läuft die über
+    <em>alle</em> Projekte, nicht nur über das gewählte.
+  </p>
+</section>
+{% endif %}
+{% endif %}
+
+<script>
+// Die fuenf Fehlerangaben erscheinen, wenn FEHLER gewaehlt ist.
+//
+// OHNE JAVASCRIPT STEHT DER BLOCK IMMER DA -- das Attribut "hidden"
+// setzt dieses Skript erst beim Laden, und zwar nur, wenn IDEE gewaehlt
+// ist. Der Rueckfall ist damit: fuenf Felder zu viel. Das ist besser als
+// fuenf Felder, die niemand findet.
+(function () {
+  var block = document.getElementById("fehlerangaben");
+  var wahl = document.getElementById("kategorie");
+  if (!block || !wahl) { return; }
+
+  function zeigen() {
+    var knopf = wahl.querySelector("input:checked");
+    var fehler = knopf && knopf.value === "FEHLER";
+    block.hidden = !fehler;
+    // Der gewaehlte Knopf sieht aus wie Boots a.knopf.gewaehlt.
+    var alle = wahl.querySelectorAll(".wahl");
+    for (var i = 0; i < alle.length; i++) {
+      alle[i].classList.toggle("gewaehlt",
+        alle[i].querySelector("input").checked);
+    }
+  }
+  wahl.addEventListener("change", zeigen);
+  zeigen();
+})();
+
+// Der Speichern-Knopf ueber den Prioritaeten wird erst dunkel, wenn eine
+// anders dasteht als beim Aufbau der Seite -- dieselbe Regel wie unter
+// Projekte und unter Systeme in Boot.
+//
+// ER BLEIBT ABER BEDIENBAR, WENN NICHTS GEAENDERT IST, und das ist hier
+// anders als dort: Er vermerkt zugleich die Durchsicht, und eine
+// Durchsicht, bei der alles so bleibt, ist eine Durchsicht. Ausgegraut
+// waere er also nicht "nichts zu tun", sondern "das Hinsehen zaehlt
+// nicht" -- und genau das misst die Zahl unten.
+(function () {
+  var knopf = document.getElementById("prio-speichern");
+  if (!knopf) { return; }
+  var felder = document.querySelectorAll('select[form="prioform"][data-war]');
+
+  function pruefen() {
+    var offen = false;
+    for (var i = 0; i < felder.length; i++) {
+      if (felder[i].value !== felder[i].dataset.war) { offen = true; }
+    }
+    knopf.classList.toggle("ghost", !offen);
+    knopf.title = offen
+      ? "Vergebene Prioritäten übernehmen und die Durchsicht vermerken"
+      : "Nichts geändert — vermerkt trotzdem, dass durchgesehen wurde";
+  }
+  for (var i = 0; i < felder.length; i++) {
+    felder[i].addEventListener("change", pruefen);
+  }
+  pruefen();
+})();
+</script>
+{% endblock %}

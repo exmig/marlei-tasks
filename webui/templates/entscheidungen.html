@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+{% block title %}Entscheidungen &mdash; MARLEI Tasks{% endblock %}
+
+{# Das fuenfte und groesste Register.
+
+   KEIN FELDSCHEMA -- als einziges der vier. *Eine Abwaegung hat keine
+   Form, die sich vorher festlegen liesse; sie hat einen Verlauf.* Ein
+   Schema wuerde genau das plaetten, woran man die Gruendlichkeit
+   abliest.
+
+   WAS ENTSCHIEDEN WURDE STEHT TROTZDEM GETRENNT, und das ist kein
+   Widerspruch: Ein Schema gaebe dem VERLAUF eine Gliederung vor; hier
+   wird nur das Ergebnis vom Weg getrennt -- zwei Dinge, die man zu
+   verschiedenen Zeiten liest.
+
+   HIER WIRD NICHTS ARCHIVIERT. Eine Entscheidung hat keinen Abschluss,
+   sondern einen Zustand: Sie ueberlebt das, wozu sie gehoert.
+
+   Warum so: docs/aufbau.md, Abschnitt 3, "Entscheidungen". #}
+{% block content %}
+
+{% macro zustandsabzeichen(z) -%}
+<span class="badge {{ 'ok' if z == 'ENTSCHLUSS' else 'teils' }}">{{ z }}</span>
+{%- endmacro %}
+
+{% macro menge(n, eins, viele) -%}
+{{ n }} {{ eins if n == 1 else viele }}
+{%- endmacro %}
+
+{# Eine Zahl von Tagen -- und sie kommt in zwei Faellen vor.
+
+   dauer() steht fuer sich, in einer Kachel oder einer Spalte: *9 Tage*.
+   seit() steht hinter dem Wort "seit" und braucht den Dativ: *seit 9
+   Tagen*. Aufgefallen beim ersten Blick auf die gebaute Seite -- im
+   Kartenfuss stand "seit 9 Tage offen". #}
+{% macro dauer(n) -%}
+{% if n is none %}—{% elif n == 0 %}heute{% elif n == 1 %}1 Tag{% else %}{{ n }} Tage{% endif %}
+{%- endmacro %}
+
+{% macro seit(n) -%}
+{% if n is none %}—{% elif n == 0 %}heute{% elif n == 1 %}einem Tag{% else %}{{ n }} Tagen{% endif %}
+{%- endmacro %}
+
+{% if not projekt %}
+<section>
+  <div class="kartenkopf"><h2>Entscheidungen</h2></div>
+  <p class="hint">
+    <strong>Es ist kein Projekt gewählt.</strong> Eine Entscheidung gehört
+    einem Projekt — ohne Auswahl gäbe es keinen Ort, an dem sie steht.
+  </p>
+  <p class="kartenfuss">
+    Gewählt wird auf dem Reiter <a href="/">Projekte</a>, in der
+    Projektübersicht.
+  </p>
+</section>
+
+{% else %}
+
+<section id="entscheidungsuebersicht">
+  <div class="kartenkopf">
+    <h2>Entscheidungsübersicht</h2>
+    {% include "_projektmarke.html" %}
+    <span class="muted small" role="status">
+      {{ menge(zahlen.gesamt, "Eintrag", "Einträge") }},
+      {{ zahlen.offen }} offen</span>
+    {# DIE VORGABE IST *ALLE* UND NICHT *OFFEN*, anders als bei den
+       Meilensteinen. Eine Entscheidung wird nicht abgeschlossen, sie
+       bleibt stehen -- die haeufigste Frage hier ist *warum gilt das*,
+       nicht *was ist noch zu tun*. #}
+    <div class="row filter">
+      <a class="knopf {{ 'gewaehlt' if zeigen != 'offen' }}"
+         href="/entscheidungen">alle</a>
+      <a class="knopf {{ 'gewaehlt' if zeigen == 'offen' }}"
+         href="/entscheidungen?zeigen=offen">offen {{ zahlen.offen }}</a>
+    </div>
+    <form method="get" action="/entscheidungen" class="inline">
+      {% if zeigen == 'offen' %}
+      <input type="hidden" name="zeigen" value="offen">
+      {% endif %}
+      <input type="search" name="suche" class="kartensuche" value="{{ suche }}"
+             placeholder="Suchen…"
+             title="Sucht im Titel, im Entschluss und im Verlauf">
+    </form>
+    <a class="kartenhilfe" href="/hilfe#entscheidungen-uebersicht"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% if entscheidungen %}
+  <table class="eng">
+    <thead>
+      <tr>
+        <th>Kennung</th>
+        <th>Entscheidung</th>
+        <th>Zustand</th>
+        <th>Bezug</th>
+        <th class="nowrap">Datum</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entscheidungen %}
+      <tr {% if e.liegt %}class="haengt"{% endif %}>
+        <td><code>{{ e.kennung }}</code></td>
+        <td><a href="#eintrag-{{ e.id }}">{{ e.titel }}</a>
+          {% if e.ohne_satz %}
+          <div class="muted small"><span class="warnung">ohne Satz</span></div>
+          {% endif %}</td>
+        <td>{{ zustandsabzeichen(e.zustand) }}</td>
+        <td>{% if e.bezug %}
+          <a href="{{ e.bezug.pfad }}"><code>{{ e.bezug.kennung }}</code></a>
+          {% else %}<span class="muted">—</span>{% endif %}</td>
+        <td class="nowrap muted">{{ e.datum_deutsch }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">
+    {% if suche %}Nichts gefunden zu <strong>{{ suche }}</strong> —
+      <a href="/entscheidungen">alle zeigen</a>.
+    {% elif zeigen == 'offen' %}Keine offene Entscheidung —
+      <a href="/entscheidungen">alle zeigen</a>.
+    {% else %}Noch keine Entscheidung.{% endif %}
+  </p>
+  {% endif %}
+
+  <p class="kartenfuss">
+    <strong>Die Entscheidung überlebt das, wozu sie gehört.</strong> Ein
+    Eintrag zieht ins Archiv, eine Entscheidung bleibt stehen — deshalb
+    hat sie keinen Abschluss, sondern nur einen Zustand. Was gerade gilt,
+    steht im bezogenen Eintrag; hier steht, <em>warum</em> es gilt.
+  </p>
+</section>
+
+{% if entscheidungen %}
+{# ==================================================================
+   DIE LIEGEPROBE. Sie ist laut Einordnung der eigentliche Nutzen dieses
+   Registers fuer einen Chef: *der Blick darauf, was entschieden wurde
+   und trotzdem liegt.*
+
+   Zwei Zustaende, zwei Fragen -- zwei verschiedene Auswertungen
+   desselben Feldes. Dieselbe Bauart wie beim Eintragsdatum, das in der
+   Sammlung die Liegedauer und an der Aufgabe die Arbeitsdauer misst.
+   ================================================================== #}
+<section id="liegeprobe">
+  <div class="kartenkopf">
+    <h2>Was entschieden ist und trotzdem liegt</h2>
+    <a class="kartenhilfe" href="/hilfe#entscheidungen-liegeprobe"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% set liegende = entscheidungen | selectattr("liegt") | list %}
+  {% if liegende %}
+  <table class="eng">
+    <thead>
+      <tr>
+        <th>Entscheidung</th>
+        <th>Woran sie hängt</th>
+        <th class="nowrap">Entschieden</th>
+        <th class="nowrap">Liegt seit</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in liegende %}
+      <tr>
+        <td><a href="#eintrag-{{ e.id }}"><code>{{ e.kennung }}</code>
+          {{ e.titel }}</a></td>
+        <td><a href="{{ e.bezug.pfad }}"><code>{{ e.bezug.kennung }}</code>
+          {{ e.bezug.titel }}</a>
+          <div class="muted small">{{ e.bezug.reiter }} · noch offen</div></td>
+        <td class="nowrap muted">{{ e.datum_deutsch }}</td>
+        <td class="nowrap"><span class="liegt {{ 'lang' if e.seit is not none and e.seit >= 10 }}">{{ dauer(e.seit) }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">
+    Nichts liegt — jede getroffene Entscheidung hängt an einem Eintrag,
+    der abgeschlossen ist, oder an keinem.
+  </p>
+  {% endif %}
+
+  <div class="kacheln">
+    <div class="kachel"><span class="zahl">{{ zahlen.liegt }}</span>
+      <span class="muted small">entschieden und liegt</span></div>
+    <div class="kachel"><span class="zahl">{{ zahlen.offen }}</span>
+      <span class="muted small">offen — der Entschluss steht aus</span></div>
+    <div class="kachel">
+      <span class="zahl">{{ dauer(zahlen.aelteste_offene) }}</span>
+      <span class="muted small">die älteste offene</span></div>
+    {% if zahlen.ohne_satz %}
+    <div class="kachel"><span class="zahl warnung">{{ zahlen.ohne_satz }}</span>
+      <span class="muted small">Entschluss ohne Satz</span></div>
+    {% endif %}
+  </div>
+
+  {# HIER STAND EINE ZWEITE FRAGE: "Offen und liegt lange". Am
+     07.09.2026 gestrichen -- wer OFFEN waehlt, hat gewaehlt, und wie
+     lange das dann so steht, ist keine Auskunft. Gemahnt wird, was
+     fehlt, nicht was absichtlich so dasteht. #}
+  <p class="kartenfuss">
+    <strong>Ein Zustand, eine Frage.</strong> <em>Getroffen, und der
+    Eintrag liegt trotzdem</em> ist die Liegeprobe — laut Einordnung der
+    eigentliche Nutzen dieses Registers. <strong>Wie lange eine
+    Entscheidung offen ist, wird dagegen nicht gemessen:</strong>
+    <code>OFFEN</code> ist eine Wahl, kein Versäumnis.
+  </p>
+</section>
+
+<section id="entscheidungen">
+  <div class="kartenkopf">
+    <h2>Entscheidungen</h2>
+    <a class="kartenhilfe" href="/hilfe#entscheidungen-angaben"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% for e in entscheidungen %}
+  {# Aufgeklappt ist, was noch offen ist -- dort steht eine Frage, die
+     jemand beantworten muss. #}
+  <details class="eintragskarte" id="eintrag-{{ e.id }}"
+           {% if e.zustand == 'OFFEN' %}open{% endif %}>
+    <summary>
+      <div class="bezeichnung">
+        <code class="projektkennung">{{ e.kennung }}</code>
+        <span class="titelzeile">{{ e.titel }}</span>
+      </div>
+      {% if e.bezug %}
+      <span class="badge bezug">{{ e.bezug.kennung }}</span>
+      {% else %}
+      <span class="badge teils">ohne Bezug</span>
+      {% endif %}
+      {{ zustandsabzeichen(e.zustand) }}
+      {% if e.ohne_satz %}<span class="badge missing">ohne Satz</span>{% endif %}
+      {% if e.liegt %}<span class="badge missing">liegt</span>{% endif %}
+    </summary>
+
+    {# ZEIGEN STATT KOPIEREN. Der Kopf des bezogenen Eintrags steht
+       daneben, mit seinem Stand -- dann gibt es keinen Anlass, ihn in
+       den Verlauf abzuschreiben. Erzwingen laesst sich das nicht,
+       erleichtern schon. #}
+    <div class="bezugskopf">
+      <span class="wort">Bezug</span>
+      <div>
+        {% if e.bezug %}
+        <a href="{{ e.bezug.pfad }}"><code>{{ e.bezug.kennung }}</code>
+          {{ e.bezug.titel }}</a>
+        <div class="muted small">{{ e.bezug.reiter }} ·
+          {% if e.bezug.offen %}noch offen{% else %}abgeschlossen als
+          <em>{{ e.bezug.abschluss }}</em>{% endif %}</div>
+        {% else %}
+        <span class="muted">— keiner. <span class="small">Freistehend ist
+          erlaubt.</span></span>
+        {% endif %}
+      </div>
+    </div>
+
+    <form method="post" action="/entscheidungen/speichern">
+      <input type="hidden" name="id" value="{{ e.id }}">
+      <dl class="angaben">
+        <div>
+          <dt><label for="titel-{{ e.id }}">Titel</label></dt>
+          <dd class="weit">
+            <input type="text" id="titel-{{ e.id }}" name="titel" class="feld"
+                   value="{{ e.titel }}" maxlength="120">
+          </dd>
+        </div>
+        <div>
+          <dt><label for="zustand-{{ e.id }}">Zustand</label></dt>
+          <dd>
+            <select id="zustand-{{ e.id }}" name="zustand">
+              {% for z in zustaende_e %}
+              <option {% if z == e.zustand %}selected{% endif %}>{{ z }}</option>
+              {% endfor %}
+            </select>
+            <span class="muted small">— <strong>OFFEN</strong> heißt nicht
+              „da steht noch nichts": Der Weg ist da, der Entschluss steht
+              aus.</span>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="bezug-{{ e.id }}">Bezug</label></dt>
+          <dd>
+            {# EIN Feld statt zweier: Art und Kennung haengen zusammen,
+               und zwei Auswahllisten, von denen die zweite von der
+               ersten abhaengt, brauchen JavaScript, um nicht zu
+               luegen. #}
+            <select id="bezug-{{ e.id }}" name="bezug">
+              <option value="">— keiner —</option>
+              {% for gruppe in auswahl if gruppe.eintraege %}
+              <optgroup label="{{ gruppe.reiter }}">
+                {% for k in gruppe.eintraege %}
+                <option value="{{ k.wert }}"
+                        {% if e.bezug and k.wert == e.bezug.art ~ ':' ~ e.bezug.id %}selected{% endif %}>{{ k.kennung }} {{ k.titel }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="datum-{{ e.id }}">Datum</label></dt>
+          <dd>
+            <input type="date" id="datum-{{ e.id }}" name="datum"
+                   class="datumsfeld" value="{{ e.datum }}">
+            <span class="muted small">— der Tag, an dem die Abwägung
+              begann</span>
+          </dd>
+        </div>
+      </dl>
+
+      {# ---- WAS ENTSCHIEDEN WURDE, und es steht VOR dem Verlauf ------
+         Im September 2026 so festgelegt: Wer eine Entscheidungskarte
+         ansieht, will zuerst sehen, was ueberhaupt entschieden wurde --
+         und kann dann im Verlauf nachlesen, warum.
+
+         Der Rahmen ist derselbe wie bei der Abnahme einer Aufgabe, und
+         aus demselben Grund: Er markiert das, worauf es hinauslaeuft. #}
+      <div class="entschluss">
+        <h3>Was entschieden wurde
+          {% if e.zustand == 'OFFEN' and not e.entschluss.strip() %}
+          <span class="badge teils">steht aus</span>
+          {% elif e.ohne_satz %}
+          <span class="badge missing">fehlt</span>
+          {% endif %}
+        </h3>
+        <textarea name="entschluss" class="feld lang" rows="2"
+                  placeholder="Der Satz, der danach gilt — ein bis zwei Zeilen">{{ e.entschluss }}</textarea>
+        {% if e.ohne_satz %}
+        <p class="muted small">
+          <strong>Der Zustand ist ENTSCHLUSS, hier steht aber nichts.</strong>
+          Ein Entschluss ohne Satz ist keiner — nachtragen genügt, gesperrt
+          wird nichts.
+        </p>
+        {% elif e.zustand == 'OFFEN' and not e.entschluss.strip() %}
+        <p class="muted small">
+          <strong>Noch nichts.</strong> Der Weg steht unten, der Entschluss
+          steht aus — genau das meint der Zustand <em>OFFEN</em>.
+        </p>
+        {% endif %}
+      </div>
+
+      {# ---- Der Verlauf: das einzige Register ohne Feldschema -------- #}
+      <div class="verlauf">
+        <h3>Der Verlauf</h3>
+        {# DAS FELD IST SO HOCH WIE SEIN INHALT, bis zu einer Grenze.
+           Die Eintraege gehen von sieben bis fast zweitausend Zeilen;
+           eine Karte, die fuer beide dieselbe Form hat, ist fuer die
+           eine zu schwer und fuer die andere zu klein. #}
+        <textarea name="text" class="feld lang"
+                  rows="{{ [[e.zeilen + 1, 6] | max, 30] | min }}"
+                  placeholder="Was abgewogen wurde, was dagegen sprach, welche Regel daraus folgt — und der Weg dorthin.">{{ e.text }}</textarea>
+        <p class="muted small">
+          Kein Feldschema — als einziges der vier Register. <em>Eine
+          Abwägung hat keine Form, die sich vorher festlegen ließe; sie hat
+          einen Verlauf.</em> Hineingehört mehr als das Ergebnis: auch der
+          Weg dorthin und die Vorbereitung — <strong>der Weg spiegelt
+          wider, wie gründlich eine Entscheidung war.</strong>
+        </p>
+      </div>
+
+      <div class="row kartenknoepfe">
+        <button type="submit">Speichern</button>
+      </div>
+    </form>
+
+    <div class="row kartenknoepfe">
+      {# LOESCHEN, nicht archivieren -- das einzige Register, in dem das
+         der Weg hinaus ist: Eine Entscheidung hat keinen Abschluss. #}
+      <form method="post" action="/entscheidungen/loeschen" class="inline"
+            onsubmit="return confirm('{{ e.kennung }} löschen? Entscheidungen werden nicht archiviert — sie ist danach weg.')">
+        <input type="hidden" name="id" value="{{ e.id }}">
+        <button type="submit" class="danger">Löschen</button>
+      </form>
+    </div>
+
+    {# Der Umfang steht hier und nicht als Spalte in der Uebersicht:
+       Neben drei anderen liest er sich als Bewertung -- lang gleich
+       gruendlich, und das waere falsch. Am eigenen Eintrag beschreibt er
+       nur ihn selbst. #}
+    <p class="kartenfuss">
+      {% if e.zeilen %}{{ menge(e.zeilen, "Zeile", "Zeilen") }}{% if e.abschnitte %}
+      in {{ menge(e.abschnitte, "Abschnitt", "Abschnitten") }}{% endif %}{% else %}Noch
+      kein Verlauf{% endif %} ·
+      {% if e.zustand == 'OFFEN' %}offen seit {{ seit(e.seit) }}{% else %}entschieden
+      am {{ e.datum_deutsch }}{% endif %}. Was gerade gilt, steht im
+      bezogenen Eintrag oben — nicht hier.
+    </p>
+  </details>
+  {% endfor %}
+
+  <p class="kartenfuss">
+    Hier wird nichts archiviert. Eine Entscheidung bleibt stehen, auch
+    wenn der Eintrag, zu dem sie gehört, längst im Archiv ist — das tut
+    kein anderes Register.
+  </p>
+</section>
+{% endif %}
+
+<section id="neue-entscheidung">
+  <div class="kartenkopf">
+    <h2>Neue Entscheidung</h2>
+    <a class="kartenhilfe" href="/hilfe#entscheidungen-neu"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  <form method="post" action="/entscheidungen/neu">
+    <dl class="angaben">
+      <div>
+        <dt><label for="n-titel">Titel</label></dt>
+        <dd class="weit">
+          <input type="text" id="n-titel" name="titel" class="feld" required
+                 autocomplete="off" maxlength="120"
+                 placeholder="Worum abgewogen wird — als Satz, nicht als Stichwort">
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-zustand">Zustand</label></dt>
+        <dd>
+          <select id="n-zustand" name="zustand">
+            {% for z in zustaende_e %}<option>{{ z }}</option>{% endfor %}
+          </select>
+          <span class="muted small">— eine neue Abwägung ist offen; sie
+            wird zum Entschluss, wenn jemand entscheidet</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-bezug">Bezug</label></dt>
+        <dd>
+          <select id="n-bezug" name="bezug">
+            <option value="">— keiner —</option>
+            {% for gruppe in auswahl if gruppe.eintraege %}
+            <optgroup label="{{ gruppe.reiter }}">
+              {% for k in gruppe.eintraege %}
+              <option value="{{ k.wert }}">{{ k.kennung }} {{ k.titel }}</option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+          <span class="muted small">— freistehend ist erlaubt</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-datum">Datum</label></dt>
+        <dd>
+          <input type="date" id="n-datum" name="datum" class="datumsfeld"
+                 value="{{ heute }}" required>
+          <span class="muted small">— der Tag, an dem die Abwägung begann,
+            nicht der des Entschlusses</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-entschluss">Was entschieden wurde</label></dt>
+        <dd class="weit">
+          <textarea id="n-entschluss" name="entschluss" class="feld lang"
+                    rows="2"
+                    placeholder="Der Satz, der danach gilt — darf leer bleiben, solange OFFEN gilt"></textarea>
+          <span class="feldhinweis muted small">Bleibt er leer, während der
+            Zustand auf <strong>ENTSCHLUSS</strong> steht, wird das ein
+            Befund: <em>Ein Entschluss ohne Satz ist keiner.</em> Gesperrt
+            wird nichts — nachtragen genügt.</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-text">Der Verlauf</label></dt>
+        <dd class="weit">
+          <textarea id="n-text" name="text" class="feld lang" rows="8"
+                    placeholder="Was abgewogen wurde, was dagegen sprach, welche Regel daraus folgt — und der Weg dorthin."></textarea>
+          <span class="feldhinweis muted small">Kein Feldschema, keine
+            Gliederungsvorgabe. <strong>Auch der Weg gehört hinein</strong>
+            — er spiegelt wider, wie gründlich entschieden wurde.</span>
+        </dd>
+      </div>
+    </dl>
+    <div class="row kartenknoepfe">
+      <button type="submit">Entscheidung anlegen</button>
+      {# Wohin es kommt, an dem Knopf, der es anlegt -- der Augenblick, in
+         dem ein falsch gewaehltes Projekt Schaden anrichtet. Die Marke in
+         der ersten Karte ist dann oft weggescrollt, den Knopf sieht man. #}
+      <span class="muted small landet">— landet in
+        <strong>{{ gewaehlt.kennung }} {{ gewaehlt.name }}</strong></span>
+    </div>
+  </form>
+  <p class="kartenfuss">
+    <strong>Am Ende muss jemand entscheiden.</strong> Deshalb heißt das
+    Register Entscheidungen und nicht Abwägungen — <em>Abwägung</em>
+    benennt den Vorgang, <em>Entscheidung</em> das, wozu er da ist.
+  </p>
+</section>
+{% endif %}
+{% endblock %}

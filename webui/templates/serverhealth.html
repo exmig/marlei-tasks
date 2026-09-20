@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Server Health — MARLEI Tasks{% endblock %}
+
+{# Zwei Karten, nicht fuenfzehn -- docs/uebernahme.md, Abschnitt 5.
+
+   Der Reiter steht in dieser Leiste GANZ HINTEN und nicht wie in MARLEI
+   Boot vorn: Dort ist der Server das Produkt, hier ist er Unterbau.
+   Niemand oeffnet eine Aufgabenverwaltung, um die Prozessorlast zu sehen.
+
+   Warum die dreizehn anderen Karten aus Boot nicht mitkommen, steht in
+   docs/uebernahme.md und laesst sich in einem Satz sagen: **Eine Karte wird
+   uebernommen, wenn sie dieselbe Frage beantwortet -- nicht, wenn sie
+   denselben Code benutzen koennte.** Eine Karte "Dienste" mit drei
+   Zeilen statt fuenf ist nicht dieselbe Karte in duenn, sondern eine
+   andere Karte mit demselben Namen. #}
+
+{% block content %}
+
+<section id="auslastung">
+  <div class="kartenkopf">
+    <h2>Auslastung</h2>
+    <a class="kartenhilfe" href="/hilfe#serverhealth-auslastung"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  <div data-teil="auslastung">
+    {% include "_auslastung.html" %}
+  </div>
+
+  {# Fusszeile der Karte: Sie spricht ueber den Inhalt, statt ihn zu sein.
+     Bewusst ausserhalb von data-teil -- was dort drinsteht, tauscht das
+     Skript alle fuenf Sekunden aus. #}
+  <p class="kartenfuss">Aktualisierung alle 5 Sekunden</p>
+</section>
+
+<section id="serverdetails">
+  <div class="kartenkopf">
+    <h2>Serverdetails</h2>
+    <a class="kartenhilfe" href="/hilfe#serverhealth-serverdetails"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {# Worauf dieser Server laeuft -- sonst nur per SSH zu erfahren.
+
+     Dieselben Angaben stehen im Fehlerbericht unter Einrichtung, und sie
+     kommen aus derselben Quelle: webui/bericht.py. Zwei Quellen liefen
+     auseinander, und dann stuende in der Meldung ein anderer Kernel als
+     hier.
+
+     **Was hier bewusst NICHT steht, ist eine Paketliste.** Diese
+     Oberflaeche kann ohne Kennwort laufen; jede Zeile mehr ist fuer jeden im
+     Netz eine Zeile mehr Einkaufsliste. Aufgenommen ist, was der Bericht
+     braucht.
+
+     **Und nichts aus den Projekten.** Diese Karte beschreibt die
+     Maschine; dieselbe Angabe ist auf jedem Server dieselbe. Das ist der
+     Grund, warum sie ohne gewaehltes Projekt vollstaendig dasteht. #}
+  <table class="schmal">
+    <tbody>
+      {% for name, wert in serverdetails.maschine %}
+      <tr>
+        <td class="nowrap"><strong>{{ name }}</strong></td>
+        <td>{{ wert }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Was mit welcher Version läuft</h3>
+  <p class="muted small">
+    Die Version, nicht der Zustand. <strong>Sie ist die Angabe, die eine
+    fremde Fehlermeldung einzuordnen erlaubt</strong> — eine Meldung aus
+    dem Innern von FastAPI sagt ohne sie nichts.
+  </p>
+  <table class="schmal">
+    <tbody>
+      {% for name, wert in serverdetails.dienste %}
+      <tr>
+        <td class="nowrap"><code>{{ name }}</code></td>
+        <td>{{ wert }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# Anders als bei der Auslastung wird hier nichts nachgeholt: Diese
+     Karte entsteht beim Aufbau der Seite und steht dann still. Eine
+     Minute Puffer, weil sich Kernel und Paketversionen zwischen zwei
+     Aufrufen nicht aendern -- was sie aendert, ein Neustart oder ein apt
+     upgrade, nimmt die Seite ohnehin mit. #}
+  <p class="kartenfuss">Beim Aufbau dieser Seite gelesen, bis zu
+    {{ serverdetails.takt }} Sekunden alt</p>
+</section>
+
+<script>
+// Die Auslastung wird vom Server fertig gerendert nachgeliefert und hier
+// nur eingesetzt -- so gibt es die Darstellung genau einmal, in der
+// Vorlage. Ohne JavaScript zeigt die Seite denselben Stand wie beim
+// Aufruf; das ist ein gueltiger Zustand und kein halber.
+//
+// ANDERS ALS IN BOOT ist es nur EIN Stueck. Dort verteilt dieselbe
+// Schleife zwei (Auslastung und laufende Uebertragungen) ueber
+// data-teil; die Auszeichnung bleibt hier trotzdem stehen, damit ein
+// zweites Stueck spaeter ohne Umbau danebenpasst.
+(function () {
+  var ziel = document.querySelector('[data-teil="auslastung"]');
+  if (!ziel) { return; }
+
+  function holen() {
+    // Im Hintergrundtab nicht nachfragen: das waere Last fuer niemanden.
+    if (document.hidden) { setTimeout(holen, 5000); return; }
+    fetch("/auslastung.html")
+      .then(function (r) { return r.text(); })
+      .then(function (t) { ziel.innerHTML = t; setTimeout(holen, 5000); })
+      .catch(function () { setTimeout(holen, 15000); });
+  }
+  setTimeout(holen, 5000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,25 @@
+{# Das gewaehlte Projekt, rechts neben der Ueberschrift der ersten Karte
+   auf Sammlung, Aufgaben, Meilensteine und Entscheidungen.
+
+   WARUM HIER, seit dem 19.09.2026. Das Projekt gilt fuer diese vier
+   Reiter, und eine Auswahl, die auf einer Seite getroffen wird und auf
+   vier anderen wirkt, ist unsichtbar, sobald man den Reiter gewechselt
+   hat. Vorher stand nur der Name als Marke im Band -- ohne Kennung, und
+   neben "MARLEI Tasks" las sich ein Projekt namens marlei-tasks wie ein
+   Teil des Produktnamens. Eine Zeile ueber den Reitern war der naechste
+   Versuch; sie klebte mit, sah aber unruhig aus.
+
+   Hier scrollt sie weg, und das ist bewusst hingenommen: Nach jedem
+   Reiterwechsel steht man oben und sieht sie. Der gefaehrliche Moment
+   ist das Anlegen, und dort steht das Projekt noch einmal am Knopf.
+
+   Kein Wort "Projekt" davor: Neben der Ueberschrift spricht die Marke
+   fuer sich, und die Kennung macht sie eindeutig. Die Kennung wird nie
+   gekuerzt, der Name notfalls mit "..." -- der volle steht im Tooltip.
+   Ein Klick fuehrt dorthin, wo gewechselt wird. #}
+{% if gewaehlt %}
+<a class="projektmarke" href="/#projektuebersicht"
+   title="{{ gewaehlt.kennung }} {{ gewaehlt.name }} &mdash; wechseln unter Projekte"><span
+     class="kennung">{{ gewaehlt.kennung }}</span> <span
+     class="name">{{ gewaehlt.name }}</span></a>
+{% endif %}

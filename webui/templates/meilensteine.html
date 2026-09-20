@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+{% block title %}Meilensteine &mdash; MARLEI Tasks{% endblock %}
+
+{# Der vierte gebaute Reiter.
+
+   VIER KARTEN, UND DIE ZWEITE IST DER PUNKT. *Was dazwischenkam* wird
+   notiert, sobald es passiert -- nicht bei der Abnahme. Eine Notiz, die
+   man im Augenblick machen soll, aber erst tief in einer Karte suchen
+   muss, wird aus dem Gedaechtnis nachgetragen und ist dann wertlos.
+
+   ES GIBT NUR DEN UMWEG, seit dem 07.09.2026: Die zweite Art der Mappe,
+   die Rast, ist gestrichen -- die Unterscheidung war zu fliessend, um
+   etwas zu sortieren. In MARLEI Boot bleibt sie.
+
+   Warum so: docs/aufbau.md, Abschnitt 3, "Meilensteine". #}
+{% block content %}
+
+{% macro prioabzeichen(p) -%}
+<span class="badge {{ 'teils' if p == '—' else 'prio' }}">{{ p }}</span>
+{%- endmacro %}
+
+{% macro menge(n, eins, viele) -%}
+{{ n }} {{ eins if n == 1 else viele }}
+{%- endmacro %}
+
+{% macro dauer(n) -%}
+{% if n is none %}—{% elif n == 0 %}heute{% elif n == 1 %}1 Tag{% else %}{{ n }} Tage{% endif %}
+{%- endmacro %}
+
+{% if not projekt %}
+<section>
+  <div class="kartenkopf"><h2>Meilensteine</h2></div>
+  <p class="hint">
+    <strong>Es ist kein Projekt gewählt.</strong> Ein Meilenstein gehört
+    einem Projekt — ohne Auswahl gäbe es keinen Ort, an dem er steht.
+  </p>
+  <p class="kartenfuss">
+    Gewählt wird auf dem Reiter <a href="/">Projekte</a>, in der
+    Projektübersicht.
+  </p>
+</section>
+
+{% else %}
+
+<section id="meilensteinuebersicht">
+  <div class="kartenkopf">
+    <h2>Meilensteinübersicht</h2>
+    {% include "_projektmarke.html" %}
+    <span class="muted small" role="status">
+      {{ steine | length }} {{ "offen" if zeigen != "alle" else "insgesamt" }}</span>
+    {# REGEL 7 KEHRT SICH UM. In der Mappe verschwindet ein abgenommener
+       Meilenstein aus der Datei -- *eine Liste, die mitwaechst statt zu
+       schrumpfen, verliert ihren Zweck.* In einer Datenbank verschwindet
+       nichts; der Zweck bleibt und wird ein VORGABEFILTER. #}
+    <div class="row filter">
+      <a class="knopf {{ 'gewaehlt' if zeigen != 'alle' }}"
+         href="/meilensteine?zeigen=offen">offen</a>
+      <a class="knopf {{ 'gewaehlt' if zeigen == 'alle' }}"
+         href="/meilensteine?zeigen=alle">alle {{ alle_zahl }}</a>
+    </div>
+    <a class="kartenhilfe" href="/hilfe#meilensteine-uebersicht"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% if steine %}
+  <table class="eng">
+    <thead>
+      <tr>
+        <th>Kennung</th>
+        <th>Meilenstein</th>
+        <th>Prio</th>
+        <th>Hängt ab von</th>
+        <th class="nowrap">Aufgaben</th>
+        <th class="nowrap">Offen seit</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in steine %}
+      <tr {% if m.abnehmbar %}class="laeuft"{% endif %}>
+        <td><code>{{ m.kennung }}</code></td>
+        <td><a href="#eintrag-{{ m.id }}">{{ m.benennung }}</a>
+          {% if m.ohne_aufgabe or m.abschluss != '—' %}
+          <div class="muted small">
+            {% if m.abschluss != '—' %}{{ m.abschluss }}{% if m.abnahme_deutsch != '—' %}
+              am {{ m.abnahme_deutsch }}{% endif %}{% endif %}
+            {% if m.ohne_aufgabe %}<span class="warnung">ohne Aufgabe</span>{% endif %}
+          </div>
+          {% endif %}</td>
+        <td>{{ prioabzeichen(m.prio) }}</td>
+        <td>
+          {% for v in m.vorgaenger %}
+          <a href="#eintrag-{{ v.id }}"><code>{{ v.kennung }}</code>
+            {{ v.benennung }}</a>{% if not loop.last %}<br>{% endif %}
+          {% else %}<span class="muted">—</span>{% endfor %}
+        </td>
+        <td class="nowrap">
+          {% if m.aufgaben %}
+          <span class="haken {{ 'voll' if m.abnehmbar }}">{{ m.aufgaben | length }} ·
+            {{ m.aufgaben_fertig }} fertig</span>
+          {% else %}<span class="haken leer">keine</span>{% endif %}
+        </td>
+        <td class="nowrap">{{ dauer(m.offen_seit) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">
+    {% if zeigen == 'alle' %}Noch kein Meilenstein.
+    {% else %}Kein offener Meilenstein —
+      <a href="/meilensteine?zeigen=alle">alle zeigen</a>.{% endif %}
+  </p>
+  {% endif %}
+
+  <p class="kartenfuss">
+    Die Liste zeigt, <strong>was offen ist</strong> — in der Mappe
+    verschwindet ein abgenommener Meilenstein aus der Datei, hier wird
+    daraus ein Filter. <em>Hängt ab von</em> nennt nur andere
+    Meilensteine; was sachlich da sein muss, steht in der Karte unter
+    <em>Bedingung</em>.
+  </p>
+</section>
+
+{% if steine %}
+{# ==================================================================
+   DER KURZE WEG FUER EINEN UMWEG. Er steht hier oben und nicht in der
+   Karte: *Wird notiert, sobald es passiert, nicht bei der Abnahme.*
+   ================================================================== #}
+<section id="dazwischen">
+  <div class="kartenkopf">
+    <h2>Was dazwischenkam</h2>
+    <a class="kartenhilfe" href="/hilfe#meilensteine-dazwischen"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  <form method="post" action="/meilensteine/dazwischen" class="row spaced">
+    <label for="dz-stein" class="sr-nur">Meilenstein</label>
+    <select id="dz-stein" name="id" required>
+      {% for m in steine %}
+      <option value="{{ m.id }}">{{ m.kennung }} {{ m.benennung }}</option>
+      {% endfor %}
+    </select>
+    <label for="dz-datum" class="sr-nur">Datum</label>
+    <input type="date" id="dz-datum" name="datum" class="datumsfeld"
+           value="{{ heute }}">
+    <label for="dz-text" class="sr-nur">Was war los</label>
+    <input type="text" id="dz-text" name="text" class="feld dazwischenfeld"
+           autocomplete="off" placeholder="Was war los? Ein Satz genügt.">
+    <button type="submit">Notieren</button>
+  </form>
+  <p class="kartenfuss">
+    <strong>Notiert wird, sobald es passiert — nicht bei der Abnahme.</strong>
+    Bei der Abnahme steht es dann schon da und muss nicht aus dem
+    Gedächtnis kommen. <em>Es gibt nur den Umweg:</em> Die zweite Art der
+    Mappe, die <em>Rast</em>, ist am 07.09.2026 gestrichen worden — die
+    Unterscheidung war zu fließend, um etwas zu sortieren.
+  </p>
+</section>
+
+<section id="meilensteine">
+  <div class="kartenkopf">
+    <h2>Meilensteine</h2>
+    <a class="kartenhilfe" href="/hilfe#meilensteine-angaben"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% for m in steine %}
+  <details class="eintragskarte" id="eintrag-{{ m.id }}"
+           {% if m.abnehmbar %}open{% endif %}>
+    <summary>
+      <div class="bezeichnung">
+        <code class="projektkennung">{{ m.kennung }}</code>
+        <span class="titelzeile">{{ m.benennung }}</span>
+      </div>
+      {{ prioabzeichen(m.prio) }}
+      {% if m.ohne_aufgabe %}
+      <span class="badge missing">ohne Aufgabe</span>
+      {% else %}
+      <span class="badge {{ 'ok' if m.abnehmbar else 'teils' }}">{{ m.aufgaben_fertig }} von
+        {{ m.aufgaben | length }} Aufgaben</span>
+      {% endif %}
+      {% if m.abschluss != '—' %}
+      <span class="badge teils">{{ m.abschluss }}</span>
+      {% endif %}
+    </summary>
+
+    {# DIE KOPFZEILE IST MEHRZEILIG, UND DAS BLEIBT SO: *Bevor jemand
+       anfaengt, will er wissen, wovon der Meilenstein abhaengt und wer
+       auf ihn wartet; das ist die erste Frage, nicht eine am Ende von
+       zwei Bildschirmseiten.*
+
+       VORGAENGER SIND EINGETRAGEN, NACHFOLGER ABGELESEN. Beides zu
+       speichern hiesse, dieselbe Beziehung zweimal zu halten -- und eine
+       der beiden Fassungen waere in einem Monat falsch. #}
+    <div class="steinkopf">
+      <div class="kopfangabe">
+        <span class="wort">Hängt ab von</span>
+        <span>
+          {% for v in m.vorgaenger %}
+          <a href="#eintrag-{{ v.id }}"><code>{{ v.kennung }}</code>
+            {{ v.benennung }}</a>{% if not loop.last %} · {% endif %}
+          {% else %}<span class="muted">— keinem anderen Meilenstein</span>
+          {% endfor %}
+        </span>
+      </div>
+      <div class="kopfangabe">
+        <span class="wort">Wartet auf ihn</span>
+        <span>
+          {% for n in m.nachfolger %}
+          <a href="#eintrag-{{ n.id }}"><code>{{ n.kennung }}</code>
+            {{ n.benennung }}</a>{% if not loop.last %} · {% endif %}
+          {% else %}<span class="muted">— keiner</span>{% endfor %}
+        </span>
+      </div>
+      <div class="kopfangabe">
+        <span class="wort">Eingetragen</span>
+        <span>{{ m.eingetragen_deutsch }}
+          <span class="muted small">— offen seit {{ dauer(m.offen_seit) }}</span></span>
+      </div>
+    </div>
+
+    <form method="post" action="/meilensteine/speichern">
+      <input type="hidden" name="id" value="{{ m.id }}">
+      <dl class="angaben">
+        <div>
+          <dt><label for="benennung-{{ m.id }}">Benennung</label></dt>
+          <dd class="weit">
+            <input type="text" id="benennung-{{ m.id }}" name="benennung"
+                   class="feld" value="{{ m.benennung }}" maxlength="80">
+          </dd>
+        </div>
+        <div>
+          <dt><label for="beschreibung-{{ m.id }}">Beschreibung</label></dt>
+          <dd class="weit">
+            <textarea id="beschreibung-{{ m.id }}" name="beschreibung" rows="2"
+                      class="feld">{{ m.beschreibung }}</textarea>
+          </dd>
+        </div>
+        {# BEDINGUNG heisst: was SACHLICH da sein muss. Andere
+           Meilensteine stehen oben unter "Haengt ab von" und nicht hier
+           -- sonst stuenden Abhaengigkeiten an zwei Stellen, und eine
+           davon waere in einem Monat falsch. #}
+        <div>
+          <dt><label for="bedingung-{{ m.id }}">Bedingung</label></dt>
+          <dd class="weit">
+            <textarea id="bedingung-{{ m.id }}" name="bedingung" rows="2"
+                      class="feld">{{ m.bedingung }}</textarea>
+            <span class="feldhinweis muted small">Was sachlich da sein
+              muss. Andere Meilensteine gehören nach oben unter
+              <em>Hängt ab von</em>.</span>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="vorgaenger-{{ m.id }}">Hängt ab von</label></dt>
+          <dd class="weit">
+            <select id="vorgaenger-{{ m.id }}" name="vorgaenger" multiple
+                    size="{{ [steine | length, 4] | min }}">
+              {% for k in steine if k.id != m.id %}
+              <option value="{{ k.id }}"
+                      {% if k.id in m.vorgaenger | map(attribute='id') | list %}selected{% endif %}>{{ k.kennung }} {{ k.benennung }}</option>
+              {% endfor %}
+            </select>
+            <span class="feldhinweis muted small">Mehrere mit Strg. Ein
+              Kreis wird abgewiesen — sonst zeigten <em>Hängt ab von</em>
+              und <em>Wartet auf ihn</em> aufeinander.</span>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="nachbereitung-{{ m.id }}">Nachbereitung</label></dt>
+          <dd class="weit">
+            <textarea id="nachbereitung-{{ m.id }}" name="nachbereitung"
+                      rows="2" class="feld">{{ m.nachbereitung }}</textarea>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="prio-{{ m.id }}">Priorität</label></dt>
+          <dd>
+            <select id="prio-{{ m.id }}" name="prio">
+              {% for p in prios %}
+              <option {% if p == m.prio %}selected{% endif %}>{{ p }}</option>
+              {% endfor %}
+            </select>
+          </dd>
+        </div>
+      </dl>
+      <div class="row kartenknoepfe">
+        <button type="submit">Speichern</button>
+      </div>
+    </form>
+
+    {# ---- Die Aufgaben unter dem Stein ------------------------------
+       Erledigte bleiben stehen und werden blass: Eine Liste, aus der
+       Fertiges verschwindet, sagt nicht mehr, woraus der Stein
+       bestand. #}
+    <div class="steinteil">
+      <h3>Aufgaben
+        {% if m.aufgaben %}
+        <span class="muted small">— {{ m.aufgaben_fertig }} von
+          {{ m.aufgaben | length }} erledigt</span>
+        {% endif %}
+      </h3>
+      {% if m.aufgaben %}
+      <ul class="steinaufgaben">
+        {% for a in m.aufgaben %}
+        <li class="{{ 'fertig' if a.fertig }}">
+          <a href="/aufgaben#eintrag-{{ a.id }}"><code>{{ a.kennung }}</code>
+            {{ a.titel }}</a>
+          <span class="badge {{ 'ok' if a.fertig else 'teils' }}">{{ a.abschluss if a.fertig else a.status }}</span>
+          <form method="post" action="/meilensteine/aufgabe" class="inline">
+            <input type="hidden" name="id" value="{{ m.id }}">
+            <input type="hidden" name="aufgabe" value="{{ a.id }}">
+            <input type="hidden" name="loesen" value="ja">
+            <button type="submit" class="weg" title="Aufgabe lösen — sie bleibt, sie gehört nur nicht mehr dazu"
+                    aria-label="{{ a.kennung }} lösen">&times;</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="hint">
+        <strong>An diesem Meilenstein hängt keine Aufgabe.</strong> Er
+        darf leer entstehen — aus einem Gespräch etwa —, aber nicht leer
+        bleiben: <em>Ein Meilenstein ohne Aufgabe ist keiner, sondern
+        selbst eine Aufgabe.</em>
+      </p>
+      {% endif %}
+      {% if freie %}
+      <form method="post" action="/meilensteine/aufgabe" class="row">
+        <input type="hidden" name="id" value="{{ m.id }}">
+        <label for="dazu-{{ m.id }}" class="sr-nur">Aufgabe hinzufügen</label>
+        <select id="dazu-{{ m.id }}" name="aufgabe" class="dazuwahl">
+          {% for a in freie %}
+          <option value="{{ a.id }}">{{ a.kennung }} {{ a.titel }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="ghost">Hinzufügen</button>
+      </form>
+      {% else %}
+      <p class="muted small">
+        Keine freie Aufgabe — jede offene hängt schon an einem Stein.
+      </p>
+      {% endif %}
+    </div>
+
+    {# ---- Was dazwischenkam: gelesen hier, geschrieben oben --------- #}
+    <div class="steinteil">
+      <h3>Was dazwischenkam
+        {% if m.dazwischen %}
+        <span class="muted small">— {{ menge(m.dazwischen | length, "Umweg", "Umwege") }}</span>
+        {% endif %}
+      </h3>
+      {% if m.dazwischen %}
+      {# Kein Abzeichen vor der Zeile: Wo es nur eine Art gibt, benennt
+         sie die Ueberschrift der Liste, nicht jede Zeile. #}
+      <ul class="dazwischenliste">
+        {% for d in m.dazwischen %}
+        <li>
+          <span class="muted small nowrap">{{ d.datum_deutsch }}</span>
+          <span>{{ d.text }}</span>
+          <form method="post" action="/meilensteine/dazwischen/weg" class="inline">
+            <input type="hidden" name="id" value="{{ m.id }}">
+            <input type="hidden" name="zeile" value="{{ d.id }}">
+            <button type="submit" class="weg" title="Zeile wegnehmen"
+                    aria-label="Zeile wegnehmen">&times;</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted small">
+        Nichts notiert — der gerade Weg. Notiert wird oben in
+        <a href="#dazwischen">Was dazwischenkam</a>, sobald etwas
+        passiert.
+      </p>
+      {% endif %}
+    </div>
+
+    {# ---- Die Abnahme: vier Handgriffe werden ein Knopf --------------
+       Heute sind es vier: Abschluss setzen, archiviere.py laufen lassen,
+       eine Zeile ins Quittungsbuch schreiben, einen Stein auf die
+       Roadmap setzen. Jeder beantwortet eine andere Frage, und jeder
+       laesst sich einzeln vergessen.
+
+       *Wo eine Regel Formalie verlangt, muss das Werkzeug sie
+       uebernehmen. Sonst wird die Regel umgangen.* #}
+    <div class="abnahme">
+      <h3>Abnahme erfolgt
+        <span class="badge {{ 'ok' if m.abnahme_am != '—' else 'teils' }}">{{ m.abnahme_deutsch if m.abnahme_am != '—' else 'offen' }}</span>
+      </h3>
+      <form method="post" action="/meilensteine/speichern">
+        <input type="hidden" name="id" value="{{ m.id }}">
+        <dl class="angaben">
+          <div>
+            <dt><label for="kriterium-{{ m.id }}">Kriterium</label></dt>
+            <dd class="weit">
+              <textarea id="kriterium-{{ m.id }}" name="abnahme_kriterium"
+                        rows="2" class="feld"
+                        placeholder="Woran man feststellt, dass der Stein steht">{{ m.abnahme_kriterium }}</textarea>
+            </dd>
+          </div>
+        </dl>
+        <div class="row kartenknoepfe">
+          <button type="submit" class="ghost">Kriterium speichern</button>
+        </div>
+      </form>
+      <p class="muted small">
+        Der Knopf setzt den Abschluss, schreibt die Zeile ins
+        Quittungsbuch und den Stein auf die Roadmap — mit Dauer und
+        <em>Was dazwischenkam</em>. <strong>Vier Handgriffe, die sich
+        einzeln vergessen lassen, sind einer.</strong>
+      </p>
+      <div class="row kartenknoepfe">
+        <form method="post" action="/meilensteine/abnehmen" class="inline">
+          <input type="hidden" name="id" value="{{ m.id }}">
+          <button type="submit" {% if not m.abnehmbar %}disabled{% endif %}
+                  title="{% if m.abnehmbar %}Alle Aufgaben sind erledigt{% else %}Erst wenn alle zugeordneten Aufgaben erledigt sind{% endif %}">
+            {% if m.abnehmbar %}Abnehmen
+            {% elif not m.aufgaben %}Abnehmen — keine Aufgabe
+            {% else %}Abnehmen — {{ menge(m.aufgaben | length - m.aufgaben_fertig, "Aufgabe", "Aufgaben") }} offen
+            {% endif %}</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="row kartenknoepfe">
+      <form method="post" action="/meilensteine/verwerfen" class="inline"
+            onsubmit="return confirm('{{ m.kennung }} verwerfen? Die Aufgaben darunter bleiben — verworfen ist der Termin, nicht die Arbeit.')">
+        <input type="hidden" name="id" value="{{ m.id }}">
+        <button type="submit" class="danger">Verwerfen</button>
+      </form>
+    </div>
+
+    <p class="kartenfuss">
+      <em>Wer geprüft hat</em> steht hier nicht: In dieser Fassung ist es
+      immer dieselbe Person, und ein Feld, das auf jedem Eintrag denselben
+      Namen trägt, sagt nichts. Es kommt mit der zweiten Person wieder.
+    </p>
+  </details>
+  {% endfor %}
+
+  <p class="kartenfuss">
+    Abgenommene und verworfene Meilensteine stehen im Archiv unter
+    History — hier zeigt der Filter oben, was offen ist.
+  </p>
+</section>
+{% endif %}
+
+<section id="neuer-meilenstein">
+  <div class="kartenkopf">
+    <h2>Neuer Meilenstein</h2>
+    <a class="kartenhilfe" href="/hilfe#meilensteine-neu"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  {# ER DARF LEER ENTSTEHEN, ABER NICHT LEER BLEIBEN. Kein Sperren beim
+     Anlegen -- ein Meilenstein aus dem Gespraech ist ein echter Fall.
+     Aber ein Befund, solange keine Aufgabe daranhaengt. Das trennt
+     sauber von der Abnahme-Sperre bei der Aufgabe: Dort fehlt etwas,
+     das den Eintrag konstituiert; hier etwas, das noch kommen kann. #}
+  <p class="hint">
+    <strong>Er darf leer entstehen, aber nicht leer bleiben.</strong> Ein
+    Meilenstein aus einer Rückmeldung oder einem Gespräch ist ein echter
+    Fall — deshalb wird hier nichts gesperrt. Solange keine Aufgabe
+    daranhängt, steht er aber als Befund über der Seite.
+  </p>
+  <form method="post" action="/meilensteine/neu">
+    <dl class="angaben">
+      <div>
+        <dt><label for="n-benennung">Benennung</label></dt>
+        <dd class="weit">
+          <input type="text" id="n-benennung" name="benennung" class="feld"
+                 required autocomplete="off" maxlength="80"
+                 placeholder="Was zusammen fertig werden muss">
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-prio">Priorität</label></dt>
+        <dd>
+          <select id="n-prio" name="prio">
+            {% for p in prios %}<option>{{ p }}</option>{% endfor %}
+          </select>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-beschreibung">Beschreibung</label></dt>
+        <dd class="weit">
+          <textarea id="n-beschreibung" name="beschreibung" rows="2"
+                    class="feld"></textarea>
+        </dd>
+      </div>
+      {% if steine %}
+      <div>
+        <dt><label for="n-vorgaenger">Hängt ab von</label></dt>
+        <dd>
+          <select id="n-vorgaenger" name="vorgaenger">
+            <option value="">— keinem —</option>
+            {% for m in steine %}
+            <option value="{{ m.id }}">{{ m.kennung }} {{ m.benennung }}</option>
+            {% endfor %}
+          </select>
+          <span class="muted small">— nur andere Meilensteine</span>
+        </dd>
+      </div>
+      {% endif %}
+      <div>
+        <dt><label for="n-bedingung">Bedingung</label></dt>
+        <dd class="weit">
+          <input type="text" id="n-bedingung" name="bedingung" class="feld"
+                 placeholder="Was sachlich da sein muss — darf ein Strich bleiben">
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-abnahme">Abnahme erfolgt</label></dt>
+        <dd class="weit">
+          <textarea id="n-abnahme" name="abnahme_kriterium" rows="2"
+                    class="feld"
+                    placeholder="Woran man feststellt, dass der Stein steht — darf nachkommen"></textarea>
+          <span class="feldhinweis muted small">Anders als bei der Aufgabe
+            sperrt das hier <strong>nicht</strong>: Dort fehlt etwas, das
+            den Eintrag ausmacht; hier etwas, das noch kommen kann.</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-datum">Eingetragen am</label></dt>
+        <dd>
+          <input type="date" id="n-datum" name="eingetragen"
+                 class="datumsfeld" value="{{ heute }}" required>
+        </dd>
+      </div>
+    </dl>
+    <div class="row kartenknoepfe">
+      <button type="submit">Meilenstein anlegen</button>
+      {# Wohin es kommt, an dem Knopf, der es anlegt -- der Augenblick, in
+         dem ein falsch gewaehltes Projekt Schaden anrichtet. Die Marke in
+         der ersten Karte ist dann oft weggescrollt, den Knopf sieht man. #}
+      <span class="muted small landet">— landet in
+        <strong>{{ gewaehlt.kennung }} {{ gewaehlt.name }}</strong></span>
+    </div>
+  </form>
+  <p class="kartenfuss">
+    Aufgaben werden ihm danach in seiner Karte zugeordnet — oder von der
+    Aufgabe aus, im Feld <em>Meilenstein</em>.
+  </p>
+</section>
+{% endif %}
+{% endblock %}

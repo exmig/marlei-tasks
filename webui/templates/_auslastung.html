@@ -1,0 +1,85 @@
+{# Die Kacheln der Karte Auslastung -- und die Zeile ueber diesen Dienst.
+
+   Aus MARLEI Boot abgeschrieben: Die vier Kacheln sind dieselben. Was in
+   Boot darunter steht (die laufenden Uebertragungen, ein eigenes Stueck
+   _laufend.html), gibt es hier nicht -- an seine Stelle tritt die Zeile
+   ueber den Dienst selbst. webui/auslastung.py sagt im Modulkopf, warum.
+
+   Dieses Stueck wird alle fuenf Sekunden nachgeholt und steht deshalb in
+   einer eigenen Datei: So gibt es die Darstellung genau einmal. #}
+<div class="kacheln">
+{% if auslastung.cpu is not none %}
+  <div class="kachel">
+    <span class="zahl">{{ auslastung.cpu }}<span class="muted"> %</span></span>
+    <span class="muted small">Prozessor</span>
+  </div>
+{% endif %}
+{% if auslastung.last %}
+  <div class="kachel">
+    <span class="zahl">{{ "%.2f"|format(auslastung.last[0]) }}</span>
+    <span class="muted small">
+      Last (1 min) &middot; {{ auslastung.kerne }} Kern{{ "e" if auslastung.kerne != 1 }}
+    </span>
+  </div>
+{% endif %}
+{% if auslastung.speicher %}
+  <div class="kachel">
+    <span class="zahl">{{ auslastung.speicher.anteil }}<span class="muted"> %</span></span>
+    <span class="muted small">
+      Speicher &middot; {{ "%.1f"|format(auslastung.speicher.belegt / 1073741824) }} von
+      {{ "%.1f"|format(auslastung.speicher.gesamt / 1073741824) }} GB
+    </span>
+  </div>
+{% endif %}
+{% if auslastung.netz %}
+  <div class="kachel">
+    <span class="zahl">
+      {{ "%.1f"|format(auslastung.netz.raus / 1048576) }}<span class="muted"> MB/s</span>
+    </span>
+    <span class="muted small">
+      Netz hinaus &middot; herein {{ "%.1f"|format(auslastung.netz.rein / 1048576) }} MB/s
+    </span>
+  </div>
+{% endif %}
+</div>
+
+{# DIESER DIENST, und nicht die Maschine. Die Laufzeit der Maschine steht
+   unter Serverdetails; gehen die beiden auseinander, ist der Dienst
+   zwischendurch neu gestartet -- und genau das will man beim Suchen
+   wissen. #}
+{% if auslastung.dienst %}
+<p class="kennzeile">
+  Dieser Dienst läuft
+  {% if auslastung.dienst.seit %}
+  seit <span class="zahl">{{ auslastung.dienst.seit }}</span>
+  {% endif %}
+  {%- if auslastung.dienst.speicher is defined %}
+  und belegt
+  <span class="zahl">{{ "%.0f"|format(auslastung.dienst.speicher / 1048576) }}</span>
+  MB Arbeitsspeicher{% endif %}.
+</p>
+{% endif %}
+
+{# WANN DIESER SATZ ERSCHEINT, IST SELBST EINE ENTSCHEIDUNG.
+
+   Er stand hier, sobald Prozessorlast und Lastmittel fehlten -- und war
+   damit unter Windows beim ersten Aufruf zu sehen: Dort gibt es kein
+   Lastmittel, und die erste Messung der Prozessorlast hat noch keinen
+   Vergleichswert. Zwei fehlende Werte mit zwei harmlosen Gruenden, und
+   darunter stand "nicht abfragbar".
+
+   Gefragt wird deshalb nach dem Speicher mit: Er kommt beim ersten Aufruf
+   mit, ohne Vergleichswert und auf beiden Systemen. Fehlt AUCH er, ist
+   wirklich keine Quelle da. #}
+{% if auslastung.cpu is none and not auslastung.last
+      and not auslastung.speicher %}
+<p class="muted small">
+  {% if windows %}
+  Auslastung nicht abfragbar — der Kernel hat auf die Frage nicht
+  geantwortet. Unter Windows sollte das nicht vorkommen.
+  {% else %}
+  Auslastung nicht abfragbar — <code>/proc</code> ist von hier aus nicht
+  lesbar. Auf einem Linux-Server sollte das nicht vorkommen.
+  {% endif %}
+</p>
+{% endif %}

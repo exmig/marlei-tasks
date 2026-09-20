@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="de">
+{# DIE ANMELDESEITE ERBT NICHT VON base.html, und das ist der Sinn: Dort
+   stehen das gewaehlte Projekt, die Befunde und die Reiter -- alles, was
+   jemand ohne Kennwort nicht sehen soll. Befunde nennen Projektnamen, und
+   in einer Aufgabenverwaltung steht, woran gearbeitet wird.
+
+   Was bleibt, ist das Band: Titel, Adresse, Kennzeichnung, Marke. Es
+   sagt, WO man ist -- und bei einem Server, der nicht die Produktion ist,
+   auch das, bevor jemand dort ein Kennwort eintippt. #}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anmelden · MARLEI Tasks</title>
+  <link rel="stylesheet" href="/static/style.css?v={{ stil_version }}">
+  <link rel="stylesheet" href="/static/produkt.css?v={{ stil_version }}">
+  <link rel="icon" href="/static/favicon.ico?v={{ marken_version }}" sizes="any">
+  <link rel="icon" type="image/svg+xml"
+        href="/static/exmig-zeichen.svg?v={{ marken_version }}">
+</head>
+<body{% if kennzeichnung %} class="gekennzeichnet"{% endif %}>
+  <header class="kopfband">
+    <div class="kopfzeile">
+      <h1>MARLEI Tasks</h1>
+      <span class="muted small"><code>{{ base_url }}</code></span>
+      {% if kennzeichnung %}
+      <span class="kennzeichnung">{{ kennzeichnung }}</span>
+      {% endif %}
+      <img class="marke" src="/static/exmig-logo-band.svg?v={{ marken_version }}"
+           width="1057" height="380" alt="Exmig">
+    </div>
+  </header>
+  <main class="anmeldung">
+    {% if fehler %}<p class="hint meldung schlecht" role="alert">{{ fehler }}</p>{% endif %}
+
+    <section id="anmelden">
+      <div class="kartenkopf">
+        <h2>Anmelden</h2>
+      </div>
+      <form method="post" action="/anmelden">
+        <input type="hidden" name="weiter" value="{{ weiter }}">
+        <dl class="angaben">
+          <div>
+            <dt><label for="kennwort">Kennwort</label></dt>
+            <dd class="weit">
+              {# autocomplete "current-password": Ein Passwortverwalter
+                 darf es anbieten. Wer ihn benutzt, waehlt ein laengeres
+                 Kennwort, und laenger ist hier das Einzige, was zaehlt. #}
+              <input type="password" id="kennwort" name="kennwort"
+                     class="feld" required autofocus
+                     autocomplete="current-password">
+            </dd>
+          </div>
+        </dl>
+        <p><button type="submit">Anmelden</button></p>
+      </form>
+
+      {# DER WEG, WENN ES VERGESSEN IST, steht gleich hier und nicht in der
+         Hilfe: Die Hilfe liegt hinter der Anmeldung. Er fuehrt ueber die
+         Maschine, und das ist die Grenze -- wer dort Administrator ist,
+         darf das Kennwort neu setzen; wer es nicht ist, erfaehrt hier
+         nichts, womit er etwas anfangen koennte. #}
+      <p class="kartenfuss">
+        <strong>Kennwort vergessen?</strong> Wiederherstellen lässt es sich
+        nicht, nur neu setzen — auf der Maschine, auf der Tasks läuft, von
+        jemandem mit Administratorrechten:
+        {% if windows %}
+        <code>.\setup\windows\install.ps1 -Kennwort</code>
+        {% else %}
+        <code>sudo MARLEI_KENNWORT=neu ./setup/linux/install.sh</code>
+        {% endif %}
+        Der Bestand bleibt dabei unberührt.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

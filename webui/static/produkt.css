@@ -1,0 +1,880 @@
+/* Was nur MARLEI Tasks braucht.
+   ==========================================================================
+
+   **Warum eine zweite Datei.** `style.css` ist die gemeinsame Datei --
+   sie liegt byteweise gleich in MARLEI Boot und hier und wird von
+   `tools/pruefe-gemeinsam.py` dagegen gehalten. Eine Regel, die nur
+   dieses Produkt braucht, gehoert deshalb nicht hinein; sonst laufen die
+   beiden Fassungen schon beim ersten Handgriff auseinander.
+
+   Boot hat diese Trennung noch nicht: Dort stehen achtzehn von 285 Regeln
+   produktbezogen mitten im gemeinsamen Stylesheet (`.quellenkarte`,
+   `.wolspalte`, `.systemliste`, `.vorgangsliste`). Sie herauszuloesen ist
+   die Vorarbeit, die ein spaeteres `git subtree` verlangt -- an einem
+   laufenden Produkt. Hier faengt es gleich richtig an, und das kostet
+   nichts.
+
+   Diese Datei wird NACH style.css geladen und benutzt nur deren Token.
+   Eigene Farbwerte gehoeren hier nicht hinein: Wer eine braucht, hat eine
+   Entscheidung getroffen, und die steht in docs/gestaltung.md.
+   ========================================================================== */
+
+/* Das gewaehlte Projekt, rechts neben der Ueberschrift der ersten Karte.
+   ------------------------------------------------------------------------
+
+   Warum dort: templates/_projektmarke.html. Die Ueberschrift schiebt in
+   style.css alles Weitere an den rechten Rand (margin-right: auto) --
+   steht die Marke dabei, bleibt sie an der Ueberschrift, und SIE schiebt
+   Zahl und Fragezeichen nach rechts.
+
+   Gefuellt statt umrandet, im Tuerkis der Marke -- dieselbe Fuellung wie
+   das Abzeichen des gewaehlten Projekts auf dem Reiter Projekte, damit
+   man beide als dieselbe Auskunft liest. Keine Versalien: Ein
+   Projektname ist ein Name und kein Zustand.
+
+   **Gerechnet, nicht geschaetzt** (07.09.2026): Navy #063b6f auf Tuerkis
+   #15bcb4 ergibt **4,77 : 1** -- ueber der Schwelle 4,5 fuer normalen
+   Text. Es ist dieselbe Zahl, die style.css oben schon fuer "Logo-mig"
+   notiert. Weiss auf Tuerkis waere mit 2,36 : 1 durchgefallen; die
+   Fuellung braucht deshalb die dunkle Schrift und nicht die helle.
+
+   **Die Kennung wird nie gekuerzt, der Name schon.** Die Kennung ist das
+   Eindeutige und immer kurz; ein langer Name endet mit "...", der volle
+   steht im Tooltip. */
+.projektmarke {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .35rem;
+  min-width: 0;
+  /* Schmal genug, dass sie neben der Ueberschrift bleibt; nie mehr als
+     eine Zeile -- der Name gibt nach, nicht die Karte. */
+  max-width: min(24rem, 100%);
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--band);
+  background: var(--marke-mig);
+  border-radius: 999px;
+  padding: .08rem .65rem;
+  text-decoration: none;
+}
+.kartenkopf:has(> .projektmarke) h2 { margin-right: 0; }
+.kartenkopf > .projektmarke { margin-right: auto; font-size: .78rem; }
+.projektmarke:hover { color: var(--band); filter: brightness(1.08); }
+.projektmarke .kennung { flex: 0 0 auto; font-family: inherit; }
+.projektmarke .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Die Kennung vor dem Namen.
+   ------------------------------------------------------------------------
+
+   Sie steht in der Kopfzeile jeder Eintragskarte, weil in dieser Mappe im
+   Fliesstext auf sie verwiesen wird -- *"B-050 ist darin aufgegangen"*,
+   mitten im Absatz. Eine Kennung, die man nur mit Zusatzangabe aufloesen
+   kann, ist keine; eine, die man erst aufklappen muss, auch nicht.
+
+   Gedaempft und nicht fett: Sie benennt, sie betont nicht. */
+.bezeichnung .projektkennung {
+  align-self: center;
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+/* Mehrzeilige Felder.
+   ------------------------------------------------------------------------
+
+   Beschreibung und Vision sind die ersten in beiden Produkten -- Boot
+   kennt nur einzeilige. Masse und Farben sind deshalb von dort
+   uebernommen (style.css, "Eine Groesse fuer alle Felder"), nur die Hoehe
+   ist neu.
+
+   `resize: vertical` und nicht `both`: Eine Vision, die breiter gezogen
+   wird als die Karte, sprengt die Zeile daneben. Hoeher ziehen darf man
+   sie -- es gibt Visionen, die laenger sind als drei Zeilen. */
+.angaben textarea.feld,
+.angaben input.feld {
+  font: inherit;
+  font-size: .82rem;
+  width: 100%;
+  max-width: 44rem;
+  padding: .18rem .4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--knopf-flaeche);
+  color: var(--ink);
+  resize: vertical;
+}
+.angaben textarea.feld:hover,
+.angaben input.feld:hover { border-color: var(--muted); }
+.angaben textarea.feld:focus,
+.angaben input.feld:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Boots Angabenzeile richtet Feldname und Wert mittig zueinander aus --
+   bei einem einzeiligen Wert richtig, bei einem drei Zeilen hohen Feld
+   steht der Name auf halber Hoehe daneben und sieht aus, als gehoere er
+   zur Zeile darunter. */
+.angaben > div { align-items: flex-start; }
+.angaben dt { padding-top: .25rem; }
+
+/* Das Datumsfeld bringt eine eigene Breite mit, die je nach Browser
+   knapp ist -- die Zahlen sind dann abgeschnitten. Mit `auto` nimmt es
+   sich, was es braucht, und nicht mehr. */
+.datumsfeld { width: auto; }
+
+/* Das gewaehlte Projekt.
+   ------------------------------------------------------------------------
+
+   Das Abzeichen traegt dieselbe Fuellung wie die Marke in den
+   Uebersichtskarten -- damit man beide als dieselbe Auskunft liest. Die Zahlen dafuer
+   stehen oben bei `.projektmarke`: Navy auf Tuerkis ergibt 4,77 : 1,
+   ueber der Schwelle 4,5. */
+.badge.gewaehlt {
+  /* **Das Abzeichen ist ein Stueck Band auf der Karte.** Navy als Grund,
+     das helle Blau der Wortmarke als Schrift -- dieselben zwei Farben in
+     derselben Anordnung wie das *ex* in exmig-logo-band.svg. Wer die
+     Karte sieht, liest dieselbe Auskunft wie in den Uebersichtskarten,
+     nur an der Zeile, fuer die sie gilt.
+
+     Die Vorgabe aus dem September 2026 war die Schriftfarbe: das helle Blau
+     des *ex*. Auf dem Tuerkis, das hier vorher der Grund war, ergibt das
+     **1,65 : 1** -- unlesbar. Auf dem Navy sind es **7,87 : 1**. Deshalb
+     hat sich der Grund mitgeaendert und nicht nur die Schrift: Die
+     gewuenschte Schriftfarbe gibt es nur mit dem Grund, zu dem sie
+     gehoert.
+
+     Das Blau steht als roher Wert da und nicht als Token: Es ist die
+     Farbe einer Datei -- der Wortmarke auf dem Band --, kein Wert der
+     Oberflaeche. Wird die Datei geaendert, gehoert diese Zeile mit
+     geaendert; ein Token taeuschte einen Zusammenhang vor, den es nicht
+     gibt.
+
+     Das Band ist in beiden Themen dasselbe, deshalb gilt die Zahl in
+     beiden. */
+  background: var(--band);
+  color: #b8dcfb;
+  font-weight: 600;
+}
+
+/* Die Bereichsliste.
+   ------------------------------------------------------------------------
+
+   Ein Bereich ist ein Abzeichen mit einem Kreuz darin. Das Kreuz sieht
+   nicht aus wie ein Knopf: Es sitzt IM Abzeichen und waere sonst
+   groesser als das, was es entfernt.
+
+   Das Formular darum herum muss `display: inline` tragen -- ein Block
+   sprengte das Abzeichen. */
+.bereichsliste { gap: .3rem; }
+.bereichsliste .badge { display: inline-flex; align-items: center; }
+.bereichsliste .badge form { display: inline; }
+.bereichsliste .badge .weg {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  padding: 0 0 0 .3rem;
+  font-size: .95rem;
+  line-height: 1;
+}
+.bereichsliste .badge .weg:hover { color: var(--danger); filter: none; }
+
+/* Die Waehlspalte der Uebersicht.
+   ------------------------------------------------------------------------
+
+   Schmal, rechts, ohne Ueberschrift -- was der Knopf tut, steht auf ihm.
+   Gebaut wie Boots `.wolspalte` und `.loeschspalte`, damit die dritte
+   Spalte dieser Art niemandem mehr erklaert werden muss. */
+.waehlspalte { width: 1%; text-align: right; white-space: nowrap; }
+.waehlspalte form { display: inline; }
+
+/* Die Zeile des gewaehlten Projekts: ein Streifen am linken Rand in der
+   Markenfarbe, dazu ein Hauch davon in der Flaeche.
+
+   KEINE KRAEFTIG GEFAERBTE ZEILE. Die laese sich als Zustand des
+   Projekts -- und *gewaehlt* ist keine Eigenschaft der Sache, sondern
+   eine Auskunft ueber den, der hinschaut. Zwei Browserfenster duerfen
+   verschiedene Zeilen so markiert haben. */
+tr.ist-gewaehlt td {
+  background: color-mix(in srgb, var(--marke-mig) 7%, transparent);
+}
+tr.ist-gewaehlt td:first-child {
+  box-shadow: inset 3px 0 0 var(--marke-mig);
+}
+
+/* Der Knopf, der sagt: dieses hier gilt.
+   ------------------------------------------------------------------------
+
+   Die Vorgabe aus dem September 2026: blauer Grund, weisse Schrift. Es gibt
+   dafuer kein neues Aussehen -- das Haus hat es schon. `a.knopf.gewaehlt`
+   in style.css ist derselbe Fall (der Umschalter UEFI/BIOS unter
+   Vorschau in Boot) und traegt dieselben drei Zeilen. Hier stehen sie
+   noch einmal, weil dies ein `button` ist und kein Link.
+
+   **Er ist ausgegraut und sieht trotzdem nicht so aus, und das ist kein
+   Verstoss gegen die Regel.** Ausgrauen heisst in diesem Haus: *Der Knopf
+   koennte etwas tun, gerade nur nicht.* Dieser hier koennte nie etwas
+   tun -- er ist kein Bedienelement, das wartet, sondern die Marke der
+   Zeile, die gerade gilt. Deshalb ueberschreibt er `button:disabled`
+   ausdruecklich, samt der Hover-Regel daneben.
+
+   **Gerechnet, nicht geschaetzt:** Weiss auf `--accent` (#0a63bd) ergibt
+   **5,94 : 1**, im dunklen Thema auf dem Marken-Navy (#063b6f)
+   **11,27 : 1**. Beide ueber der Schwelle 4,5 fuer normalen Text -- es
+   ist dasselbe Farbpaar, das `a.knopf.gewaehlt` seit dem 27.08.2026
+   traegt, und damit keines, das jemand neu nachrechnen muss. */
+.waehlspalte button.gewaehlt,
+.waehlspalte button.gewaehlt:disabled,
+.waehlspalte button.gewaehlt:disabled:hover {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+  cursor: default;
+}
+
+
+/* ==========================================================================
+   Der Reiter Sammlung
+   ========================================================================== */
+
+/* Der Umschalter zwischen den zwei Ansichten.
+   ------------------------------------------------------------------------
+
+   Boots `a.knopf` / `a.knopf.gewaehlt` gibt es schon -- neu ist nur, dass
+   er hier fuer die GANZE SEITE gilt. Er steht seit dem 19.09.2026 in der
+   ersten Karte, der Sammlungsuebersicht; vorher stand er als lose Zeile
+   zwischen Reiterleiste und erster Karte, und die Seite begann anders
+   als Aufgaben und Meilensteine.
+
+   Kein eigenes Aussehen: Wer den UEFI/BIOS-Schalter unter Vorschau in
+   Boot kennt, erkennt ihn wieder -- und die Bedeutung ist dieselbe, nur
+   der Geltungsbereich ist groesser. */
+.ansichten { margin: .2rem 0 .6rem; gap: .5rem; }
+.ansichten .muted { margin-left: .4rem; }
+/* Die Zahlenzeile darunter: das, wonach man die Ansicht waehlt. */
+.sammlungszahlen { margin: 0; }
+.sammlungszahlen strong { color: var(--ink); }
+
+/* Der Titel in der Kopfzeile einer Eintragskarte.
+   ------------------------------------------------------------------------
+
+   ANDERS ALS BEIM PROJEKT IST ER KEIN EINGABEFELD. Ein Projektname
+   aendert sich im Vorbeigehen -- ein Titel der Sammlung wird beim
+   Schaerfen geaendert, und dafuer hat die Durchsicht ihre eigene
+   Ansicht. Ein Feld an dieser Stelle luede dazu ein, eine Beobachtung
+   umzuschreiben, statt sie zu schaerfen. */
+.bezeichnung .titelzeile {
+  flex: 1 1 auto;
+  align-self: center;
+  font-weight: 600;
+  font-size: .95rem;
+}
+.bezeichnung .titelzeile code { font-weight: 400; font-size: .85rem; }
+
+/* Der Bereich als Abzeichen: gedaempft im Akzentblau, denn er ordnet
+   ein -- er warnt nicht und er bewertet nicht. */
+.badge.bereich {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+/* Eine vergebene Prioritaet. Der Strich traegt weiter .teils: Er ist
+   keine Prioritaet, sondern ihr Fehlen. */
+.badge.prio {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Die zwei Kategorieknoepfe.
+   ------------------------------------------------------------------------
+
+   Zwei Knoepfe statt einer Auswahlliste, weil es genau zwei sind und der
+   eine fuenf Felder nach sich zieht: Was so viel entscheidet, soll man
+   sehen, ohne es aufzuklappen.
+
+   Gebaut wie a.knopf, aber mit einem Radiofeld darin -- so bleibt es mit
+   der Tastatur bedienbar und funktioniert ohne JavaScript. Das Feld
+   selbst bleibt sichtbar: Ein weggeblendetes Radiofeld nimmt dem
+   Vorleseprogramm die Auskunft, was gewaehlt ist. */
+.schalter .wahl {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: .15rem .5rem;
+  font-size: .78rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.schalter .wahl.gewaehlt {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.schalter .wahl input { margin-right: .3rem; vertical-align: -1px; }
+
+/* Der Block mit den fuenf Fehlerangaben.
+   ------------------------------------------------------------------------
+
+   Abgesetzt, damit man sieht, dass er zu EINER Kategorie gehoert -- aber
+   gestrichelt und ohne Warnfarbe: **Er mahnt nicht, er fragt.** Eine
+   rote Umrandung sagte "hier ist etwas falsch", und falsch ist hier
+   nichts: Keines der fuenf Felder ist Pflicht. */
+.fehlerblock {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  margin: .8rem 0 .2rem;
+}
+.fehlerblock h3 { margin: 0 0 .2rem; font-size: .92rem; }
+.fehlerblock .angaben { margin-top: .5rem; }
+
+/* Die drei Spalten der Durchsicht.
+   ------------------------------------------------------------------------
+
+   Gebaut wie Boots .wolspalte und .loeschspalte: Knopf in der
+   Kopfzeile, Bedienelement darunter. Beim vierten Mal muss niemand mehr
+   raten, wozu ein Kaestchen gehoert. */
+.markspalte { width: 1%; text-align: center; white-space: nowrap; }
+.markspalte input[type="checkbox"] { width: 1.05rem; height: 1.05rem; }
+th.markspalte, th.priospalte { padding-top: .25rem; padding-bottom: .25rem; }
+.priospalte { white-space: nowrap; }
+.priospalte button { margin-left: .4rem; }
+.abschlussspalte { width: 1%; text-align: right; white-space: nowrap; }
+.abschlussspalte form { display: inline; }
+.abschlussspalte form + form { margin-left: .3rem; }
+
+/* Wie lange etwas liegt. Ab zehn Tagen bekommt die Zahl Gewicht -- das
+   ist die Liegeprobe, an der einzelnen Zeile abgelesen. Die Fehlfarbe
+   ist hier keine Fehlermeldung, sondern dieselbe Auskunft wie im
+   Befund: Hier schaut seit Wochen niemand hin. */
+.liegt.lang { font-weight: 600; color: var(--miss-ink); }
+
+/* Die Liste im Buendelschritt: was gleich zu einer Aufgabe wird. Enger
+   als eine gewoehnliche Liste, denn sie ist eine Aufzaehlung zur
+   Kontrolle und kein Text. */
+.buendelliste { margin: .4rem 0 .8rem; padding-left: 1.2rem; }
+.buendelliste li { margin: .1rem 0; }
+.buendelliste code { color: var(--muted); }
+
+/* Ein Hinweis unter einem Feld, nicht daneben.
+   ------------------------------------------------------------------------
+
+   Neben einem kurzen Feld -- einer Auswahlliste, einem Datum -- steht der
+   Hinweis in derselben Zeile und liest sich als Fortsetzung. Neben einem
+   Feld ueber die volle Breite geht das nicht auf: Er beginnt dann rechts
+   unten am Feldrand und bricht darunter weiter, und der Gedankenstrich
+   davor steht als Waise am Textfeld. Aufgefallen am 07.09.2026 im
+   Buendelschritt. */
+.angaben .feldhinweis {
+  display: block;
+  margin-top: .3rem;
+  max-width: 44rem;
+}
+
+
+/* ==========================================================================
+   Der Reiter Aufgaben
+   ========================================================================== */
+
+/* Die Zeile "In Arbeit" ueber der Uebersicht. Die Mappe pflegt sie im
+   Verzeichnis von Hand; hier faellt sie ab -- was AKTIV oder PAUSE ist,
+   ist das, woran jemand sitzt. */
+.inarbeit { margin: 0 0 .6rem; }
+.inarbeit .badge { margin-left: .3rem; }
+
+/* Die Zeile einer Aufgabe, an der gerade gearbeitet wird. Gebaut wie die
+   des gewaehlten Projekts und aus demselben Grund: ein Streifen am
+   linken Rand, keine kraeftig gefaerbte Flaeche. */
+tr.laeuft td { background: color-mix(in srgb, var(--ok-bg) 55%, transparent); }
+tr.laeuft td:first-child { box-shadow: inset 3px 0 0 var(--ok-ink); }
+
+/* Der Stand der Abnahme in der Uebersicht.
+   ------------------------------------------------------------------------
+
+   ZAHLEN, KEINE PROZENTE: Vier Punkte sind vier Punkte, und "50 %" sagt
+   nicht, ob es zwei von vier oder fuenf von zehn sind. Bei kleinen
+   Listen -- und Abnahmelisten sind klein -- ist der Bruch die genauere
+   Auskunft. */
+.haken { font-variant-numeric: tabular-nums; }
+.haken.voll { font-weight: 600; color: var(--ok-ink); }
+
+/* ---- Die zwei Haekchenlisten --------------------------------------------
+
+   SIE SEHEN VERSCHIEDEN AUS, WEIL SIE VERSCHIEDENES MESSEN. Die eine
+   sagt, wie weit die Arbeit ist; die andere, woran man die Fertigkeit
+   feststellt. Nebeneinander gleich dargestellt saehen sie aus wie
+   zweimal dasselbe -- und dann verschwaende die Abnahme als
+   eigenstaendige Sache, obwohl sie das einzige Pflichtfeld dieses
+   Produkts ist.
+
+   Der sichtbare Beleg dafuer steht am Knopf: *Erledigt* bleibt grau,
+   auch wenn die Arbeitsliste zu vier Fuenfteln durch ist. */
+.haekchen { list-style: none; margin: .4rem 0 .5rem; padding: 0; }
+.haekchen li {
+  margin: .15rem 0;
+  display: flex;
+  gap: .5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.haekchen label { display: flex; gap: .45rem; align-items: baseline; }
+.haekchen input[type="checkbox"] { width: 1rem; height: 1rem; }
+/* Der Text einer Zeile ist ein Feld (B-073), soll aber lesen wie eine
+   Liste: ohne Rahmen und Grund, bis man hinzeigt oder hineinklickt. Eine
+   Liste aus lauter Eingabekaesten liest sich wie ein Formular, das
+   ausgefuellt werden will. Das Kaestchen sitzt jetzt neben dem Feld und
+   nicht mehr in einem label -- deshalb richtet die Zeile auf die Mitte
+   aus und nicht mehr auf die Grundlinie. */
+.haekchen li:has(.zeiletext) { align-items: center; }
+.haekchen .zeiletext {
+  flex: 1 1 20rem;
+  min-width: 0;
+  border-color: transparent;
+  background: transparent;
+  padding-left: .25rem;
+  padding-right: .25rem;
+}
+.haekchen .zeiletext:hover { border-color: var(--line); }
+.haekchen .zeiletext:focus { border-color: var(--accent); }
+/* Das Kreuz zum Wegnehmen. Wie an einem Bereich: kein Knopf-Aussehen, es
+   sitzt neben der Zeile und waere sonst groesser als das, was es
+   entfernt. Es erscheint erst beim Draufzeigen -- eine Liste mit einem
+   Kreuz hinter jeder Zeile liest sich wie eine Aufforderung. */
+.haekchen .weg {
+  background: none;
+  border: 0;
+  color: transparent;
+  padding: 0 .2rem;
+  font-size: .9rem;
+  line-height: 1;
+}
+.haekchen li:hover .weg,
+.haekchen .weg:focus-visible { color: var(--muted); }
+.haekchen .weg:hover { color: var(--danger); filter: none; }
+
+/* Die Zeile zum Dazuschreiben. Sie steht nicht in einer .angaben-Liste,
+   deren Regel greift also nicht -- ohne diese Masse waere das Feld so
+   schmal, dass der eigene Hinweis darin abgeschnitten wird. */
+.zeilezu {
+  font: inherit;
+  font-size: .82rem;
+  width: 100%;
+  max-width: 26rem;
+  margin-top: .3rem;
+  padding: .18rem .4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--knopf-flaeche);
+  color: var(--ink);
+}
+
+/* Liste 1 -- der Fortschritt: offen, mit Balken und Daten. */
+.arbeitsliste { margin: .9rem 0; }
+.arbeitsliste h3 { margin: 0; font-size: .92rem; }
+.arbeitsliste .balken { max-width: 22rem; }
+
+/* Liste 2 -- die Fertigkeit: in einem Rahmen, ohne Daten, mit einem
+   Satz, der sagt, was sie misst.
+
+   Der Rahmen ist durchgezogen und nicht gestrichelt wie der Fehlerblock
+   in der Sammlung: DER FRAGT, DIESER GILT. Ein Fehler darf unvollstaendig
+   sein, eine Abnahme nicht. */
+.abnahme {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: .7rem .9rem;
+  margin: .9rem 0 .3rem;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.abnahme h3 { margin: 0 0 .2rem; font-size: .92rem; }
+.abnahme h3 .badge { margin-left: .4rem; font-weight: 400; }
+.abnahme > p { margin: 0; }
+
+/* Das eine Pflichtfeld in den beiden Formularen -- hier und im
+   Buendelschritt der Sammlung. Es traegt ein Abzeichen statt eines
+   Sternchens: Ein Sternchen muss man kennen, ein Wort nicht. */
+.pflichtfeld dt .badge { margin-left: .4rem; font-weight: 400; }
+
+/* Der zweite Ausgang aus dem Buendelschritt. Er sieht aus wie ein
+   umrandeter Knopf und nicht wie ein Abbrechen-Link: Er IST kein
+   Abbrechen, sondern der zweite gueltige Weg -- die Eintraege bleiben in
+   der Sammlung und werden spaeter geschaerft. Ein Link in Grau laese
+   sich als Rueckzieher. */
+a.knopf.zurueck { color: var(--knopf2-schrift); }
+a.knopf.zurueck:hover { color: var(--knopf2-schrift); filter: brightness(1.1); }
+
+/* ==========================================================================
+   Der Reiter Meilensteine
+   ========================================================================== */
+
+/* Der Filter in der Kopfzeile -- Regel 7, umgedreht. */
+.filter { gap: .3rem; }
+
+/* Die mehrzeilige Kopfzeile eines Steins.
+   ------------------------------------------------------------------------
+
+   SIE STEHT VOR DEN ANGABEN, und die Begruendung wird aus der Mappe mit
+   uebernommen, weil sie ueberall gilt: *Bevor jemand anfaengt, will er
+   wissen, wovon der Meilenstein abhaengt und wer auf ihn wartet; das ist
+   die erste Frage, nicht eine am Ende von zwei Bildschirmseiten.*
+
+   Vorgaenger sind eingetragen, Nachfolger abgelesen -- beides zu
+   speichern hiesse, dieselbe Beziehung zweimal zu halten. */
+.steinkopf {
+  border-left: 3px solid var(--line);
+  padding: .1rem 0 .1rem .8rem;
+  margin: .6rem 0 .3rem;
+}
+.kopfangabe {
+  display: flex;
+  gap: .5rem;
+  align-items: baseline;
+  margin: .15rem 0;
+  flex-wrap: wrap;
+}
+.kopfangabe .wort {
+  flex: 0 0 8.5rem;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+/* Ein Abschnitt in der Steinkarte -- Aufgaben, Was dazwischenkam. */
+.steinteil { margin: .9rem 0; }
+.steinteil h3 { margin: 0 0 .2rem; font-size: .92rem; }
+.steinteil > .hint { margin: .3rem 0; }
+
+/* Die Aufgaben unter einem Stein. ERLEDIGTE BLEIBEN STEHEN und werden
+   blass: Eine Liste, aus der Fertiges verschwindet, sagt nicht mehr,
+   woraus der Stein bestand -- und genau das ist es, was der Stein spaeter
+   im Archiv beantworten soll. */
+.steinaufgaben { list-style: none; margin: .2rem 0 .5rem; padding: 0; }
+.steinaufgaben li {
+  display: flex;
+  gap: .5rem;
+  align-items: baseline;
+  margin: .15rem 0;
+  flex-wrap: wrap;
+}
+.steinaufgaben li.fertig a { color: var(--muted); }
+.steinaufgaben form { display: inline; }
+/* Die Auswahl nimmt die Zeile, bis 52rem -- doppelt so viel wie anfangs.
+   Bei laengeren Titeln brach sie ab, und man waehlte eine Aufgabe, deren
+   Namen man nicht sah.
+
+   **Eine Obergrenze allein reicht nicht:** Ein select ist so breit wie
+   seine laengste Zeile. Sind alle freien Aufgaben kurz, aendert eine
+   hoehere Grenze nichts, und die Auswahl steht so schmal da wie vorher
+   -- so geschehen beim ersten Versuch. Deshalb waechst sie (flex), und
+   min-width: 0 laesst sie auf schmalem Fenster wieder schrumpfen. */
+.dazuwahl { flex: 1 1 26rem; min-width: 0; max-width: 52rem; }
+
+/* Was dazwischenkam, in der Karte gelesen. Geschrieben wird es oben --
+   drei Felder, damit die Notiz entsteht, waehrend es passiert. */
+.dazwischenliste { list-style: none; margin: .3rem 0; padding: 0; }
+.dazwischenliste li {
+  display: flex;
+  gap: .5rem;
+  align-items: baseline;
+  margin: .2rem 0;
+  flex-wrap: wrap;
+}
+.dazwischenliste form { display: inline; }
+.dazwischenfeld { min-width: 16rem; flex: 1 1 16rem; }
+
+/* Der Wegnehmen-Knopf, wie in den Haekchenlisten der Aufgabe: erst beim
+   Draufzeigen sichtbar. Eine Liste mit einem Kreuz hinter jeder Zeile
+   liest sich wie eine Aufforderung. */
+.steinaufgaben .weg,
+.dazwischenliste .weg {
+  background: none;
+  border: 0;
+  color: transparent;
+  padding: 0 .2rem;
+  font-size: .9rem;
+  line-height: 1;
+}
+.steinaufgaben li:hover .weg,
+.dazwischenliste li:hover .weg,
+.steinaufgaben .weg:focus-visible,
+.dazwischenliste .weg:focus-visible { color: var(--muted); }
+.steinaufgaben .weg:hover,
+.dazwischenliste .weg:hover { color: var(--danger); filter: none; }
+
+/* Eine Aufschrift, die nur ein Vorleseprogramm braucht. In einer Zeile
+   aus vier Feldern stehen die Woerter davor im Weg -- weglassen darf man
+   sie trotzdem nicht: Ohne Aufschrift ist ein Feld fuer einen blinden
+   Benutzer ein Feld ohne Namen. */
+.sr-nur {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Der Reiter Entscheidungen
+   ========================================================================== */
+
+/* Der Kopf des bezogenen Eintrags -- ZEIGEN STATT KOPIEREN.
+   ------------------------------------------------------------------------
+
+   Steht er neben der Entscheidung, gibt es keinen Anlass, den Stand in
+   den Verlauf abzuschreiben: *Was gerade gilt, steht im Backlog; hier
+   steht, warum es gilt.* Erzwingen laesst sich das nicht, erleichtern
+   schon -- derselbe Griff wie bei der Verweis-Regel.
+
+   Gebaut wie die Kopfzeile eines Meilensteins, aus demselben Grund: Es
+   ist die erste Frage. */
+.bezugskopf {
+  display: flex;
+  gap: .5rem;
+  align-items: baseline;
+  border-left: 3px solid var(--line);
+  padding: .2rem 0 .2rem .8rem;
+  margin: .6rem 0 .3rem;
+  flex-wrap: wrap;
+}
+.bezugskopf .wort { flex: 0 0 4rem; color: var(--muted); font-size: .82rem; }
+
+/* Die Kennung des Bezugs im Kartenkopf. Gedaempftes Akzentblau wie der
+   Bereich in der Sammlung: Sie ordnet ein, sie bewertet nicht. */
+.badge.bezug {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Eine Zeile in der Uebersicht, deren Entscheidung getroffen ist und
+   deren Eintrag trotzdem liegt. Gedaempft, nicht rot: Es ist kein
+   Fehler, sondern die Auskunft, um derentwillen es dieses Register
+   gibt. */
+tr.haengt td { background: color-mix(in srgb, var(--miss-bg) 45%, transparent); }
+
+/* Was entschieden wurde.
+   ------------------------------------------------------------------------
+
+   ES STEHT VOR DEM VERLAUF, und der Rahmen ist derselbe wie bei der
+   Abnahme einer Aufgabe: **Er markiert das, worauf es hinauslaeuft.**
+   Was daneben oder darunter steht, ist der Weg dorthin.
+
+   Das widerspricht dem fehlenden Feldschema nicht: Ein Schema gaebe dem
+   VERLAUF eine Gliederung vor. Hier wird nur das Ergebnis vom Weg
+   getrennt -- zwei Dinge, die man zu verschiedenen Zeiten liest. */
+.entschluss {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: .7rem .9rem;
+  margin: .9rem 0 .3rem;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.entschluss h3 { margin: 0 0 .3rem; font-size: .92rem; }
+.entschluss h3 .badge { margin-left: .4rem; font-weight: 400; }
+.entschluss > p { margin: .4rem 0 0; }
+
+/* Der Verlauf.
+   ------------------------------------------------------------------------
+
+   DAS FELD IST SO HOCH WIE SEIN INHALT, bis zu einer Grenze -- die
+   Eintraege gehen von sieben bis fast zweitausend Zeilen, und eine
+   Karte, die fuer beide dieselbe Form hat, ist fuer die eine zu schwer
+   und fuer die andere zu klein. Die Hoehe rechnet die Vorlage.
+
+   Kein Rendern: docs/datenhaltung.md hat am 07.09.2026 entschieden, dass es
+   neben der Ansicht keine gerenderte Textfassung gibt. Was hier steht,
+   steht so da, wie es getippt wurde.
+
+   Und wie schon beim Zeilenfeld der Aufgabe: Es steht NICHT in einer
+   .angaben-Liste, deren Regel greift also nicht. `.feld` allein ist
+   keine Groesse. */
+.verlauf { margin: .9rem 0; }
+.verlauf h3 { margin: 0 0 .3rem; font-size: .92rem; }
+.verlauf > p { margin: .4rem 0 0; }
+textarea.feld.lang {
+  font: inherit;
+  font-size: .82rem;
+  line-height: 1.5;
+  width: 100%;
+  padding: .35rem .5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--knopf-flaeche);
+  color: var(--ink);
+  resize: vertical;
+}
+textarea.feld.lang:hover { border-color: var(--muted); }
+textarea.feld.lang:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ==========================================================================
+   Der Reiter History
+   ========================================================================== */
+
+/* Der Satz, dass hier nichts eingetragen wird. Er steht ueber allem und
+   nicht in einer Karte: Er gilt fuer den ganzen Reiter. */
+.nurschau { margin: 0 0 1rem; }
+
+/* Die Strasse.
+   ------------------------------------------------------------------------
+
+   KEIN ASCII-DIAGRAMM. Die Mappe zeichnet die Strasse mit Strichen und
+   Kreisen -- `--●───●───◉` --, weil eine Textdatei nichts anderes kann.
+   Hier ist es eine senkrechte Linie mit Marken daran: dieselbe Auskunft,
+   lesbar in jeder Fensterbreite, und ohne Zeichensalat beim Vorlesen. */
+.strasse { list-style: none; margin: .6rem 0 .4rem; padding: 0; }
+.stein {
+  display: flex;
+  gap: .9rem;
+  padding: 0 0 1.1rem;
+  position: relative;
+}
+/* Die Linie zwischen den Marken -- am letzten Stein hoert sie auf. */
+.stein:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 5.2rem;
+  top: 1.5rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.steinmarke {
+  flex: 0 0 5.2rem;
+  text-align: right;
+  padding-right: .9rem;
+  position: relative;
+}
+.steinmarke::after {
+  content: "";
+  position: absolute;
+  right: -.32rem;
+  top: .35rem;
+  width: .65rem;
+  height: .65rem;
+  border-radius: 999px;
+  background: var(--accent);
+}
+/* Der letzte Punkt ist offen und heisst "hier" -- er ist kein Stein,
+   sondern die Stelle, an der die Strasse gerade aufhoert. */
+.stein.hier .steinmarke::after {
+  background: var(--knopf-flaeche);
+  border: 2px solid var(--accent);
+}
+.steinmarke .jetzt { font-size: .78rem; color: var(--accent); font-weight: 600; }
+.steininhalt { flex: 1 1 auto; min-width: 0; }
+.steininhalt h3 { margin: 0; font-size: .95rem; }
+.dauer { margin: .1rem 0 .3rem; font-size: .85rem; color: var(--muted); }
+.dauer strong { color: var(--ink); }
+
+/* Was dazwischenkam, auf dem Stein. Ohne Aufzaehlungszeichen: Das Datum
+   davor ist die Marke, und zwei Marken je Zeile sind eine zu viel. Der
+   Streifen links ist die Warnkante -- ein Umweg ist kein Fehler, aber
+   auch keine Nebensache. */
+.umwege { list-style: none; margin: .2rem 0 0; padding: 0; }
+.umwege li {
+  display: flex;
+  gap: .5rem;
+  align-items: baseline;
+  margin: .2rem 0;
+  font-size: .88rem;
+  flex-wrap: wrap;
+}
+.umwege li::before {
+  content: "";
+  flex: 0 0 3px;
+  align-self: stretch;
+  background: var(--warn-kante);
+  border-radius: 2px;
+}
+
+/* Im Archiv wird nur gezeigt: Kaestchen und Knoepfe fallen weg, der
+   Haken ist ein Zeichen. **Ein Kaestchen, das man anklicken kann und das
+   nichts tut, ist schlimmer als keines.** */
+.haekchen.schau { list-style: none; margin: .3rem 0; padding: 0; }
+.haekchen.schau li {
+  display: flex;
+  gap: .5rem;
+  align-items: baseline;
+  margin: .15rem 0;
+  flex-wrap: wrap;
+}
+.hakenzeichen { flex: 0 0 1rem; color: var(--ok-ink); font-weight: 600; }
+.archivliste { margin: .9rem 0; }
+.archivliste h3 { margin: 0 0 .2rem; font-size: .92rem; }
+/* Die Abnahme im Archiv behaelt den Rahmen, verliert aber die Fuellung:
+   Der Rahmen sagt weiter, worauf es hinauslief; die Fuellung gehoerte zu
+   einem Feld, das man noch bedienen kann. */
+.abnahme.schau { background: none; }
+
+/* ==========================================================================
+   Der Reiter Einrichtung
+   ========================================================================== */
+
+/* Die Liste der Dateien, die der Export schreibt. */
+.dateiliste { margin: .8rem 0; }
+.dateiliste h3 { margin: 0 0 .2rem; font-size: .92rem; }
+.dateiliste ul { margin: .2rem 0; padding-left: 1.2rem; }
+.dateiliste li { margin: .1rem 0; }
+
+/* Der Export vor der Werkseinstellung.
+   ------------------------------------------------------------------------
+
+   Abgesetzt, damit er nicht wie ein Hinweis aussieht, sondern wie ein
+   SCHRITT: Er steht VOR der Frage und nicht daneben. Ein Knopf, der
+   unwiederbringliche Arbeit loescht, muss den Weg zurueck anbieten,
+   bevor er fragt -- nicht danach.
+
+   Derselbe Rahmen wie die Abnahme einer Aufgabe und wie *Was entschieden
+   wurde*: Er markiert das, worauf es hinauslaeuft. */
+.vorher {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: .7rem .9rem;
+  margin: .9rem 0;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.vorher h3 { margin: 0 0 .2rem; font-size: .92rem; }
+.vorher .kartenknoepfe { margin-top: .5rem; }
+
+/* Die Zwischenueberschrift in der Firewall-Karte. */
+section > h3 { margin: 1rem 0 .2rem; font-size: .92rem; }
+
+/* Abmelden im Band.
+   ------------------------------------------------------------------------
+
+   Rechts, vor der Marke: Dort sucht man den Weg hinaus, und er steht
+   nicht zwischen Titel und Projekt, wo er wie eine Auskunft aussaehe.
+
+   **margin-left:auto wandert von der Marke hierher.** Tragen es zwei
+   Geschwister, teilen sie den freien Platz -- der Knopf stuende dann in
+   der Mitte des Bandes. Deshalb schiebt er, und die Marke folgt ihm mit
+   dem gewoehnlichen Abstand der Zeile.
+
+   Gestaltet in den Farben, die das Band schon hat: Schrift in
+   --band-neben, Rand darin. **Gerechnet** (19.09.2026): #a9c0d8 auf Navy
+   #063b6f ergibt 6,02 : 1 -- dieselbe Zahl wie die Adresse daneben, die
+   in derselben Farbe steht. */
+.kopfzeile .abmelden {
+  margin: 0 0 0 auto;
+  align-self: center;
+}
+.kopfzeile .abmelden + .marke { margin-left: 0; }
+.kopfzeile .abmelden button {
+  background: none;
+  color: var(--band-neben);
+  border: 1px solid var(--band-neben);
+  border-radius: 999px;
+  padding: .1rem .6rem;
+}
+.kopfzeile .abmelden button:hover { color: var(--band-schrift); }
+
+/* Die Anmeldeseite: eine Karte, schmal und mittig. Ein Kennwortfeld ueber
+   sechzig Zeichen Breite sieht aus wie ein Formular, das noch mehr will. */
+main.anmeldung { max-width: 28rem; margin-top: 2.5rem; }

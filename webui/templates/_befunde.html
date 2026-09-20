@@ -1,0 +1,69 @@
+{# Die Befunde -- einmal als Karten, einmal als graue Zeile.
+
+   Dieselbe Vorlage steht in base.html und hinter /befunde.html: Jede Seite
+   holt sie alle zehn Sekunden nach, damit eine behobene Ursache ihre Karte
+   ohne Neuladen mitnimmt. Fertig gerendert und nicht als Daten, damit es
+   die Darstellung genau einmal gibt.
+
+   Warum sie unterhalb der Reiter stehen und nicht darueber, warum sie
+   zugeklappt sind und warum die Ueberschrift die Folge nennt:
+   docs/gestaltung.md, "Die Seitenkarte".
+
+   AUS MARLEI BOOT ABGESCHRIEBEN, mit einem Unterschied, und der ist
+   nicht kosmetisch: **Hier gehoert jeder Befund einem Projekt.** Die
+   Befunde laufen ueber alle Projekte -- die einzige Stelle, an der die
+   Vorauswahl nicht gilt --, und deshalb traegt die Karte zweierlei mehr:
+   den Weg in das betroffene Projekt und die Projektnummer im
+   Kenntnis-Formular. Ohne die zweite naehme das Stillstellen in einem
+   Projekt dieselbe Lage in einem anderen mit. #}
+{# Wohin der Knopf zurueckfuehrt. Beim Aufbau einer Seite ist das die Seite
+   selbst. Wird nur dieses Stueck nachgeholt, waere request.url.path
+   "/befunde.html" -- dann sagt es der Aufrufer im Feld "hier". #}
+{% set ziel = hier if hier is defined else request.url.path %}
+{% for befund in befunde %}
+<details class="seitenkarte stufe-{{ befund.stufe }}">
+  <summary><h2>{{ befund.titel }}</h2></summary>
+  {% include "befunde/" ~ befund.kennung ~ ".html" %}
+  <div class="kartenfuss row">
+    {# DER WEG DORTHIN GEHOERT AN DIE KARTE: Wer sie anklickt, landet im
+       richtigen Projekt -- die Vorauswahl wird dabei umgestellt, denn
+       ohne das zeigte der Reiter dahinter ein anderes Projekt. #}
+    <form method="post" action="/projekte/waehlen">
+      <input type="hidden" name="id" value="{{ befund.projekt_id }}">
+      <input type="hidden" name="ziel" value="{{ befund.ziel }}">
+      <button type="submit" class="ghost">Ansehen &rarr;</button>
+    </form>
+    {# Nur Gelb und Blau. Rot ist nie wegklickbar: Ein Werkzeug, das
+       seine Arbeit nicht tut, darf nicht aussehen wie eines, das sie
+       tut. #}
+    {% if befund.stufe in ("warnung", "info") %}
+    <form method="post" action="/befund/kenntnis">
+      <input type="hidden" name="kennung" value="{{ befund.kennung }}">
+      <input type="hidden" name="projekt" value="{{ befund.projekt_id }}">
+      <input type="hidden" name="marke" value="{{ befund.marke }}">
+      <input type="hidden" name="zurueck" value="{{ ziel }}">
+      <button type="submit" class="ghost">Zur Kenntnis genommen</button>
+    </form>
+    {% endif %}
+  </div>
+</details>
+{% endfor %}
+
+{# Was jemand zur Kenntnis genommen hat, verschwindet nicht -- es wird
+   leise. Wer nicht selbst geklickt hat, findet den Befund also trotzdem,
+   und ein Kollege sieht dieselbe Seite, nur eingeklappt. #}
+{% if bekannte %}
+<details class="bekanntzeile">
+  <summary>
+    {{ bekannte | length }}
+    {{ "Befund" if bekannte | length == 1 else "Befunde" }} zur Kenntnis
+    genommen
+  </summary>
+  {% for befund in bekannte %}
+  <div class="bekannt stufe-{{ befund.stufe }}">
+    <h3>{{ befund.titel }}</h3>
+    {% include "befunde/" ~ befund.kennung ~ ".html" %}
+  </div>
+  {% endfor %}
+</details>
+{% endif %}

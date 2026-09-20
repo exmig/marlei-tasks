@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+venv/
+*.db
+*.db-wal
+*.db-shm
+
+# Der Stempel, den install.sh hinterlaesst. Falls er einmal im
+# Projektordner landet, gehoert er trotzdem nicht ins Repository: Er
+# beschreibt eine Installation, nicht den Quelltext.
+webui/VERSION
+
+# Die Mappe dieses Projekts -- Vision, Roadmap, Meilensteine, Backlog,
+# Quittungsbuch und was daneben anfaellt. Ueberlegungen und Absichten,
+# keine Anleitung. Bewusst der ganze Ordner, damit nichts versehentlich
+# mitgeht; genauso haelt es marlei-boot.
+#
+# Die Ironie ist bekannt und kein Versehen: Dieses Produkt wird die
+# Mappe eines Tages selbst tragen. Bis dahin liegt sie hier als Datei.
+mappe/
+
+# Was die Vorschauen in tools/ ausgeben. Erzeugt, nicht gepflegt.
+build/
+
+# Ausfuhren aus der Anwendung. Der Ausgang bleibt Text
+# (docs/datenhaltung.md, Abschnitt 8) -- aber er gehoert nicht ins
+# Repository, sondern dorthin, wo der Betreiber ihn hinlegt.
+export/

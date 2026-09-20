@@ -1,0 +1,1848 @@
+{% extends "base.html" %}
+{% block title %}Hilfe — MARLEI Tasks{% endblock %}
+
+{# Die Hilfe -- ein Kapitel je Reiter, ein Abschnitt je Karte.
+
+   DIE ANKER SIND DER VERTRAG. Jede Karte in diesem Produkt traegt ein
+   Fragezeichen, das hierher springt (/hilfe#reiter-karte). Wer eine Karte
+   umbenennt, verschiebt oder wegnimmt, aendert diese Seite mit -- eine
+   Pruefung in tests/test_app.py geht beide Richtungen durch und faellt
+   um, wenn ein Fragezeichen ins Leere zeigt oder ein Abschnitt hier
+   keine Karte mehr hat.
+
+   Warum die Form so aussieht, wie sie aussieht (Kapitel, Abschnittskopf
+   mit Fortschrittsstrich, vierte Ebene in Versalien): docs/gestaltung.md.
+   Sie ist aus MARLEI Boot uebernommen und nicht neu entworfen.
+
+   WAS HIER NICHT STEHT: die Installation. Die steht in den .md-Dateien
+   des Projekts -- hier steht, was am laufenden Server zu bedienen ist.
+   Und keine Lizenz: Dieses Produkt hat mit Absicht noch kein
+   oeffentliches Repository, und ein Verweis darauf zeigte ins Leere. Mit
+   der Veroeffentlichung kommt das Kapitel dazu, wie in Boot. #}
+
+{% block content %}
+
+<section class="inhalt">
+  <h2>Hilfe</h2>
+  <p class="muted">
+    <strong>Ein Kapitel je Reiter</strong>, davor die ersten Schritte und
+    das, was überall gilt. Wer dieses Werkzeug zum ersten Mal vor sich
+    hat, liest die <a href="#erste-schritte">ersten Schritte</a> und
+    arbeitet den <a href="#erste-schritte-zuerst">Ablauf</a> mithilfe der
+    Reiter durch — der Rest ist zum Nachschlagen da.
+  </p>
+  <p class="muted small">
+    Das <strong>Fragezeichen in jedem Kartenkopf</strong> springt genau in
+    den Abschnitt, der zu dieser Karte gehört. Umgekehrt führt aus jedem
+    Abschnitt ein <em>Zur Karte →</em> zurück.
+  </p>
+  <ol class="verzeichnis">
+    <li><a href="#erste-schritte">Erste Schritte</a></li>
+    <li><a href="#ueberall">Was überall gilt</a></li>
+    <li><a href="#projekte">Projekte</a></li>
+    <li><a href="#sammlung">Sammlung</a></li>
+    <li><a href="#aufgaben">Aufgaben</a></li>
+    <li><a href="#meilensteine">Meilensteine</a></li>
+    <li><a href="#entscheidungen">Entscheidungen</a></li>
+    <li><a href="#einrichtung">Einrichtung</a></li>
+    <li><a href="#history">History</a></li>
+    <li><a href="#serverhealth">Server Health</a></li>
+    <li><a href="#faq">Häufige Fragen</a></li>
+  </ol>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Erste Schritte                                                     -->
+<!-- ================================================================= -->
+<section id="erste-schritte" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Erste Schritte</h2>
+  </header>
+  <p class="muted">
+    Es ist weniger, als es aussieht. <strong>Vier Ebenen, und jede beginnt
+    mit einem Satz</strong> — etwas fällt auf, daraus wird Arbeit, Arbeit
+    kommt zu einem Termin zusammen, und hinterher steht da, wie es
+    gelaufen ist. Alles Weitere sind Handgriffe, die dieses Werkzeug
+    übernimmt, damit man sie nicht vergisst.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="erste-schritte-wofuer">Wofür ist dieses Werkzeug da?</h3>
+  </div>
+  <p class="muted">
+    Es hält fest, <strong>woran gearbeitet wird und warum es so
+    entschieden wurde</strong>. Der zweite Teil ist der ungewöhnliche: Die
+    meisten Werkzeuge zeigen die laufende Arbeit und verlieren die
+    Begründung in Kommentaren. Hier ist sie ein eigenes Register, das den
+    Eintrag überlebt, zu dem sie gehört.
+  </p>
+  <p class="hint">
+    <strong>Die Kernfunktion ist das Zusammenlegen, der Kernwert ist die
+    Ursache.</strong> Aus zwei Beobachtungen, die dasselbe Problem sind,
+    wird eine Aufgabe — und in dem Augenblick, in dem man sie
+    zusammenlegt, schreibt man den Satz auf, der in keiner von beiden
+    stand. Das ist die Gelegenheit, bei der man ihn am ehesten findet.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="erste-schritte-ebenen">Die vier Ebenen und die Rückschau</h3>
+  </div>
+  <p class="muted">
+    Fünf Register, und jedes beantwortet genau eine Frage. Wer weiß,
+    welche Frage er hat, weiß, auf welchem Reiter er ist:
+  </p>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong><a href="/sammlung">Sammlung</a></strong></td>
+        <td class="muted">Was ist aufgefallen? Alles, was auffällt, kommt
+          zuerst hierher — mit niedriger Hürde und ohne Anspruch, dass es
+          schon zu Ende gedacht ist.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong><a href="/aufgaben">Aufgaben</a></strong></td>
+        <td class="muted">Woran wird gearbeitet? Hier sitzt jemand dran.
+          Deshalb gibt es hier einen Status und eine Abnahme.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong><a href="/meilensteine">Meilensteine</a></strong></td>
+        <td class="muted">Was muss zusammen fertig werden? Ein Termin,
+          unter dem mehrere Aufgaben stehen.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong><a href="/entscheidungen">Entscheidungen</a></strong></td>
+        <td class="muted">Warum ist es so? Das Register, das bleibt, wenn
+          alles andere ins Archiv gezogen ist.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong><a href="/history">History</a></strong></td>
+        <td class="muted">Wie sind wir hierhergekommen, was ist wann
+          fertig geworden, was stand da im Wortlaut? Die Rückschau —
+          sie wird nicht gepflegt, sie fällt ab.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted small">
+    Dazu die <a href="/">Projekte</a> ganz vorn — sie tragen die Auswahl,
+    aus der alle fünf aufgebaut werden —, die
+    <a href="/einrichtung">Einrichtung</a> für Ausgabe und Ablage und
+    <a href="/serverhealth">Server Health</a> für die Maschine darunter.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="erste-schritte-zuerst">Was tut man zuerst?</h3>
+  </div>
+  <p class="muted">
+    Der Reihe nach, jeder Schritt liefert, was der nächste braucht. Das
+    erste Durcharbeiten dauert ein paar Minuten; danach kommt man nur noch
+    für einen einzelnen Schritt hierher.
+  </p>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>1. <a href="/">Projekte</a></strong></td>
+        <td class="muted">Ein Projekt anlegen — Name, Beschreibung,
+          Vision. <strong>Und die Bereiche</strong>: ohne mindestens einen
+          nimmt die Sammlung nichts an. Wer anlegt, hat danach gewählt.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>2. <a href="/sammlung">Sammlung</a></strong></td>
+        <td class="muted">Eintragen, was auffällt. Titel, Bereich,
+          Kategorie — mehr braucht es nicht.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>3. <a href="/sammlung?ansicht=durchsicht">Durchsicht</a></strong></td>
+        <td class="muted">Prioritäten vergeben, Verworfenes verwerfen —
+          und markieren, was zusammengehört. Der Knopf
+          <em>Zusammenlegen</em> macht daraus eine Aufgabe.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>4. <a href="/aufgaben">Aufgaben</a></strong></td>
+        <td class="muted">Daran wird gearbeitet: Status setzen, Punkte
+          abhaken, am Ende <em>Erledigt</em> — was erst geht, wenn die
+          Abnahme durch ist.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>5. <a href="/meilensteine">Meilensteine</a></strong></td>
+        <td class="muted">Nur wenn mehreres zusammen fertig werden muss.
+          Aufgaben hinzufügen, am Ende <em>Abnehmen</em> — ein Klick, der
+          vier Handgriffe ersetzt.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>6. <a href="/einrichtung#export">Einrichtung</a></strong></td>
+        <td class="muted">Einmal den Ausgabeort setzen. Danach schreibt
+          <em>Jetzt ausgeben</em> den ganzen Bestand als Text weg — die
+          einzige Sicherung, die es vor dem Löschen gibt.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="hint">
+    <strong>Die Entscheidungen laufen nebenher, nicht am Ende.</strong>
+    Sobald man abwägt — und lange bevor man weiß, wie es ausgeht —, gehört
+    der Verlauf ins Register. Ein Eintrag im Zustand <code>OFFEN</code> ist
+    ausdrücklich vorgesehen: <em>Der Weg ist da, der Entschluss steht
+    aus.</em>
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="erste-schritte-nicht">Was dieses Werkzeug nicht ist</h3>
+  </div>
+  <p class="muted">
+    <strong>Es ist für einen Menschen gebaut, der mehrere Sachen am Laufen
+    hat</strong> — nicht für ein Team. Es gibt deshalb keine Benutzer,
+    keine Rechte, keine Zuweisung an jemanden und keine Benachrichtigung.
+    Wer diese Oberfläche im Browser hat, ist <em>der</em> Benutzer.
+  </p>
+  <p class="muted">
+    <strong>Was es gibt, ist ein Kennwort.</strong> Das Setup fragt bei
+    der Installation danach, und die Anmeldung gilt danach einen Monat.
+    Vergessen heißt neu setzen, nicht wiederherstellen — auf der Maschine,
+    von jemandem mit Administratorrechten:
+    {% if windows %}<code>.\setup\windows\install.ps1 -Kennwort</code>{% else %}<code>sudo MARLEI_KENNWORT=neu ./setup/linux/install.sh</code>{% endif %}.
+    Der Bestand bleibt dabei unberührt. Ist keines gesetzt, steht
+    <em>ohne Kennwort</em> oben im Band.
+  </p>
+  <p class="muted">
+    <strong>Abmelden sperrt diesen Browser, nicht die anderen.</strong>
+    Der Knopf steht oben rechts im Band; danach fragt dieser Browser
+    wieder nach dem Kennwort, und wer anderswo angemeldet ist, bleibt es.
+    <em>Alle</em> Browser auf einmal sperrt nur ein neu gesetztes
+    Kennwort — jede bestehende Anmeldung endet damit sofort.
+  </p>
+  <p class="muted">
+    <strong>Mehrere Projekte sind nicht mehrere Menschen.</strong> Die
+    Auswahl auf dem Reiter Projekte trennt Bestände, nicht Personen.
+  </p>
+  <p class="hint">
+    <strong>Stellen Sie diese Oberfläche nicht ins offene Netz.</strong>
+    Sie ist für das eigene Netz gedacht und fragt niemanden, wer er ist.
+    Was hier steht, ist außerdem selten harmlos: In einer
+    Aufgabenverwaltung steht, woran eine Firma arbeitet.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Was überall gilt                                                   -->
+<!-- ================================================================= -->
+<section id="ueberall" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Was überall gilt</h2>
+  </header>
+  <p class="muted">
+    Sechs Dinge, die auf jedem Reiter gleich funktionieren. Wer sie einmal
+    liest, muss sie in keinem Kapitel wieder nachschlagen.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="ueberall-projekt">Das gewählte Projekt steht an der ersten Karte</h3>
+  </div>
+  <p class="muted">
+    <strong>Es gilt für alles, was darunter steht:</strong> Sammlung,
+    Aufgaben, Meilensteine, Entscheidungen — und für den Export und die
+    Werkseinstellung unter <a href="/einrichtung">Einrichtung</a>.
+    Gewechselt wird es in der
+    <a href="#projekte-uebersicht">Projektübersicht</a>.
+  </p>
+  <p class="muted">
+    Deshalb steht es auf jedem dieser vier Reiter rechts neben der
+    Überschrift der ersten Karte, mit Kennung — etwa
+    <em>P-002 marlei-tasks</em> — und nicht nur unter Projekte: Eine
+    Auswahl, die man auf einem Reiter trifft und auf fünf anderen wirkt,
+    ist unsichtbar, sobald man den Reiter gewechselt hat. Wer dann etwas
+    einträgt, trägt es ins falsche Projekt — und merkt es Wochen später.
+  </p>
+  <p class="muted">
+    Ein langer Name wird gekürzt, die Kennung nie; ein Klick auf die Marke
+    führt in die Projektübersicht. Weil die erste Karte beim Scrollen
+    wegwandert, steht an jedem Knopf, der etwas anlegt, noch einmal, wohin
+    es kommt.
+  </p>
+  <p class="muted small">
+    Ist keines gewählt, zeigen die Register statt einer leeren Liste den
+    Weg dorthin. Das passiert auch, wenn das zuletzt
+    gewählte Projekt inzwischen gelöscht wurde.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="ueberall-kennungen">Kennungen zählen über alle Projekte</h3>
+  </div>
+  <p class="muted">
+    <code>P-</code> für Projekte, <code>B-</code> für die Sammlung,
+    <code>A-</code> für Aufgaben, <code>M-</code> für Meilensteine,
+    <code>E-</code> für Entscheidungen. <strong>Es gibt eine Zählung je
+    Art und nicht eine je Art und Projekt</strong> — damit gehört
+    <code>B-066</code> genau einem Eintrag, für immer.
+  </p>
+  <p class="hint">
+    <strong>Dass die Nummern eines Projekts dabei springen, ist der Preis
+    und kein Fehler.</strong> Ein Projekt hat <code>B-003</code>,
+    <code>B-007</code>, <code>B-012</code>, und das sieht nach Verlust aus.
+    Die Lücken sind die Einträge der anderen Projekte. Der Grund ist der
+    Verweis im Fließtext: <em>„B-050 ist darin aufgegangen“</em> muss ohne
+    Projektangabe eindeutig sein — sonst ist die Kennung keine Kennung,
+    sondern eine Zeilennummer.
+  </p>
+  <p class="muted small">
+    Wiederverwendet wird nie, auch nach dem Abschließen nicht.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="ueberall-sperren">Was sperrt und was nur mahnt</h3>
+  </div>
+  <p class="muted">
+    Der Satz dahinter steht in jedem Register an einer anderen Stelle und
+    ist immer derselbe: <strong>Sperren gehört zu dem, was nicht nachwachsen
+    kann; mahnen zu dem, was nachwächst.</strong>
+  </p>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>Es sperrt</strong></td>
+        <td class="muted">
+          Die <a href="#aufgaben-neu">Abnahme</a> einer Aufgabe — ohne sie
+          weiß später niemand, wann sie fertig ist, und das lässt sich
+          nicht rekonstruieren. Und der <a href="#sammlung-eintragen">Bereich</a>:
+          Er ist die Achse, nach der sortiert wird; ein Eintrag ohne
+          Bereich wäre in jeder Durchsicht unauffindbar.
+        </td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Es mahnt</strong></td>
+        <td class="muted">
+          Die fünf <a href="#sammlung-eintragen">Fehlerangaben</a>,
+          <em>Was dahintersteckt</em> an einer
+          <a href="#aufgaben-angaben">Aufgabe</a>, ein
+          <a href="#meilensteine-angaben">Meilenstein ohne Aufgabe</a> und
+          ein <a href="#entscheidungen-angaben">Entschluss ohne Satz</a>.
+          Alles vier kann man nachtragen.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted">
+    <strong>Der Grund, warum nicht mehr gesperrt wird, ist praktisch und
+    nicht nachsichtig:</strong> Eine Regel, deren Weg teuer ist, wird
+    umgangen. Wer nicht weiterkommt und nicht zurückkann, tippt
+    irgendetwas hinein — und dann stehen dort bessere Formulare und
+    schlechtere Daten.
+  </p>
+  <p class="muted small">
+    Deshalb trägt die eine Sperre auch einen Ausgang: <em>Das schaffe ich
+    nicht — zurück in die Sammlung.</em> Das ist kein Scheitern, sondern
+    der zweite gültige Weg.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="ueberall-befunde">Befunde gelten über alle Projekte</h3>
+  </div>
+  <p class="muted">
+    Ein <strong>Befund</strong> ist eine Karte über der Seite — rot, gelb
+    oder blau —, die etwas meldet, das keiner einzelnen Karte gehört. Er
+    ist die einzige Stelle, an der die Vorauswahl <em>nicht</em> gilt: Was
+    liegen bleibt, liegt gerade in dem Projekt, in das seit Wochen niemand
+    geschaut hat. Ein Befund nennt deshalb immer sein Projekt.
+  </p>
+  <h4>Was gemeldet wird</h4>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>Getroffen, und es liegt</strong></td>
+        <td class="muted">Die <a href="#entscheidungen-liegeprobe">Liegeprobe</a>:
+          Eine Entscheidung ist gefallen, der Eintrag dazu ist offen
+          geblieben. Hier hält nicht die Abwägung auf, sondern die
+          Umsetzung.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Ohne Ursache</strong></td>
+        <td class="muted">Eine Aufgabe sagt nicht, was dahintersteckt.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Ohne die Angaben</strong></td>
+        <td class="muted">Ein <code>FEHLER</code> steht ohne die fünf
+          verlangten Angaben da.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Ohne Aufgabe</strong></td>
+        <td class="muted">Ein Meilenstein hat nichts unter sich.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Ohne Satz</strong></td>
+        <td class="muted">Ein <code>ENTSCHLUSS</code> sagt nicht, was
+          entschieden wurde.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Lange nicht hingesehen</strong></td>
+        <td class="muted">In einem Projekt hat seit über einem Monat
+          niemand die Sammlung durchgesehen. <strong>Der einzige, der
+          nichts vermisst, sondern etwas misst</strong> — und der, wegen
+          dem es die Befunde überhaupt gibt.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted small">
+    Die ersten fünf sind <strong>gelb</strong>, der letzte
+    <strong>blau</strong>. <strong>Rot gibt es hier nicht</strong>, und
+    das ist kein Versehen: Rot hieße, das Werkzeug tut seine Arbeit nicht
+    — dann stünde aber keine Seite mehr, auf der eine Karte stehen
+    könnte. Was hier gemeldet wird, ist von anderer Art: Es fehlt etwas,
+    <em>das nachwachsen kann</em>.
+  </p>
+
+  <h4>Zwei Knöpfe, und der zweite ist der interessante</h4>
+  <p class="muted">
+    <strong><em>Ansehen →</em></strong> stellt die Vorauswahl auf das
+    betroffene Projekt um und führt dorthin, wo das Gemeldete steht.
+    Ohne das Umstellen zeigte der Reiter dahinter ein anderes Projekt.
+  </p>
+  <p class="muted">
+    <strong><em>Zur Kenntnis genommen</em></strong> macht die Karte leise
+    — <strong>weg ist sie damit nicht</strong>: Sie schrumpft auf eine
+    graue Zeile über der Seite, und wer nicht selbst geklickt hat, findet
+    sie trotzdem.
+  </p>
+  <p class="hint">
+    <strong>Weggeklickt heißt: „ich weiß Bescheid, bis es schlimmer
+    wird.“</strong> Jeder Befund merkt sich, wie weit es war — werden aus
+    drei Lücken vier, kommt die Karte zurück. Eine Frist gibt es bewusst
+    nicht: Jede Zahl darin wäre gegriffen, und <em>sieben Tage</em>
+    beantwortet keine Frage, die jemand hat.
+  </p>
+  <p class="muted small">
+    <strong>Und zur Kenntnis genommen wird je Projekt.</strong> Dieselbe
+    Lage in einem anderen Projekt bleibt laut — sonst verschwände ein
+    Befund, den nie jemand gesehen hat. War ein Befund weg und kommt
+    wieder, ist er neu und fängt wieder laut an.
+  </p>
+  <p class="muted small">
+    Ein <strong>abgeschlossenes</strong> Projekt meldet gar nichts mehr:
+    Es liegt nicht, es ist fertig. Ein <strong>ruhendes</strong> dagegen
+    schon.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="ueberall-datum">Daten, Tage und der Strich</h3>
+  </div>
+  <p class="muted">
+    <strong>Daten stehen deutsch</strong> — <em>07.09.2026</em> —, auch
+    wenn sie in der Ablage nach ISO liegen. Ein Eingabefeld für ein Datum
+    ist das des Browsers und zeigt deshalb, was dort eingestellt ist.
+  </p>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong><code>0 Tage</code></strong></td>
+        <td class="muted">heißt <em>heute</em> — eine Zahl, die stimmt,
+          und ein Satz, den niemand sagt. Die Karten schreiben deshalb
+          <em>heute</em>.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Ein Strich <code>—</code></strong></td>
+        <td class="muted">heißt <em>nie</em> und nicht <em>null</em>. Er
+          steht dort, wo etwas noch gar nicht stattgefunden hat.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted small">
+    <strong>Dasselbe Datum misst zweierlei:</strong> In der Sammlung ist
+    <em>eingetragen am</em> die Liegedauer, an einer Aufgabe die
+    Arbeitsdauer. Zwei Fragen, ein Feld.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="ueberall-verweise">Zeigen statt kopieren</h3>
+  </div>
+  <p class="muted">
+    Ein Verweis speichert nur die <strong>Kennung</strong>; die Bezeichnung
+    wird beim Anzeigen geholt. Das gilt für den Ursprung einer Aufgabe, für
+    die Aufgaben unter einem Meilenstein, für <em>Hängt ab von</em> und für
+    den Bezug einer Entscheidung.
+  </p>
+  <p class="muted">
+    <strong>Wer einen Eintrag umbenennt, benennt jeden Verweis darauf
+    mit.</strong> Es gibt nichts nachzuziehen, und es gibt keine
+    abgeschriebene Bezeichnung, die in einem Monat falsch ist.
+  </p>
+  <p class="muted small">
+    Aus demselben Grund steht neben einer Entscheidung der Kopf des
+    bezogenen Eintrags mit seinem Stand: <em>Was gerade gilt, steht im
+    Register; hier steht, warum es gilt.</em>
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Projekte                                                           -->
+<!-- ================================================================= -->
+<section id="projekte" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Projekte</h2>
+    <p class="zumregister"><a href="/">Zum Register &rarr;</a></p>
+  </header>
+  <p class="muted">
+    Der erste Reiter, und der einzige, der ohne Vorauswahl auskommt. Er tut
+    zweierlei: <strong>Er listet alle Projekte und beschreibt jedes</strong> —
+    und er trägt die Auswahl, aus der die fünf folgenden Register aufgebaut
+    werden.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="projekte-uebersicht">Projektübersicht</h3>
+    <p class="zurkarte"><a href="/#projektuebersicht">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Für den einen Knopf, wegen dem man diesen Reiter aufmacht:
+    <em>wählen</em>.</strong> Danach steht das Projekt an der ersten Karte der
+    vier Register, und
+    alles Weitere gilt für dieses.
+  </p>
+  <h4>Was steht darin?</h4>
+  <p class="muted">
+    Kennung, Name, Zustand und Eintragsdatum — drei Zeilen je Projekt, mehr
+    nicht. Wer wechseln will, soll nicht erst eine Beschreibung überfliegen
+    müssen.
+  </p>
+  <h4>Was man wissen sollte</h4>
+  <p class="muted">
+    <strong>Gewählt wird nur hier.</strong> In den Karten darunter steht
+    kein zweiter Knopf dafür — <em>zwei Wege zu demselben Schritt lehren,
+    dass es zwei Schritte sind.</em>
+  </p>
+  <p class="muted small">
+    Sortiert ist die Liste nach der Kennung, nicht nach dem Namen: Nach
+    Namen sortiert spränge sie, sobald jemand ein Projekt umbenennt — und
+    die Stelle, an der man sein Projekt sucht, wäre jedes Mal eine andere.
+  </p>
+  <p class="hint">
+    <strong>Wer wechselt, während unten ungespeicherte Felder stehen, wird
+    gefragt.</strong> Wählen ist ein eigenes Formular und schickt die
+    Felder der Karten darunter nicht mit; ohne die Frage wäre die Arbeit
+    weg, und niemand hätte es gemerkt.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="projekte-angaben">Projekte</h3>
+    <p class="zurkarte"><a href="/#projekte">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Eine Karte je Projekt, mit allen Feldern und dem Weg hinaus.
+    <strong>Beschrieben wird jedes, nicht nur das gewählte</strong> — nur
+    steht die Karte des gewählten offen und alle anderen zu. Ein Projekt
+    umbenennen zu können, ohne es vorher zu wählen, ist das Natürlichere.
+  </p>
+  <h4>Die Felder</h4>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>Name</strong></td>
+        <td class="muted"><strong>Muss eindeutig sein</strong>, und das ist
+          keine Ordnungsliebe: Er ist das Losungswort beim Löschen und beim
+          Zurücksetzen. Gäbe es zwei gleichnamige Projekte, bestätigte die
+          Eingabe nicht mehr, <em>welches</em> gemeint ist.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Beschreibung</strong></td>
+        <td class="muted">Worum es geht.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Vision</strong></td>
+        <td class="muted">Wohin es gehen soll. <strong>Ein Feld und kein
+          Reiter</strong> — ein Projekt hat genau eine, und hier steht sie
+          bei dem, wofür sie gilt.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Zustand</strong></td>
+        <td class="muted"><code>AKTIV</code> · <code>RUHT</code> ·
+          <code>ABGESCHLOSSEN</code></td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Bereiche</strong></td>
+        <td class="muted">Die Achse, nach der später sortiert wird — und
+          sie ist <strong>je Projekt eine andere</strong>. Kategorie und
+          Priorität beschreiben die <em>Art</em> eines Eintrags und sind
+          überall dieselben; der Bereich beschreibt den
+          <em>Gegenstand</em>.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="hint">
+    <strong><code>ABGESCHLOSSEN</code> stellt die Liegeprobe still,
+    <code>RUHT</code> nicht.</strong> Ein abgeschlossenes Projekt liegt
+    nicht, es ist fertig. Ein ruhendes ist dagegen genau der Fall, für den
+    die Liegeprobe gebaut ist — das, in das seit Wochen niemand geschaut
+    hat.
+  </p>
+  <h4>Der Bestand im Kartenfuß</h4>
+  <p class="muted">
+    <em>65 Sammlung · 7 Aufgaben · 3 Meilensteine · 41 Entscheidungen</em> —
+    das ist kein sechstes Feld, sondern abgelesen. Deshalb steht es unten.
+    <strong>Beim Löschen sagt dieselbe Zahl, was verloren geht.</strong>
+  </p>
+  <h4>Löschen und Bereiche entfernen</h4>
+  <p class="muted">
+    <strong>Ein Bereich, an dem Einträge hängen, lässt sich nicht
+    entfernen.</strong> Er sperrt, und die Meldung nennt die Zahl der
+    Einträge, die daran stehen: Der Bereich eines Eintrags steht in keiner
+    zweiten Spalte, aus der er sich wiederherstellen ließe.
+  </p>
+  <p class="hint">
+    <strong>Ein Projekt zu löschen nimmt alles mit, was darin steht.</strong>
+    Deshalb zwei Sicherungen, die zwei verschiedene Fehler abfangen: der
+    <a href="#einrichtung-export">Export</a> davor fängt den Fehler ab, es
+    überhaupt getan zu haben — und <strong>der Projektname als
+    Losungswort</strong> den, es am falschen getan zu haben. Ein festes
+    Wort wie <em>Löschen</em> bestätigt nur, dass man gelesen hat, dass
+    gelöscht wird; der Name bestätigt, <strong>welches</strong>.
+  </p>
+  <p class="muted small">
+    Der Unterschied zur <a href="#einrichtung-werkseinstellung">Werkseinstellung</a>
+    liegt nicht im Verlust, sondern in dem, was übrig bleibt: ein leeres
+    Projekt, an dem man neu anfängt — oder keines.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="projekte-neu">Neues Projekt</h3>
+    <p class="zurkarte"><a href="/#neues-projekt">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Name, Beschreibung, Vision und das Eintragsdatum. <strong>Wer ein
+    Projekt anlegt, hat es danach gewählt</strong> — ein zweiter Klick für
+    eine Absicht, die schon feststand, ist keiner.
+  </p>
+  <h4>Warum das Datum leer ist</h4>
+  <p class="muted">
+    <strong>Anders als in der Sammlung steht hier nicht <em>heute</em>.</strong>
+    Was auffällt, fällt heute auf — ein Projekt dagegen läuft oft schon
+    länger, und ein erfundenes Datum wäre schlimmer als eine Nachfrage.
+  </p>
+  <p class="muted small">
+    Der nächste Schritt nach dem Anlegen sind die <strong>Bereiche</strong>
+    in der Karte darüber: Ohne mindestens einen nimmt die Sammlung nichts
+    an.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Sammlung                                                           -->
+<!-- ================================================================= -->
+<section id="sammlung" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Sammlung</h2>
+    <p class="zumregister"><a href="/sammlung">Zum Register &rarr;</a></p>
+  </header>
+  <p class="muted">
+    <strong>Was aufgefallen ist</strong> — Ideen und Fehler, mit niedriger
+    Hürde eingetragen und ohne Anspruch, zu Ende gedacht zu sein. Es gibt
+    hier ausdrücklich <strong>keinen Status</strong>: Es gäbe nur einen,
+    und der hieße <em>liegt da</em>.
+  </p>
+  <p class="hint">
+    <strong>Der Reiter hat zwei Ansichten, und der Umschalter steht in der
+    ersten Karte.</strong> <em>Eintragen</em> ist die eine — drei Angaben,
+    sonst Vorgaben. <em>Durchsicht</em> ist die andere: Priorität vergeben,
+    bündeln, verwerfen. Die Trennung ist keine Bequemlichkeit: Eine einzige
+    Ansicht stellte dem Eintragenden Felder hin, die er gar nicht füllen
+    soll.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="sammlung-uebersicht">Sammlungsübersicht</h3>
+    <p class="zurkarte"><a href="/sammlung#sammlungsuebersicht">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Für die Wahl der Ansicht</strong> — und für die Zahlen, nach
+    denen man sie wählt. Oben steht, wie viele Einträge offen sind; darunter
+    die beiden Knöpfe <em>Eintragen</em> und <em>Durchsicht</em>, und eine
+    Zeile mit drei Zahlen: wie viele noch <strong>keine Priorität</strong>
+    haben, wie vielen <code>FEHLER</code>-Einträgen noch Angaben fehlen, und
+    wann zuletzt durchgesehen wurde.
+  </p>
+  <p class="muted">
+    Sie steht an derselben Stelle wie die Übersichten auf Aufgaben und
+    Meilensteine: <strong>Jeder dieser Reiter beginnt mit seiner
+    Übersicht.</strong> Die gezählten Einträge sind alle offenen, auch wenn
+    die Suche gerade nur einen Teil zeigt.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="sammlung-eintragen">Neuer Eintrag</h3>
+    <p class="zurkarte"><a href="/sammlung#neuer-eintrag">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Für die niedrige Hürde.</strong> Titel, Kategorie
+    (<code>IDEE</code> oder <code>FEHLER</code>) und Bereich — der Rest ist
+    freiwillig. Das Datum steht auf heute: <em>Was auffällt, fällt heute
+    auf.</em>
+  </p>
+  <h4>Der Bereich ist Pflicht</h4>
+  <p class="muted">
+    Ohne ihn geht kein Eintrag durch, und er wird
+    <a href="/#projekte">beim Projekt</a> gepflegt. Hat das Projekt noch
+    keinen, sagt die Seite das <em>vorher</em> — nicht erst im abgewiesenen
+    Formular.
+  </p>
+  <h4>Die fünf Angaben zu einem FEHLER</h4>
+  <p class="muted">
+    Wählt man <code>FEHLER</code>, erscheinen fünf Felder: <em>wann er
+    auftritt · woran man ihn merkt · was man tun kann · warum er jetzt
+    nicht behoben wird · was eine Lösung grob kostet.</em> Die vorletzte
+    trägt die eigentliche Regel: <strong>Was keinen Grund hat, gehört
+    behoben und nicht eingetragen.</strong>
+  </p>
+  <p class="hint">
+    <strong>Sie sperren nicht.</strong> Ein unvollständiger
+    <code>FEHLER</code> wird angelegt, bekommt in seiner Karte ein
+    Abzeichen — <em>„3 Angaben fehlen“</em> — und die fehlenden Felder zum
+    Nachtragen an Ort und Stelle. Die Hürde bleibt niedrig, die Lücke
+    verschwindet trotzdem nicht aus dem Blick.
+  </p>
+  <p class="muted small">
+    An einer <code>IDEE</code> stehen sie gar nicht erst da: Fünf leere
+    Zeilen wären dort kein Hinweis, sondern Lärm.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="sammlung-liste">Sammlung</h3>
+    <p class="zurkarte"><a href="/sammlung#sammlung">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Eine Karte je Eintrag, <strong>mit dem Jüngsten oben</strong> — wer
+    etwas einträgt, will es danach sehen. Aufgeklappt liest man
+    Beschreibung, Ursprung und, was beim Schärfen zu bedenken ist.
+  </p>
+  <h4>Die Suche</h4>
+  <p class="muted">
+    Sie geht über <strong>Titel und Beschreibung</strong> und findet schon
+    beim Tippen. Fehlt die Volltextsuche auf dieser Maschine, sucht sie
+    einfacher weiter — schlechter, aber nicht weg.
+  </p>
+  <h4>Warum der Titel hier kein Eingabefeld ist</h4>
+  <p class="muted">
+    Anders als der Projektname. <strong>Ein Titel der Sammlung wird beim
+    Schärfen geändert, nicht im Vorbeigehen</strong> — also in der
+    Durchsicht.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="sammlung-durchsicht">Durchsicht</h3>
+    <p class="zurkarte"><a href="/sammlung?ansicht=durchsicht#durchsicht">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Für den Durchgang durch alles, was liegt.</strong> Eine Zeile
+    je Eintrag mit Kategorie, Priorität, Liegedauer und Abschluss — und
+    ganz links die Kästchen zum Markieren.
+  </p>
+  <h4>Zusammenlegen — die Kernfunktion</h4>
+  <p class="muted">
+    Zwei oder drei Einträge markieren, <em>Zusammenlegen</em> klicken:
+    <strong>Der Knopf legt nicht an, sondern fragt zuerst.</strong> Der
+    Bündelschritt listet die markierten Einträge auf und fragt nach dem
+    <em>gemeinsamen Bild</em> und nach der <em>Abnahme</em> — in dem
+    Augenblick, in dem das Denken gerade stattgefunden hat. Ein Knopf, der
+    stillschweigend anlegte, wäre nicht die Kernfunktion, sondern eine
+    Abkürzung an ihr vorbei.
+  </p>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>Priorität</strong></td>
+        <td class="muted">Die Aufgabe erbt die <strong>stärkste</strong> der
+          Einzelnen. Wer drei bündelt, von denen einer <code>MUSS</code>
+          ist, hat eine <code>MUSS</code>-Aufgabe.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Bereich</strong></td>
+        <td class="muted">Der des ersten. Ein Bündel über zwei Bereiche
+          hinweg gibt es; dann ist die Wahl eine Setzung und an der
+          Aufgabe änderbar.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Was dahintersteckt</strong></td>
+        <td class="muted"><strong>Vorbelegt</strong> aus Kennung, Titel und
+          Beschreibung der Einträge — man streicht und formuliert, statt
+          vor einem leeren Kasten zu sitzen.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>→ Aufgabe</strong></td>
+        <td class="muted">Tut dasselbe mit einem einzigen Eintrag und geht
+          durch denselben Schritt. <em>Zusammenlegen ist der häufige Fall,
+          nicht der einzige.</em></td>
+      </tr>
+    </tbody>
+  </table>
+  <h4>Abschluss setzen heißt: weg von hier</h4>
+  <p class="muted">
+    Der Eintrag wandert vollständig und im Wortlaut ins
+    <a href="#history-archiv">Archiv</a>. <strong>Und ein Unterschied geht
+    dabei leicht verloren:</strong> <em>verworfen</em> bekommt eine Zeile
+    im <a href="#history-quittung">Quittungsbuch</a>, <em>Aufgabe</em>
+    nicht — es ist nicht fertig, es zieht um. Die Zeile schreibt dann die
+    Aufgabe, wenn sie fertig ist.
+  </p>
+  <p class="muted small">
+    <em>Speichern</em> über den Prioritäten bleibt bedienbar, auch wenn
+    nichts geändert ist: Es vermerkt zugleich die Durchsicht. Ausgegraut
+    hieße hier nicht <em>nichts zu tun</em>, sondern <em>das Hinsehen zählt
+    nicht</em>.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="sammlung-liegen">Was am längsten liegt</h3>
+    <p class="zurkarte"><a href="/sammlung?ansicht=durchsicht#was-liegt">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Vier Zahlen am Ende der Durchsicht: <strong>wie viele ohne Priorität
+    dastehen, wie alt der älteste davon ist, wie viele Fehler unvollständig
+    sind — und wie lange die letzte Durchsicht her ist.</strong>
+  </p>
+  <h4>Vermerkt wird das Hinsehen, nicht das Ändern</h4>
+  <p class="muted">
+    Deshalb schreibt auch ein <em>Speichern</em> ohne Änderung den Vermerk.
+    Sonst könnte die Zahl nicht messen, was sie messen soll: dass jemand
+    hingesehen und <strong>nichts</strong> zu tun gefunden hat.
+  </p>
+  <p class="muted small">
+    Dieselbe Quelle speist den Befund <em>lange nicht hingesehen</em> —
+    nur läuft der über <em>alle</em> Projekte, nicht nur über das
+    gewählte.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Aufgaben                                                           -->
+<!-- ================================================================= -->
+<section id="aufgaben" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Aufgaben</h2>
+    <p class="zumregister"><a href="/aufgaben">Zum Register &rarr;</a></p>
+  </header>
+  <p class="muted">
+    <strong>Woran gearbeitet wird.</strong> Der Unterschied zur Sammlung
+    ist nicht die Größe, sondern dass hier jemand dransitzt — deshalb gibt
+    es einen Status, eine Ursache und eine Abnahme. Ob eine Beobachtung als
+    Idee oder Fehler ins Haus kam, ist dagegen beantwortet, sobald daraus
+    Arbeit wird: Die Kategorie fällt weg.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="aufgaben-uebersicht">Aufgabenübersicht</h3>
+    <p class="zurkarte"><a href="/aufgaben#aufgabenuebersicht">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Eine Zeile je Aufgabe: Kennung, Titel, Priorität, Status, Arbeitsdauer
+    und der Stand der Abnahme. <strong>Sortiert nach dem Status</strong> —
+    <code>AKTIV</code>, <code>PAUSE</code>, <code>PASSIV</code> —, denn die
+    Frage ist hier nicht <em>was ist neu</em>, sondern <em>woran sitzt
+    gerade jemand</em>.
+  </p>
+  <h4>Die Spalte heißt Arbeitsdauer, nicht „in Arbeit seit“</h4>
+  <p class="muted">
+    Gemessen wird die Zeit seit dem Eintragen — auch an einer Aufgabe auf
+    <code>PASSIV</code>, an der ausdrücklich niemand sitzt.
+    <strong>Ob gerade jemand dransitzt, sagt der Status daneben.</strong>
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="aufgaben-angaben">Aufgaben</h3>
+    <p class="zurkarte"><a href="/aufgaben#aufgaben">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Eine Karte je Aufgabe, mit allem, was daran hängt.
+    <strong>Aufgeklappt ist, was <code>AKTIV</code> ist.</strong>
+  </p>
+  <h4>Die zwei Häkchenlisten messen Verschiedenes</h4>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>Was getan werden muss</strong></td>
+        <td class="muted">misst den <strong>Fortschritt</strong> — wie weit
+          die Arbeit ist. Offen dargestellt, mit Balken und einem Datum je
+          erledigter Zeile.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Wann es abgenommen ist</strong></td>
+        <td class="muted">misst die <strong>Fertigkeit</strong> — woran man
+          sie feststellt. In einem Rahmen, ohne Daten, mit einem Satz
+          darunter, der sagt, was sie misst.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted">
+    <strong>Sie sehen deshalb verschieden aus.</strong> Nebeneinander in
+    gleicher Form läsen sie sich wie zweimal dasselbe — und mit dem
+    Unterschied verschwände die Abnahme als eigenständige Sache. Eine
+    Häkchenliste misst, aber sie beschreibt nicht.
+  </p>
+  <p class="muted small">
+    Beide wachsen zeilenweise: tippen, Enter. Wegnehmen tut ein Kreuz, das
+    erst beim Draufzeigen erscheint — eine Liste mit einem Kreuz hinter
+    jeder Zeile liest sich wie eine Aufforderung. Gezählt wird in Zahlen,
+    nicht in Prozent: <em>„50 %“</em> sagt nicht, ob es zwei von vier oder
+    fünf von zehn sind.
+  </p>
+  <h4>Erledigt hängt an der Abnahme</h4>
+  <p class="muted">
+    <strong>Der Knopf steht ausgegraut da, solange ein Haken fehlt</strong> —
+    auch dann, wenn die Arbeitsliste vollständig durch ist. Geprüft wird es
+    trotzdem noch einmal beim Klicken: Ein ausgegrauter Knopf ist eine
+    Auskunft, keine Prüfung.
+  </p>
+  <p class="hint">
+    <strong>Der letzte Abnahmepunkt lässt sich nicht wegnehmen.</strong>
+    Ohne ihn wäre die Aufgabe hinterher das, was beim Anlegen nicht
+    durchgegangen wäre — und eine Sperre, die sich nachträglich umgehen
+    lässt, ist keine.
+  </p>
+  <h4>Was dahintersteckt</h4>
+  <p class="muted">
+    <strong>Die Ursache hinter den Beobachtungen ist der eigentliche Zweck
+    dieser Ebene</strong> — der Satz, der in keinem der Ursprungseinträge
+    stand. Das Feld mahnt und sperrt nicht: Die Ursache kann man
+    nachtragen, sobald man sie versteht.
+  </p>
+  <h4>Die weiteren Felder</h4>
+  <p class="muted">
+    <em>Was bedacht werden muss</em> · <em>Was ist das Ergebnis</em> ·
+    Bereich · Priorität · Status · Ursprung · Meilenstein. <strong>Der
+    Ursprung ist ein Verweis</strong> — gespeichert ist die Kennung, der
+    Titel wird geholt. Eine Aufgabe darf auch ohne Ursprung entstehen: aus
+    einer Rückmeldung oder einem Gespräch.
+  </p>
+  <p class="muted small">
+    <code>PASSIV</code> nimmt das Statusdatum mit: Ein stehengebliebenes
+    <em>seit</em> wäre eine Behauptung.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="aufgaben-neu">Neue Aufgabe</h3>
+    <p class="zurkarte"><a href="/aufgaben#neue-aufgabe">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Für die Aufgabe, die nicht aus der Sammlung kommt. Titel, Bereich,
+    Priorität, Datum — und die beiden Listen, eine Zeile je Punkt.
+  </p>
+  <h4>Die Abnahme sperrt — als einzige</h4>
+  <p class="hint">
+    <strong>Ohne Abnahme wird die Aufgabe nicht angelegt.</strong> Der Grund
+    ist scharf formuliert und gilt: <em>Lässt sich nicht beschreiben, woran
+    man sie fertig erkennt, ist es keine Aufgabe</em> — sondern eine
+    Beobachtung mit Kopfzeile, und die gehört in die
+    <a href="/sammlung">Sammlung</a>.
+  </p>
+  <p class="muted">
+    <strong>Der Unterschied zu den fünf Fehlerangaben ist kein
+    Widerspruch:</strong> Die machen einen Eintrag <em>vollständiger</em>.
+    Die Abnahme macht ihn erst zu dem, was er ist.
+  </p>
+  <p class="muted">
+    Deshalb trägt der Bündelschritt daneben den zweiten Ausgang:
+    <strong>„Das schaffe ich nicht — zurück in die Sammlung.“</strong> Er
+    sieht aus wie ein Knopf und nicht wie ein graues <em>Abbrechen</em>,
+    weil er kein Rückzieher ist, sondern der zweite gültige Weg.
+  </p>
+  <p class="muted small">
+    Beide Listen sind ein Textfeld mit einer Zeile je Punkt — nicht fünf
+    Felder mit einem Hinzufügen-Knopf. Die Vorgabe dahinter ist eine Zahl:
+    <strong>Die Abnahme muss in dreißig Sekunden zu tippen sein.</strong>
+    Leerzeilen fallen weg, weil niemand einen leeren Punkt meint.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Meilensteine                                                       -->
+<!-- ================================================================= -->
+<section id="meilensteine" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Meilensteine</h2>
+    <p class="zumregister"><a href="/meilensteine">Zum Register &rarr;</a></p>
+  </header>
+  <p class="muted">
+    <strong>Was zusammen fertig werden muss.</strong> Ein Meilenstein ist
+    ein Termin mit Aufgaben darunter — und die Stelle, an der aus einzelnen
+    Erledigungen ein Stein auf der <a href="#history-strasse">Straße</a>
+    wird.
+  </p>
+  <p class="muted small">
+    Die Liste zeigt per Vorgabe, <strong>was offen ist</strong>; der Filter
+    in der Kopfzeile holt die anderen dazu. In der Mappe verschwand ein
+    abgenommener Stein aus der Datei — <em>eine Liste, die mitwächst statt
+    zu schrumpfen, verliert ihren Zweck.</em> In einer Datenbank
+    verschwindet nichts, aber der Zweck bleibt.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="meilensteine-uebersicht">Meilensteinübersicht</h3>
+    <p class="zurkarte"><a href="/meilensteine#meilensteinuebersicht">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Eine Zeile je Stein: Kennung, Benennung, Priorität,
+    <em>Hängt ab von</em>, die Zahl der Aufgaben und wie lange er offen
+    ist.
+  </p>
+  <h4>Vorgänger sind eingetragen, Nachfolger abgelesen</h4>
+  <p class="muted">
+    <em>Wartet auf ihn</em> ist kein Feld, sondern die Umkehrung derselben
+    Angabe. <strong>Beides zu speichern hieße, dieselbe Beziehung zweimal
+    zu halten</strong> — und eine der beiden Fassungen wäre in einem Monat
+    falsch.
+  </p>
+  <p class="muted small">
+    Ein Kreis wird abgewiesen, auch über mehrere Ecken. Sonst zeigten
+    <em>Hängt ab von</em> und <em>Wartet auf ihn</em> aufeinander, und
+    keine der beiden Auskünfte wäre noch wahr.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="meilensteine-dazwischen">Was dazwischenkam</h3>
+    <p class="zurkarte"><a href="/meilensteine#dazwischen">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Für den Umweg — notiert, sobald er passiert.</strong> Drei
+    Felder in einer Zeile: welcher Stein, welches Datum, ein Satz. Mehr
+    soll es nicht sein, denn davon hängt ab, ob es überhaupt getan wird.
+  </p>
+  <h4>Warum das eine eigene Karte ist</h4>
+  <p class="muted">
+    Eine Notiz, die man im Augenblick machen soll, aber nur tief in einem
+    Meilenstein machen kann, wird nicht gemacht — sie wird bei der Abnahme
+    aus dem Gedächtnis nachgetragen, <strong>und dann ist sie
+    wertlos</strong>. Hier steht sie zwei Klicks entfernt, weil die
+    Reiterleiste oben klebt.
+  </p>
+  <p class="muted">
+    <strong>Geschrieben wird nur hier, gelesen in der Karte des
+    Steins</strong> — und später auf der Straße, wo sie zu der Dauer gehört,
+    die sie erklärt.
+  </p>
+  <p class="muted small">
+    Es gibt nur eine Art von Notiz. Die Mappe kannte zwei — <em>Umweg</em>
+    für einen Weg, der nicht ging, <em>Rast</em> für eine Wartezeit —, aber
+    zwei Etiketten, die sich nicht auseinanderhalten lassen, sortieren
+    nichts.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="meilensteine-angaben">Meilensteine</h3>
+    <p class="zurkarte"><a href="/meilensteine#meilensteine">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Eine Karte je Stein, mit Beschreibung, <em>Bedingung</em>, den
+    zugeordneten Aufgaben, der Abnahme, der Nachbereitung und den
+    Umwegen. <strong>Aufgeklappt ist der Stein, der abnehmbar ist</strong> —
+    die eine Karte mit einer fälligen Handlung.
+  </p>
+  <h4>Bedingung heißt: was sachlich da sein muss</h4>
+  <p class="muted">
+    <strong>Andere Meilensteine gehören nicht hierher</strong>, sondern
+    oben unter <em>Hängt ab von</em>. Sonst stünden Abhängigkeiten an zwei
+    Stellen, und eine davon wäre in einem Monat falsch.
+  </p>
+  <h4>Abnehmen ist ein Klick statt vier Handgriffen</h4>
+  <p class="muted">
+    Vier Dinge waren es: den Abschluss setzen, den Stein ins Archiv
+    schieben, eine Zeile ins Quittungsbuch schreiben und einen Punkt auf
+    die Roadmap setzen — mit Dauer und dem, was dazwischenkam.
+    <strong>Drei davon fallen jetzt ab, statt getan zu werden:</strong> Die
+    Dauer rechnet sich aus den beiden Daten, das Quittungsbuch liest den
+    Abschluss, und die Umwege stehen schon da, weil sie notiert wurden, als
+    sie passierten.
+  </p>
+  <p class="muted">
+    <strong>Der Knopf hängt an den Aufgaben.</strong> Solange eine
+    zugeordnete Aufgabe offen ist, steht er ausgegraut da; ohne jede
+    Aufgabe gibt es nichts abzunehmen.
+  </p>
+  <h4>Verworfen ist der Termin, nicht die Arbeit</h4>
+  <p class="muted">
+    <strong>Die Aufgaben bleiben</strong> und stehen danach wieder ohne
+    Stein da. Ein verworfener Meilenstein sagt nichts darüber, ob die
+    Arbeit noch zu tun ist — sie hat nur keinen gemeinsamen Termin mehr.
+  </p>
+  <p class="muted small">
+    Erledigte Aufgaben bleiben dagegen in der Liste des Steins stehen und
+    werden blass: Eine Liste, aus der Fertiges verschwindet, sagt nicht
+    mehr, woraus der Stein bestand — und genau das soll er im Archiv
+    beantworten.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="meilensteine-neu">Neuer Meilenstein</h3>
+    <p class="zurkarte"><a href="/meilensteine#neuer-meilenstein">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Benennung, Priorität, Datum, Beschreibung, Bedingung — und sonst
+    nichts. <strong>Ein Meilenstein darf leer entstehen</strong>, aus einer
+    Rückmeldung oder einer Entscheidung im Gespräch.
+  </p>
+  <h4>Leer entstehen darf er, leer bleiben nicht</h4>
+  <p class="hint">
+    <strong>Solange keine Aufgabe daranhängt, gilt er als Mahnung</strong> —
+    aber gesperrt wird nichts. Das trennt sauber von der Abnahme: Dort fehlt
+    etwas, das den Eintrag <em>konstituiert</em>. Hier fehlt etwas, das
+    <strong>noch kommen kann</strong> — der Meilenstein ist schon einer, er
+    hat nur noch keine Arbeit unter sich.
+  </p>
+  <p class="muted small">
+    Aufgaben lassen sich von beiden Seiten zuordnen: hier über
+    <em>Hinzufügen</em> und drüben im Feld <em>Meilenstein</em> der Aufgabe.
+    <strong>Wer geprüft hat</strong>, wird nicht erfasst — in dieser Fassung
+    ist es immer dieselbe Person, und ein Feld, das auf jedem Eintrag
+    denselben Namen trägt, sagt nichts.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Entscheidungen                                                     -->
+<!-- ================================================================= -->
+<section id="entscheidungen" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Entscheidungen</h2>
+    <p class="zumregister"><a href="/entscheidungen">Zum Register &rarr;</a></p>
+  </header>
+  <p class="muted">
+    <strong>Warum es so ist.</strong> Das einzige Register ohne
+    Feldschema — eine Abwägung hat keine Form, die sich vorher festlegen
+    ließe; sie hat einen Verlauf. Und das einzige, dessen Einträge das
+    überleben, wozu sie gehören: Der Eintrag zieht ins Archiv,
+    <strong>die Entscheidung bleibt stehen</strong>.
+  </p>
+  <p class="hint">
+    <strong>Hier gehört auch der Weg hinein, nicht nur das Ergebnis</strong> —
+    und die Vorbereitung. Der Grund ist der eigentliche Fund dieses
+    Registers: <em>Der Weg spiegelt wider, wie gründlich eine Entscheidung
+    war.</em> Ein Feldschema würde genau das plätten: Achtzig geprüfte
+    Wörter, drei Kandidaten und zwei verworfene Wege sehen in Felder
+    gepresst aus wie eine Zeile.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="entscheidungen-uebersicht">Entscheidungsübersicht</h3>
+    <p class="zurkarte"><a href="/entscheidungen#entscheidungsuebersicht">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Eine Zeile je Entscheidung: Kennung, Titel, Zustand, Bezug und Datum.
+  </p>
+  <h4>Die Vorgabe ist alle, nicht offen</h4>
+  <p class="muted">
+    Anders als bei den Meilensteinen. <strong>Die häufigste Frage hier ist
+    <em>warum gilt das</em>, nicht <em>was ist noch zu tun</em></strong> —
+    und die Antwort steht meistens in einer längst getroffenen
+    Entscheidung.
+  </p>
+  <p class="muted small">
+    Die Suche geht über Titel, Entschluss <em>und</em> Verlauf: Bei einem
+    Register, dessen Inhalt der Text ist, wäre eine Titelsuche keine.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="entscheidungen-liegeprobe">Was entschieden ist und trotzdem liegt</h3>
+    <p class="zurkarte"><a href="/entscheidungen#liegeprobe">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Für die Liegeprobe</strong> — den Blick darauf, was entschieden
+    wurde und trotzdem liegt. Eine Entscheidung ist getroffen, der Eintrag,
+    an dem sie hängt, ist immer noch offen: Dann hält nicht die Abwägung
+    auf, sondern die Umsetzung.
+  </p>
+  <h4>Und was hier <em>nicht</em> gemessen wird</h4>
+  <p class="muted">
+    <strong>Wie lange eine Entscheidung offen ist.</strong>
+    <code>OFFEN</code> heißt nicht <em>da steht noch nichts</em>, sondern:
+    Der Weg ist da, der Entschluss steht aus. <strong>Wer das wählt, hat
+    gewählt</strong> — ihn nach vier Wochen daran zu erinnern hieße, seine
+    Entscheidung für ein Versäumnis zu halten.
+  </p>
+  <p class="muted small">
+    Gemahnt wird, was fehlt, nicht was absichtlich so dasteht. Deshalb
+    zählt die Liegeprobe nur den anderen Fall: <code>ENTSCHLUSS</code>,
+    und der Eintrag liegt trotzdem.
+  </p>
+  <p class="muted small">
+    Gebaut ist sie als Tabelle und nicht als Zahl, denn die Frage ist
+    <em>welche</em> und nicht <em>wie viele</em>. Die Zahlen stehen
+    darunter.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="entscheidungen-angaben">Entscheidungen</h3>
+    <p class="zurkarte"><a href="/entscheidungen#entscheidungen">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Eine Karte je Entscheidung. <strong>Aufgeklappt ist, was
+    <code>OFFEN</code> ist</strong> — dort steht eine Frage, die jemand
+    beantworten muss.
+  </p>
+  <h4>Was entschieden wurde steht vor dem Verlauf</h4>
+  <p class="muted">
+    <strong>Zuerst das Ergebnis, dann der Weg.</strong> Wer eine
+    Entscheidungskarte ansieht, will zuerst sehen, was überhaupt entschieden
+    wurde — und kann dann im Verlauf nachlesen, warum. Der Rahmen um das
+    obere Feld ist derselbe wie um die Abnahme einer Aufgabe: Er markiert
+    das, worauf es hinausläuft.
+  </p>
+  <p class="muted">
+    <strong>Steht der Zustand auf <code>ENTSCHLUSS</code> und das Feld ist
+    leer, ist das eine Lücke</strong> — ein Entschluss ohne Satz ist keiner.
+    Gesperrt wird trotzdem nicht: Den Satz kann man nachtragen. Bei
+    <code>OFFEN</code> ist dasselbe leere Feld dagegen die Auskunft selbst.
+  </p>
+  <h4>Der Bezug ist ein Feld, nicht zwei</h4>
+  <p class="muted">
+    Eine Liste mit Gruppen — Sammlung, Aufgaben, Meilensteine — statt zweier
+    Auswahllisten, von denen die zweite von der ersten abhängt.
+    <strong>Freistehend ist erlaubt:</strong> Es gibt Entscheidungen, die zu
+    keinem einzelnen Eintrag gehören.
+  </p>
+  <p class="muted">
+    <strong>Neben der Entscheidung steht der Kopf des bezogenen
+    Eintrags</strong>, mit Register und Stand — <em>Sammlung · noch
+    offen</em>. Damit gibt es keinen Anlass, den Stand in den Verlauf
+    abzuschreiben.
+  </p>
+  <h4>Gelöscht, nicht archiviert</h4>
+  <p class="muted">
+    <strong>Das einzige Register, in dem das der Weg hinaus ist.</strong>
+    Anderswo wird abgeschlossen und der Eintrag zieht ins Archiv; eine
+    Entscheidung hat keinen Abschluss. Was falsch eingetragen wurde, muss
+    deshalb wirklich weg.
+  </p>
+  <p class="muted small">
+    Das Textfeld ist so hoch wie sein Inhalt, zwischen sechs und dreißig
+    Zeilen. <strong>Gerendert wird nichts</strong> — was dasteht, steht so
+    da, wie es getippt wurde.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="entscheidungen-neu">Neue Entscheidung</h3>
+    <p class="zurkarte"><a href="/entscheidungen#neue-entscheidung">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Titel, Zustand, Bezug, Datum — und der Verlauf. <strong>Anlegen kann
+    man sie, lange bevor man weiß, wie es ausgeht.</strong>
+  </p>
+  <h4>Warum das Register Entscheidungen heißt</h4>
+  <p class="muted">
+    Obwohl auch Unentschiedenes darin steht. <em>Abwägung</em> benennt den
+    Vorgang, <em>Entscheidung</em> das, wozu er da ist — und
+    <strong>am Ende muss jemand entscheiden.</strong> Es heißt ja nicht,
+    dass gar keine Entscheidung getroffen wird, wenn man sie heute nicht
+    trifft.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Einrichtung                                                        -->
+<!-- ================================================================= -->
+<section id="einrichtung" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Einrichtung</h2>
+    <p class="zumregister"><a href="/einrichtung">Zum Register &rarr;</a></p>
+  </header>
+  <p class="muted">
+    Wie dieses Werkzeug eingerichtet ist. Man braucht die Seite selten —
+    aber wenn, dann meistens dringend: <strong>welcher Stand läuft, wo
+    liegt was, und wie kommen die Daten hier wieder heraus.</strong>
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-stand">Stand</h3>
+    <p class="zurkarte"><a href="/einrichtung#stand">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Welche Fassung hier läuft</strong> — dieselbe Angabe, die in
+    der Fußzeile jeder Seite steht, hier mit Datum. Die erste Frage bei
+    jeder Fehlersuche und die erste Angabe in jedem
+    <a href="#einrichtung-fehlerbericht">Fehlerbericht</a>.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-export">Export</h3>
+    <p class="zurkarte"><a href="/einrichtung#export">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Sie schreibt den ganzen Bestand als Text weg</strong> — fünf
+    Markdown-Dateien in einem Ordner je Projekt: <code>projekt.md</code> ·
+    <code>sammlung.md</code> · <code>aufgaben.md</code> ·
+    <code>meilensteine.md</code> · <code>entscheidungen.md</code>.
+  </p>
+  <h4>Drei Zwecke, und der dritte ist der ungewöhnliche</h4>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>Lesbar bleiben</strong></td>
+        <td class="muted">Was hier steht, soll auch ohne dieses Programm zu
+          lesen sein. Eine Datenbankdatei ist das nicht.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Sichern</strong></td>
+        <td class="muted">Die erste der beiden Sicherungen vor dem Löschen
+          und vor der Werkseinstellung.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Versionsgeschichte</strong></td>
+        <td class="muted">Wer den Ausgabeort in ein Git-Repository legt,
+          bekommt eine Geschichte des Bestands — <strong>wer wann was
+          geändert hat</strong>, ohne dass dieses Programm etwas davon
+          mitschreiben müsste.</td>
+      </tr>
+    </tbody>
+  </table>
+  <h4>Zweimal ausgeben ergibt zweimal dasselbe</h4>
+  <p class="hint">
+    <strong>Bei unverändertem Bestand ist die Ausgabe byteweise
+    dieselbe.</strong> Keine Zeitstempel im Kopf, feste Sortierung — sonst
+    erzeugte jeder Lauf im Repository einen Unterschied über alles, und die
+    Geschichte wäre wertlos. Die Zeile <em>Stand der Ausgabe</em> baut
+    deshalb auf, was ausgegeben würde, und vergleicht es mit dem, was auf
+    der Platte liegt: <strong>verglichen wird der Inhalt, nicht ein
+    Zähler</strong>.
+  </p>
+  <h4>Zwei Wege hinaus, und einer braucht keine Shell</h4>
+  <p class="muted">
+    <strong><em>Ausgeben</em> schreibt</strong> — an den eingerichteten
+    Ort, damit dort ein Repository mitläuft.
+    <strong><em>Als ZIP herunterladen</em> gibt mit</strong>: dieselben
+    fünf Dateien, gepackt, im Browser.
+  </p>
+  <p class="hint">
+    <strong>Der Download braucht keinen eingerichteten Ausgang und keinen
+    Zugang zur Maschine.</strong> Wer den Server nicht selbst bedienen
+    kann oder darf, kommt trotzdem an seinen Bestand — das ist die
+    eigentliche Zusage hinter <em>der Ausgang bleibt Text</em>.
+  </p>
+  <p class="muted small">
+    Er schreibt dabei nichts: Der eingerichtete Ausgang bleibt unberührt,
+    und <em>Stand der Ausgabe</em> sagt danach dasselbe wie davor. Auch
+    das Paket ist bei unverändertem Bestand byteweise dasselbe — ein ZIP
+    trägt zu jeder Datei eine Uhrzeit, und hier steht überall dieselbe,
+    damit die Zusage nicht an der Stelle bricht, an der man sie am
+    leichtesten prüft.
+  </p>
+
+  <h4>Ausgegeben wird das gewählte Projekt</h4>
+  <p class="muted">
+    Die Auswahl aus der <a href="#projekte-uebersicht">Projektübersicht</a>
+    gilt hier wie überall — der Knopf heißt deshalb nach dem Projekt. Für
+    ein anderes: erst wechseln, dann ausgeben.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-ablageorte">Ablageorte</h3>
+    <p class="zurkarte"><a href="/einrichtung#ablageorte">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Wo liegt was</strong> — die Datenbankdatei, der Ausgabeort, die
+    Anwendung selbst. Mit Zustand: ob es da ist und ob geschrieben werden
+    kann.
+  </p>
+  <p class="muted small">
+    Der Export steht hier und in seiner eigenen Karte, und das ist keine
+    Doppelung: Hier steht, <em>ob es den Ort gibt und ob er beschreibbar
+    ist</em> — dort, <em>was geschrieben wird und ob es noch stimmt</em>.
+  </p>
+  <p class="hint">
+    <strong>Die Datenbankdatei ist das, was gesichert werden muss.</strong>
+    Wer sie kopiert, hat alles; wer nur den Export hat, hat den Text, aber
+    nicht den Bestand.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-einstellungen">Einstellungen</h3>
+    <p class="zurkarte"><a href="/einrichtung#einstellungen">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Was beim Start dieses Dienstes eingestellt war — Adresse, Port,
+    Ausgabeort, Kennzeichnung. <strong>Gelesen und nicht gesetzt:</strong>
+    Geändert wird das dort, wo der Dienst eingerichtet ist, nicht hier.
+  </p>
+  <p class="muted small">
+    Eine Änderung wirkt deshalb erst nach einem Neustart des Dienstes.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-firewall">Firewall</h3>
+    <p class="zurkarte"><a href="/einrichtung#firewall">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Sie sagt, ob auf dieser Maschine eine Firewall läuft, und welche Ports
+    dieses Werkzeug braucht.
+  </p>
+  <h4>Gemeldet wird, nicht geprüft — und schon gar nicht geändert</h4>
+  <p class="hint">
+    <strong>Dieses Programm richtet keine Firewall ein und ändert keine
+    Regel.</strong> Sie gehört der Maschine, auf der es läuft, und damit
+    Ihnen. Ein Werkzeug, das ungefragt Regeln auf einer fremden Maschine
+    setzt, ist das, wovor man Werkzeuge sonst warnt.
+  </p>
+  <p class="muted">
+    Dazu ein technischer Grund: Ohne erweiterte Rechte lässt sich erfahren,
+    <em>ob</em> eine Firewall eingeschaltet ist; welche Regeln gelten,
+    {% if windows %}ist ohne Administratorrechte nicht nachvollziehbar
+    — sie kommen aus mehreren Speichern zusammen{% else %}ist nur für
+    <code>root</code> lesbar{% endif %}. Die Karte sagt deshalb nirgends,
+    ein Port sei offen — sie sagt, welcher offen sein <em>muss</em>.
+  </p>
+  <p class="muted small">
+    {% if windows %}
+    <strong>Hier sind es drei Zeilen für eine Firewall:</strong> Windows
+    führt je Netzart ein eigenes Profil — Domäne, Privat, Öffentlich —,
+    und welches greift, hängt daran, wie das Netz eingestuft ist, in dem
+    diese Maschine steht. <em>Nicht feststellbar</em> heißt: Der Schalter
+    steht nicht dort, wo er stehen sollte; geraten wird an dieser Stelle
+    nicht. Was von Hand gilt, sagt
+    <code>netsh advfirewall show allprofiles</code>. Und weil Windows die
+    Firewall von Haus aus eingeschaltet mitbringt, ist die Regel für den
+    Port dieses Werkzeugs der übliche Fall — nicht die Ausnahme:
+    <code>install.ps1 -Firewallregel</code> legt sie an, wenn man es
+    verlangt.
+    {% else %}
+    <em>Keine Firewall gefunden</em> ist keine Warnung: Im eigenen Netz ist
+    das der übliche Fall. Die Portliste bleibt trotzdem stehen — als
+    Antwort auf die Frage, was zu öffnen wäre, falls sich das ändert. Und
+    die Falle beim Nachsehen von Hand:
+    <code>systemctl is-active ufw</code> meldet <em>active</em>, auch wenn
+    die Firewall abgeschaltet ist. Was gilt, sagt <code>ufw status</code>.
+    {% endif %}
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-fehlerbericht">Fehlerbericht</h3>
+    <p class="zurkarte"><a href="/einrichtung#fehlerbericht">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Sie baut den Text, den ein Fehlerbericht braucht: Fassung,
+    Betriebssystem, Python — die Angaben, nach denen sonst zurückgefragt
+    wird. Zum Ansehen auf der Seite oder als Datei zum Anhängen.
+  </p>
+  <h4>Der zweite Teil ist freiwillig — und er zählt nur</h4>
+  <p class="hint">
+    <strong>Der Block über Ihre Umgebung enthält Zahlen und Pfade: keine
+    Titel, keine Texte, keine Namen.</strong> Das ist der Grund, warum er
+    überhaupt verschickbar ist — in einer Aufgabenverwaltung steht, woran
+    eine Firma arbeitet. Der Haken ist trotzdem freiwillig, und ohne ihn
+    fehlt der Block ganz.
+  </p>
+  <p class="muted small">
+    Sehen Sie sich den Text vor dem Verschicken an. Er steht deshalb auf
+    der Seite und nicht nur in einer Datei.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-verbesserungen">Verbesserungen</h3>
+    <p class="zurkarte"><a href="/einrichtung#verbesserungen">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Wohin ein Vorschlag geht und was hineingehört: was Sie tun wollten, was
+    stattdessen passierte, und woran Sie es gemerkt haben.
+  </p>
+  <p class="muted small">
+    <strong>Nach neuen Fassungen wird nicht gesucht</strong>, und das steht
+    auch auf der Karte: Es gibt noch kein öffentliches Repository, bei dem
+    man fragen könnte. Ein Knopf, der ins Leere fragt, wäre schlimmer als
+    der Satz.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-werkseinstellung">Werkseinstellung</h3>
+    <p class="zurkarte"><a href="/einrichtung#werkseinstellung">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    Sie setzt <strong>das gewählte Projekt</strong> auf den Zustand zurück,
+    in dem es angelegt wurde: Sammlung, Aufgaben, Meilensteine,
+    Entscheidungen und Bereiche sind danach weg. <strong>Was bleibt, ist
+    das Projekt selbst</strong> — Name, Beschreibung, Vision. Das ist der
+    ganze Unterschied zum <a href="#projekte-angaben">Löschen</a>. Die
+    anderen Projekte bleiben unberührt.
+  </p>
+  <h4>Sie bietet den Export an, bevor sie fragt</h4>
+  <p class="hint">
+    <strong>Ein Abbild holt man erneut, einen eingetragenen Gedanken
+    nicht.</strong> Deshalb steht über der Frage, ob die letzte Ausgabe noch
+    stimmt — und wenn nicht, in wie vielen Dateien sie abweicht. Daneben
+    steht <em>Ohne Export weiter</em>: ein Ausgang, kein Zwang.
+  </p>
+  <h4>Das Losungswort ist der Projektname</h4>
+  <p class="muted">
+    Nicht das Wort <em>Löschen</em>. <strong>Ein zerstörender Knopf trifft
+    hier ein Ziel, das nirgends im Formular steht, sondern oben im
+    Band</strong> — wer an Projekt A denkt und dort steht B, verliert die
+    Arbeit von Wochen im falschen Projekt. Ein festes Wort bestätigt nur,
+    dass man gelesen hat, dass gelöscht wird; der Name bestätigt,
+    <strong>welches</strong>.
+  </p>
+  <p class="muted small">
+    Das Feld steht leer da und trägt den Namen nur als grauen Hinweis. Wäre
+    es vorbelegt, genügte ein Druck auf die Eingabetaste — dann könnte man
+    die Abfrage auch weglassen.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- History                                                            -->
+<!-- ================================================================= -->
+<section id="history" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>History</h2>
+    <p class="zumregister"><a href="/history">Zum Register &rarr;</a></p>
+  </header>
+  <p class="muted">
+    <strong>Die Rückschau — der einzige Reiter, der nur zeigt.</strong>
+    Hier wird nichts eingetragen und nichts geändert: Jede Zeile fällt aus
+    den fünf Registern ab. Drei Ansichten, weil es drei verschiedene Fragen
+    sind, und derselbe Umschalter wie unter Sammlung.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="history-strasse">Die Straße</h3>
+    <p class="zurkarte"><a href="/history#strasse">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Wie sind wir hierhergekommen?</strong> Eine senkrechte Linie
+    mit einem Stein je abgenommenem Meilenstein — der letzte Punkt ist
+    offen und heißt <em>hier</em>.
+  </p>
+  <h4>Was auf einem Stein steht</h4>
+  <p class="muted">
+    <strong>Dauer und was dazwischenkam, sonst nichts.</strong> Beides
+    fällt ab: die Dauer aus den zwei Daten, die Umwege aus dem, was notiert
+    wurde, als es passierte. Ein verworfener Stein steht nicht auf der
+    Straße — er wurde nicht abgenommen, er fällt weg.
+  </p>
+  <p class="muted small">
+    Kein Diagramm aus Strichen und Kreisen: Das kann eine Textdatei nicht
+    anders, eine Seite schon. Dieselbe Auskunft, lesbar in jeder
+    Fensterbreite und ohne Zeichensalat beim Vorlesen.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="history-quittung">Quittungsbuch</h3>
+    <p class="zurkarte"><a href="/history?ansicht=quittung#quittungsbuch">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Was ist wann fertig geworden?</strong> Eine Zeile je Abschluss,
+    mit Kennung, Bezeichnung, Art des Abschlusses, den beiden Daten und der
+    Dauer.
+  </p>
+  <h4>Was hier nicht drinsteht</h4>
+  <p class="hint">
+    <strong>Ein Eintrag der Sammlung, aus dem eine Aufgabe wurde, bekommt
+    keine Zeile</strong> — es ist nicht fertig, es zieht um. Seine Zeile
+    schreibt die Aufgabe, wenn sie fertig ist. Dasselbe gilt für eine
+    Aufgabe, die einem Meilenstein zugeordnet wurde.
+    <em>Verworfen</em> bekommt dagegen eine Zeile: Das ist ein Ende.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="history-archiv">Archiv</h3>
+    <p class="zurkarte"><a href="/history?ansicht=archiv#archiv">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Was stand da im Wortlaut?</strong> Jeder abgeschlossene Eintrag
+    vollständig, so wie er war — mit allen Feldern, den Häkchenlisten und
+    dem, was dazwischenkam.
+  </p>
+  <h4>Es steht mehr darin als im Quittungsbuch</h4>
+  <p class="muted">
+    <strong>Das Archiv fragt nicht, ob etwas fertig wurde, sondern was
+    drinstand.</strong> Ein Eintrag, der zur Aufgabe wurde, steht deshalb
+    hier — und nicht im Quittungsbuch.
+  </p>
+  <h4>Hier gibt es keine Bedienelemente</h4>
+  <p class="muted">
+    <strong>Ein Kästchen, das nichts tut, ist schlimmer als keines.</strong>
+    Der Haken ist hier ein Zeichen, kein Schalter; die Abnahme behält ihren
+    Rahmen und verliert die Füllung.
+  </p>
+  <p class="hint">
+    <strong>Es gibt keinen Weg zurück.</strong> Ein versehentlich
+    abgeschlossener Eintrag lässt sich hier nicht wiedereröffnen —
+    herausholen ginge nur an der Ablage selbst. Das ist bewusst
+    aufgeschoben und nicht vergessen: <em>Wiedereröffnen</em> wäre der
+    einzige Knopf auf diesem Reiter, der schreibt.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Server Health                                                      -->
+<!-- ================================================================= -->
+<section id="serverhealth" class="kapitel">
+  <header class="kapitelkopf">
+    <h2>Server Health</h2>
+    <p class="zumregister"><a href="/serverhealth">Zum Register &rarr;</a></p>
+  </header>
+  <p class="muted">
+    <strong>Die Maschine, auf der das hier läuft</strong> — nicht der
+    Bestand. Zwei Karten, und beide stehen unabhängig vom gewählten
+    Projekt da.
+  </p>
+  <p class="muted small">
+    <strong>Der Reiter steht ganz hinten, und das ist eine Entscheidung.</strong>
+    In MARLEI Boot steht er vorn: Dort <em>ist</em> der Server das
+    Produkt. Hier ist er Unterbau — niemand öffnet eine
+    Aufgabenverwaltung, um die Prozessorlast zu sehen.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="serverhealth-auslastung">Auslastung</h3>
+    <p class="zurkarte"><a href="/serverhealth#auslastung">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Was tut der Server gerade?</strong> Prozessor, Last,
+    Speicherbelegung und Netzdurchsatz — alles
+    {% if windows %}vom Kernel erfragt{% else %}aus <code>/proc</code>{% endif %},
+    ohne Zusatzpakete und ohne besondere Rechte. Aktualisiert alle fünf
+    Sekunden.
+  </p>
+  {% if windows %}
+  <h4>Eine Kachel fehlt hier, und sie kommt nicht wieder</h4>
+  <p class="muted">
+    <strong>Die Last gibt es unter Windows nicht.</strong> Das ist kein
+    fehlender Wert, sondern ein Begriff, den dieses System nicht führt —
+    kein Lastmittel über 1, 5 und 15 Minuten, auch nicht unter anderem
+    Namen. <em>Es steht deshalb keine Zahl da, statt einer geschätzten.</em>
+    Die Anzahl der Kerne, die in ihrer Unterzeile stand, finden Sie unter
+    <a href="#serverhealth-serverdetails">Serverdetails</a>.
+  </p>
+  {% endif %}
+  <h4>Die Zeile darunter meint diesen Dienst, nicht die Maschine</h4>
+  <p class="muted">
+    <em>„Dieser Dienst läuft seit 3 Stunden und belegt 84 MB
+    Arbeitsspeicher.“</em> Auf einer Maschine, die sonst im Leerlauf
+    steht, sagt die Prozessorlast wenig darüber, ob sie für diesen Dienst
+    reicht — <strong>sein eigener Verbrauch sagt es.</strong>
+  </p>
+  <p class="hint">
+    <strong>Und die Betriebszeit beantwortet die erste Frage jeder
+    Fehlersuche:</strong> Läuft er überhaupt noch, oder ist er
+    zwischendurch neu gestartet? Steht darüber die <em>Laufzeit</em> der
+    Maschine (unter <a href="#serverhealth-serverdetails">Serverdetails</a>)
+    und ist sie deutlich länger, hat sich der Dienst neu gestartet — und
+    das ohne Ihr Zutun.
+  </p>
+  <p class="muted small">
+    Steht dort <em>Auslastung nicht abfragbar</em>, ist keine Quelle
+    erreichbar —
+    {% if windows %}der Kernel hat auf die Frage nicht geantwortet{% else %}<code>/proc</code>
+    ist von hier aus nicht lesbar{% endif %}. Das sollte nicht vorkommen.
+    <strong>Jede Zahl fehlt dann, statt geschätzt zu werden.</strong>
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="serverhealth-serverdetails">Serverdetails</h3>
+    <p class="zurkarte"><a href="/serverhealth#serverdetails">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Worauf dieser Server läuft</strong> — Distribution, Kernel,
+    Architektur, Prozessorkerne, Virtualisierung, Laufzeit, Python und
+    SQLite. Angaben, für die man sich sonst
+    {% if windows %}an der Maschine{% else %}per SSH{% endif %} anmelden
+    müsste.
+  </p>
+  {% if windows %}
+  <p class="muted small">
+    <strong>Die Zeile <em>Distribution</em> heißt auch hier so</strong>,
+    obwohl Windows keine hat: Sie beantwortet dieselbe Frage — welches
+    System ist das genau —, und zwei Fehlerberichte mit verschiedenen
+    Zeilennamen lassen sich nicht nebeneinanderlegen. <em>Und die Zeile
+    <code>nginx</code> sagt hier, dass keiner vorgesehen ist:</em> Unter
+    Windows liefert die Anwendung die Oberfläche selbst aus. Eine Zeile,
+    die das sagt, ist mehr wert als eine fehlende, die jemand sucht.
+  </p>
+  {% endif %}
+  <h4>Was mit welcher Version läuft</h4>
+  <p class="muted">
+    Der zweite Block nennt die Version, nicht den Zustand.
+    <strong>Sie ist die Angabe, ohne die eine fremde Fehlermeldung nicht
+    einzuordnen ist:</strong> Eine Meldung aus dem Innern von FastAPI
+    sagt ohne Versionsnummer nichts, und die Rückfrage danach kostet
+    einen Tag.
+  </p>
+  <p class="muted small">
+    <code>marlei-tasks</code> ist keine Paketversion, sondern der Stand,
+    den <code>install.sh</code> gestempelt hat — derselbe, der in der
+    Fußzeile jeder Seite steht.
+  </p>
+  <h4>Warum hier keine Paketliste steht</h4>
+  <p class="hint">
+    <strong>Ein Kennwort ist keine Festung.</strong> Es kann leer
+    bleiben, und es geht über http unverschlüsselt durchs Netz. Jede Zeile
+    mehr wäre für jeden, der hineinkommt, eine Zeile mehr Einkaufsliste. Aufgenommen
+    ist, was der <a href="#einrichtung-fehlerbericht">Fehlerbericht</a>
+    braucht — und sonst nichts.
+  </p>
+  <p class="muted small">
+    Dieselben Angaben stehen im Fehlerbericht, und sie kommen aus
+    derselben Quelle: Zwei Quellen liefen auseinander, und dann nennt die
+    Mail einen anderen Kernel als die Seite, die Sie gerade vor sich
+    haben. Die Karte wird beim Aufbau der Seite gelesen und dann eine
+    Minute lang nicht wieder — Kernel und Paketversionen ändern sich
+    zwischen zwei Aufrufen nicht.
+  </p>
+</section>
+
+
+<!-- ================================================================= -->
+<!-- Häufige Fragen                                                     -->
+<!-- ================================================================= -->
+<section id="faq" class="kapitel">
+  <h2>Häufige Fragen</h2>
+  <p class="muted">
+    Fragen, die sich beim Bedienen stellen — mit der Stelle, an der die
+    Antwort ausführlich steht.
+  </p>
+
+  <details class="frage">
+    <summary>Auf Sammlung oder Aufgaben steht nichts — nur ein Hinweis</summary>
+    <p class="muted">
+      Dann ist <strong>kein Projekt gewählt</strong>. Die vier Register
+      hängen an der Auswahl aus der
+      <a href="#projekte-uebersicht">Projektübersicht</a>. Das passiert
+      auch, wenn das zuletzt gewählte Projekt inzwischen gelöscht wurde.
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Ich habe in das falsche Projekt eingetragen</summary>
+    <p class="muted">
+      <strong>Verschieben lässt sich ein Eintrag nicht</strong> — die
+      Kennung gehört dem Projekt, in dem sie vergeben wurde. Der Weg ist:
+      im richtigen Projekt neu eintragen und den falschen Eintrag
+      <em>verwerfen</em>. Er steht danach im
+      <a href="#history-archiv">Archiv</a>, im Wortlaut, und ist nicht
+      verloren.
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Die Kennungen springen — B-003, B-007, B-012</summary>
+    <p class="muted">
+      <strong>Das ist kein Verlust.</strong> Die Lücken sind die Einträge
+      der anderen Projekte: Es gibt eine Zählung je Art und nicht eine je
+      Art und Projekt. Der Grund steht unter
+      <a href="#ueberall-kennungen">Kennungen zählen über alle
+      Projekte</a>.
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Ich kann keine Aufgabe anlegen — es fehlt die Abnahme</summary>
+    <p class="muted">
+      <strong>Das ist die einzige Sperre in diesem Werkzeug</strong>, und
+      sie ist Absicht: <em>Lässt sich nicht beschreiben, woran man sie
+      fertig erkennt, ist es keine Aufgabe.</em> Zwei Zeilen genügen — die
+      Vorgabe ist, dass es in dreißig Sekunden zu tippen sein muss. Und
+      wenn es das wirklich nicht ist, gibt es den zweiten Ausgang:
+      <em>zurück in die Sammlung</em>. Siehe
+      <a href="#aufgaben-neu">Neue Aufgabe</a>.
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Der Knopf „Erledigt“ ist grau, obwohl alles abgehakt ist</summary>
+    <p class="muted">
+      Dann ist die <strong>Arbeitsliste</strong> durch, aber die
+      <strong>Abnahme</strong> nicht. Die beiden messen Verschiedenes: die
+      eine den Fortschritt, die andere die Fertigkeit. Beim Meilenstein ist
+      es dasselbe — <em>Abnehmen</em> bleibt grau, solange eine
+      zugeordnete Aufgabe offen ist.
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Ein Eintrag ist verschwunden</summary>
+    <p class="muted">
+      Ein Eintrag mit gesetztem Abschluss zieht ins
+      <a href="#history-archiv">Archiv</a> — vollständig und im Wortlaut.
+      <strong>Zurückholen kann man ihn hier nicht</strong>; das ist bewusst
+      aufgeschoben. Bei den Meilensteinen ist es anders: Dort zeigt die
+      Liste nur die offenen, und der Filter in der Kopfzeile holt die
+      anderen dazu.
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Wie lege ich einen neuen Bereich an?</summary>
+    <p class="muted">
+      Beim Projekt, in der Karte <a href="#projekte-angaben">Projekte</a>.
+      Die Bereiche sind je Projekt eine andere Liste — sie beschreiben den
+      Gegenstand, nicht die Art. <strong>Ein Bereich, an dem Einträge
+      hängen, lässt sich nicht entfernen.</strong>
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Wo bleibt die Entscheidung, wenn ihr Eintrag ins Archiv zieht?</summary>
+    <p class="muted">
+      <strong>Sie bleibt stehen.</strong> Das tut kein anderes Register:
+      Eine Entscheidung überlebt das, wozu sie gehört — sonst wäre die
+      Begründung genau dann weg, wenn jemand in einem Jahr fragt, warum es
+      so ist. Der bezogene Eintrag wird dann als abgeschlossen
+      ausgewiesen.
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Wie sichere ich meine Daten?</summary>
+    <p class="muted">
+      Zwei Dinge, und sie sind nicht dasselbe: <strong>Die Datenbankdatei
+      kopieren</strong> — ihr Pfad steht unter
+      <a href="#einrichtung-ablageorte">Ablageorte</a> — sichert alles.
+      Der <a href="#einrichtung-export">Export</a> schreibt den Bestand
+      zusätzlich als Text weg, lesbar ohne dieses Programm und geeignet
+      für ein Repository.
+    </p>
+  </details>
+
+  <details class="frage">
+    <summary>Kann jemand mit mir zusammen daran arbeiten?</summary>
+    <p class="muted">
+      <strong>Nein, und das ist keine Lücke, sondern die Grenze dieser
+      Fassung.</strong> Sie ist für einen Menschen gebaut: ein Kennwort,
+      aber keine Benutzer, keine Rechte, keine Zuweisung. Mehrere Projekte sind nicht mehrere
+      Menschen. Wer gleichzeitig schreibt, gehört in eine andere Fassung —
+      und die gibt es heute nicht.
+    </p>
+  </details>
+</section>
+
+{% endblock %}

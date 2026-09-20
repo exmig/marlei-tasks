@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% block title %}History &mdash; MARLEI Tasks{% endblock %}
+
+{# Der sechste gebaute Reiter -- und der einzige, der nur zeigt.
+
+   DREI ANSICHTEN, UND SIE SIND DIE DREI MAPPENDATEIEN.
+   02-roadmap (4 %) · 06-erledigt (6 %) · 07-archiv (43 %) -- zusammen
+   53 % des Bestands. Sie beantworten drei verschiedene Fragen:
+
+     Strasse        Wie sind wir hierhergekommen?
+     Quittungsbuch  Was ist wann fertig geworden?
+     Archiv         Was stand da im Wortlaut?
+
+   HIER WIRD NICHTS EINGETRAGEN. Jede Zeile faellt aus den fuenf
+   Registern ab; es gibt auf diesem Reiter keine einzige POST-Route.
+
+   Warum so: docs/aufbau.md, Abschnitt 1. #}
+{% block content %}
+
+{% macro abschlussabzeichen(a) -%}
+<span class="badge {{ 'ok' if a == 'erledigt' else 'teils' }}">{{ a }}</span>
+{%- endmacro %}
+
+{% macro menge(n, eins, viele) -%}
+{{ n }} {{ eins if n == 1 else viele }}
+{%- endmacro %}
+
+{% macro tage(n) -%}
+{% if n is none %}—{% elif n == 0 %}am selben Tag{% elif n == 1 %}1 Tag{% else %}{{ n }} Tage{% endif %}
+{%- endmacro %}
+
+{% if not projekt %}
+<section>
+  <div class="kartenkopf"><h2>History</h2></div>
+  <p class="hint">
+    <strong>Es ist kein Projekt gewählt.</strong> Die Rückschau gehört
+    einem Projekt — ohne Auswahl gäbe es keine Straße, auf die man
+    zurücksieht.
+  </p>
+  <p class="kartenfuss">
+    Gewählt wird auf dem Reiter <a href="/">Projekte</a>, in der
+    Projektübersicht.
+  </p>
+</section>
+
+{% else %}
+
+<div class="row ansichten">
+  <a class="knopf {{ 'gewaehlt' if ansicht == 'strasse' }}"
+     href="/history?ansicht=strasse">Straße</a>
+  <a class="knopf {{ 'gewaehlt' if ansicht == 'quittung' }}"
+     href="/history?ansicht=quittung">Quittungsbuch</a>
+  <a class="knopf {{ 'gewaehlt' if ansicht == 'archiv' }}"
+     href="/history?ansicht=archiv">Archiv</a>
+  <span class="muted small">
+    {% if ansicht == 'strasse' %}Wie sind wir hierhergekommen — Dauer und was dazwischenkam.
+    {% elif ansicht == 'quittung' %}Was ist wann fertig geworden — eine Zeile je Eintrag.
+    {% else %}Was stand da im Wortlaut — der ganze Eintrag, unverändert.{% endif %}
+  </span>
+</div>
+
+{# HIER WIRD NICHTS EINGETRAGEN, und das steht ueber allem: Es gilt fuer
+   den ganzen Reiter und nicht fuer eine Karte. #}
+<p class="hint nurschau">
+  <strong>Hier wird nichts eingetragen.</strong> Alles auf diesem Reiter
+  fällt aus den fünf Registern ab — die Straße aus den abgenommenen
+  Meilensteinen, das Quittungsbuch aus den Abschlüssen, das Archiv aus
+  dem, was dort steht. In der Mappe sind das drei Dateien, die von Hand
+  gepflegt werden.
+</p>
+
+{% if ansicht == 'strasse' %}
+<section id="strasse">
+  <div class="kartenkopf">
+    <h2>Die Straße</h2>
+    <span class="muted small" role="status">
+      {{ menge(zahlen.steine, "Stein", "Steine") }}{% if zahlen.tage %} ·
+      {{ menge(zahlen.tage, "Tag", "Tage") }}{% endif %}</span>
+    <a class="kartenhilfe" href="/hilfe#history-strasse"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {# KEIN ASCII-DIAGRAMM. Die Mappe zeichnet die Strasse mit Strichen und
+     Kreisen, weil eine Textdatei nichts anderes kann. Hier ist es eine
+     senkrechte Linie mit Marken -- dieselbe Auskunft, lesbar in jeder
+     Fensterbreite und ohne Zeichensalat beim Vorlesen. #}
+  <ol class="strasse">
+    {% for s in steine %}
+    <li class="stein">
+      <div class="steinmarke"><code>{{ s.kennung }}</code></div>
+      <div class="steininhalt">
+        <h3>{{ s.benennung }}</h3>
+        <p class="dauer">{{ s.eingetragen_deutsch }} →
+          {{ s.abnahme_deutsch }} · <strong>{{ tage(s.dauer) }}</strong>
+          {% if s.aufgaben %} ·
+          {{ menge(s.aufgaben | length, "Aufgabe", "Aufgaben") }}{% endif %}</p>
+        {% if s.dazwischen %}
+        <ul class="umwege">
+          {% for d in s.dazwischen %}
+          <li><span class="muted small nowrap">{{ d.datum_deutsch }}</span>
+            <span>{{ d.text }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted small">Kein Umweg — der gerade Weg.</p>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+    <li class="stein hier">
+      <div class="steinmarke"><span class="jetzt">hier</span></div>
+      <div class="steininhalt">
+        <h3>{{ "Vor uns" if offene else "Kein offener Meilenstein" }}</h3>
+        {% if offene %}
+        <p class="muted">
+          {% for m in offene %}
+          <a href="/meilensteine#eintrag-{{ m.id }}"><code>{{ m.kennung }}</code>
+            {{ m.benennung }}</a>{% if not loop.last %} · {% endif %}
+          {% endfor %}
+        </p>
+        {% else %}
+        <p class="muted small">
+          Angelegt wird einer unter
+          <a href="/meilensteine">Meilensteine</a>.
+        </p>
+        {% endif %}
+      </div>
+    </li>
+  </ol>
+
+  {% if not steine %}
+  <p class="muted">
+    Noch kein Stein abgenommen — die Straße fängt an, sobald der erste
+    Meilenstein steht.
+  </p>
+  {% endif %}
+
+  <p class="kartenfuss">
+    <strong>Auf den Stein kommt, was getan wurde — nicht, was vorhatte,
+    wer ihn eintrug.</strong> Beschreibung, Bedingung und Abnahme stehen
+    im <a href="/history?ansicht=archiv">Archiv</a>; hier stehen Dauer
+    und was dazwischenkam. Beides fällt ab: die Dauer aus den zwei Daten,
+    die Umwege aus dem, was notiert wurde, als es passierte.
+  </p>
+</section>
+
+{% elif ansicht == 'quittung' %}
+<section id="quittungsbuch">
+  <div class="kartenkopf">
+    <h2>Quittungsbuch</h2>
+    <span class="muted small" role="status">
+      {{ menge(quittungen | length, "Zeile", "Zeilen") }}</span>
+    <form method="get" action="/history" class="inline">
+      <input type="hidden" name="ansicht" value="quittung">
+      <input type="search" name="suche" class="kartensuche" value="{{ suche }}"
+             placeholder="Suchen…">
+    </form>
+    <a class="kartenhilfe" href="/hilfe#history-quittung"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% if quittungen %}
+  <table class="eng">
+    <thead>
+      <tr>
+        <th>Kennung</th>
+        <th>Bezeichnung</th>
+        <th>Abschluss</th>
+        <th class="nowrap">Eingetragen</th>
+        <th class="nowrap">Fertig</th>
+        <th class="nowrap">Dauer</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for q in quittungen %}
+      <tr>
+        <td><code>{{ q.kennung }}</code></td>
+        <td><a href="/history?ansicht=archiv#eintrag-{{ q.art }}-{{ q.id }}">{{ q.titel }}</a>
+          <div class="muted small">{{ q.register }}</div></td>
+        <td>{{ abschlussabzeichen(q.abschluss) }}</td>
+        <td class="nowrap muted">{{ q.eingetragen_deutsch }}</td>
+        <td class="nowrap muted">{{ q.fertig_deutsch }}</td>
+        <td class="nowrap">{{ tage(q.dauer) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">
+    {% if suche %}Nichts gefunden zu <strong>{{ suche }}</strong> —
+      <a href="/history?ansicht=quittung">alle zeigen</a>.
+    {% else %}Noch nichts abgeschlossen.{% endif %}
+  </p>
+  {% endif %}
+
+  {# DER UNTERSCHIED, DER LEICHT VERLOREN GEHT. #}
+  <p class="kartenfuss">
+    <strong>Ein Unterschied geht hier leicht verloren:</strong>
+    <em>verworfen</em> bekommt eine Zeile, <em>aufgabe</em> nicht — es
+    ist nicht fertig, es zieht um. Ein Eintrag der Sammlung, aus dem eine
+    Aufgabe wurde, steht deshalb nicht hier; seine Zeile schreibt die
+    Aufgabe, wenn sie fertig ist.
+  </p>
+</section>
+
+{% else %}
+<section id="archiv">
+  <div class="kartenkopf">
+    <h2>Archiv</h2>
+    <span class="muted small" role="status">
+      {{ menge(archiv | length, "Eintrag", "Einträge") }}</span>
+    <div class="row filter">
+      <a class="knopf {{ 'gewaehlt' if not art }}"
+         href="/history?ansicht=archiv">alle {{ zahlen.archiv }}</a>
+      <a class="knopf {{ 'gewaehlt' if art == 'B' }}"
+         href="/history?ansicht=archiv&amp;art=B">Sammlung {{ zahlen.archiv_je_art.B }}</a>
+      <a class="knopf {{ 'gewaehlt' if art == 'A' }}"
+         href="/history?ansicht=archiv&amp;art=A">Aufgaben {{ zahlen.archiv_je_art.A }}</a>
+      <a class="knopf {{ 'gewaehlt' if art == 'M' }}"
+         href="/history?ansicht=archiv&amp;art=M">Meilensteine {{ zahlen.archiv_je_art.M }}</a>
+    </div>
+    <form method="get" action="/history" class="inline">
+      <input type="hidden" name="ansicht" value="archiv">
+      {% if art %}<input type="hidden" name="art" value="{{ art }}">{% endif %}
+      <input type="search" name="suche" class="kartensuche" value="{{ suche }}"
+             placeholder="Suchen…">
+    </form>
+    <a class="kartenhilfe" href="/hilfe#history-archiv"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% for e in archiv %}
+  {# HIER WIRD NICHTS GEAENDERT: keine Felder, keine Kaestchen. Der Haken
+     ist ein Zeichen, kein Bedienelement -- ein Kaestchen, das man
+     anklicken kann und das nichts tut, ist schlimmer als keines. #}
+  <details class="eintragskarte" id="eintrag-{{ e.art }}-{{ e.id }}">
+    <summary>
+      <div class="bezeichnung">
+        <code class="projektkennung">{{ e.kennung }}</code>
+        <span class="titelzeile">{{ e.titel }}</span>
+      </div>
+      <span class="badge teils">{{ e.register }}</span>
+      {% if e.satz.bereich is defined %}
+      <span class="badge bereich">{{ e.satz.bereich }}</span>
+      {% endif %}
+      {{ abschlussabzeichen(e.abschluss) }}
+    </summary>
+
+    <dl class="angaben">
+      {% if e.art == 'B' %}
+      {% if e.satz.beschreibung %}
+      <div><dt>Beschreibung</dt>
+        <dd class="weit umbrechen">{{ e.satz.beschreibung }}</dd></div>
+      {% endif %}
+      {% if e.satz.schaerfen %}
+      <div><dt>Beim Schärfen</dt>
+        <dd class="weit umbrechen">{{ e.satz.schaerfen }}</dd></div>
+      {% endif %}
+      <div><dt>Kategorie</dt><dd>{{ e.satz.kategorie }} ·
+        Priorität {{ e.satz.prio }}</dd></div>
+      {% if e.satz.ursprung %}
+      <div><dt>Ursprung</dt>
+        <dd class="weit umbrechen">{{ e.satz.ursprung }}</dd></div>
+      {% endif %}
+
+      {% elif e.art == 'A' %}
+      {% if e.satz.dahinter %}
+      <div><dt>Was dahintersteckt</dt>
+        <dd class="weit umbrechen">{{ e.satz.dahinter }}</dd></div>
+      {% endif %}
+      {% if e.satz.ursprung %}
+      <div><dt>Ursprung</dt><dd class="weit">
+        {% for u in e.satz.ursprung %}
+        <a href="/history?ansicht=archiv#eintrag-B-{{ u.id }}"><code>{{ u.kennung }}</code>
+          {{ u.titel }}</a>{% if not loop.last %} · {% endif %}
+        {% endfor %}</dd></div>
+      {% endif %}
+      {% if e.satz.bedacht %}
+      <div><dt>Was bedacht werden musste</dt>
+        <dd class="weit umbrechen">{{ e.satz.bedacht }}</dd></div>
+      {% endif %}
+      {% if e.satz.ergebnis %}
+      <div><dt>Was das Ergebnis ist</dt>
+        <dd class="weit umbrechen">{{ e.satz.ergebnis }}</dd></div>
+      {% endif %}
+      {% if e.satz.meilenstein %}
+      <div><dt>Meilenstein</dt><dd>
+        <a href="/history?ansicht=archiv#eintrag-M-{{ e.satz.meilenstein.id }}"><code>{{ e.satz.meilenstein.kennung }}</code>
+          {{ e.satz.meilenstein.benennung }}</a></dd></div>
+      {% endif %}
+
+      {% else %}
+      {% if e.satz.beschreibung %}
+      <div><dt>Beschreibung</dt>
+        <dd class="weit umbrechen">{{ e.satz.beschreibung }}</dd></div>
+      {% endif %}
+      <div><dt>Bedingung</dt>
+        <dd class="weit umbrechen">{{ e.satz.bedingung }}</dd></div>
+      {% if e.satz.abnahme_kriterium %}
+      <div><dt>Abnahmekriterium</dt>
+        <dd class="weit umbrechen">{{ e.satz.abnahme_kriterium }}</dd></div>
+      {% endif %}
+      <div><dt>Nachbereitung</dt>
+        <dd class="weit umbrechen">{{ e.satz.nachbereitung }}</dd></div>
+      {% if e.satz.aufgaben %}
+      <div><dt>Aufgaben</dt><dd class="weit">
+        {% for a in e.satz.aufgaben %}
+        <a href="/history?ansicht=archiv#eintrag-A-{{ a.id }}"><code>{{ a.kennung }}</code>
+          {{ a.titel }}</a>{% if not loop.last %} · {% endif %}
+        {% endfor %}</dd></div>
+      {% endif %}
+      {% endif %}
+
+      <div><dt>Eingetragen am</dt><dd>{{ e.satz.eingetragen_deutsch }}</dd></div>
+      <div><dt>{{ "Erledigt" if e.abschluss == 'erledigt' else "Abgeschlossen" }} am</dt>
+        <dd>{{ e.fertig_deutsch }}</dd></div>
+    </dl>
+
+    {% if e.art == 'A' %}
+    {% if e.satz.arbeit %}
+    <div class="archivliste">
+      <h3>Was getan werden musste
+        <span class="muted small">— {{ e.satz.arbeit_fertig }} von
+          {{ e.satz.arbeit | length }}</span></h3>
+      <ul class="haekchen schau">
+        {% for p in e.satz.arbeit %}
+        <li><span class="hakenzeichen">{{ "✓" if p.erledigt else "—" }}</span>
+          <span>{{ p.text }}</span>
+          {% if p.erledigt %}
+          <span class="muted small">erledigt am {{ p.erledigt_deutsch }}</span>
+          {% endif %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    <div class="abnahme schau">
+      <h3>Wann es abgenommen war
+        <span class="badge {{ 'ok' if e.satz.abnehmbar else 'teils' }}">{{ e.satz.abnahme_fertig }} von
+          {{ e.satz.abnahme | length }}</span></h3>
+      <ul class="haekchen schau">
+        {% for p in e.satz.abnahme %}
+        <li><span class="hakenzeichen">{{ "✓" if p.erledigt else "—" }}</span>
+          <span>{{ p.text }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% elif e.art == 'M' and e.satz.dazwischen %}
+    <div class="archivliste">
+      <h3>Was dazwischenkam
+        <span class="muted small">—
+          {{ menge(e.satz.dazwischen | length, "Umweg", "Umwege") }}</span></h3>
+      <ul class="dazwischenliste">
+        {% for d in e.satz.dazwischen %}
+        <li><span class="muted small nowrap">{{ d.datum_deutsch }}</span>
+          <span>{{ d.text }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <p class="kartenfuss">
+      <strong>Hier wird nichts geändert.</strong> Ein Archiv, in dem man
+      nachträglich schreiben kann, ist keines — was hier steht, stand so
+      da, als es abgeschlossen wurde.
+    </p>
+  </details>
+  {% else %}
+  <p class="muted">
+    {% if suche %}Nichts gefunden zu <strong>{{ suche }}</strong> —
+      <a href="/history?ansicht=archiv">alle zeigen</a>.
+    {% elif art %}In diesem Register ist noch nichts abgeschlossen —
+      <a href="/history?ansicht=archiv">alle zeigen</a>.
+    {% else %}Noch nichts abgeschlossen. Das Archiv füllt sich von
+      selbst, sobald ein Eintrag einen Abschluss bekommt.{% endif %}
+  </p>
+  {% endfor %}
+
+  <p class="kartenfuss">
+    In einer Datenbank verschwindet nichts — das Archiv ist deshalb keine
+    zweite Ablage, sondern dieselbe von der anderen Seite gesehen. Die
+    Register davor zeigen, was offen ist; hier steht, was abgeschlossen
+    wurde.
+  </p>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

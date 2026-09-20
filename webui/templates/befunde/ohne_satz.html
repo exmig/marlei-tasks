@@ -1,0 +1,16 @@
+{# EIN ENTSCHLUSS OHNE SATZ IST KEINER -- und auch das mahnt nur: Den
+   Satz kann man nachtragen. Bei OFFEN ist dasselbe leere Feld dagegen
+   kein Befund, sondern die Auskunft selbst: Der Weg ist da, der
+   Entschluss steht aus. #}
+<p>
+  In <strong>{{ befund.projekt }}</strong> {{ "steht" if befund.zahl == 1
+  else "stehen" }} {{ befund.zahl }} {{ "Entscheidung" if befund.zahl == 1
+  else "Entscheidungen" }} auf <code>ENTSCHLUSS</code>, ohne dass
+  dabeisteht, <em>was</em> entschieden wurde.
+</p>
+<p>
+  <strong>Der Verlauf sagt, wie gründlich abgewogen wurde — nicht, was
+  gilt.</strong> Wer in einem Jahr nachliest, sucht zuerst das Ergebnis
+  und dann den Weg dorthin. Ohne den Satz muss er ihn aus der Abwägung
+  erraten.
+</p>

@@ -1,0 +1,593 @@
+{% extends "base.html" %}
+{% block title %}Aufgaben &mdash; MARLEI Tasks{% endblock %}
+
+{# Der dritte gebaute Reiter.
+
+   HIER SITZT JEMAND DRAN, und das ist der Unterschied zur Sammlung.
+   Deshalb traegt eine Aufgabe einen Status und ein Topic keinen: Niemand
+   arbeitet an einer losen Beobachtung.
+
+   DAS EINE PFLICHTFELD IST DIE ABNAHME. Sie sperrt beim Anlegen -- eine
+   Aufgabe ohne Abnahme ist keine unvollstaendige Aufgabe, sondern eine
+   Beobachtung mit Kopfzeile. "Was dahintersteckt" mahnt dagegen nur.
+
+   Warum so: docs/aufbau.md, Abschnitt 3, "Die Abnahme sperrt" und "Was
+   dahintersteckt mahnt". #}
+{% block content %}
+
+{% macro statusabzeichen(s, seit) -%}
+<span class="badge {{ {'AKTIV': 'ok', 'PAUSE': 'missing'}.get(s, 'teils') }}">{{ s }}{% if seit and seit != '—' %} seit {{ seit }}{% endif %}</span>
+{%- endmacro %}
+
+{% macro prioabzeichen(p) -%}
+<span class="badge {{ 'teils' if p == '—' else 'prio' }}">{{ p }}</span>
+{%- endmacro %}
+
+{% macro menge(n, eins, viele) -%}
+{{ n }} {{ eins if n == 1 else viele }}
+{%- endmacro %}
+
+{# Die Arbeitsdauer.
+
+   SIE HEISST NICHT "IN ARBEIT SEIT", und das war beim ersten Blick auf
+   die gebaute Seite eine falsche Auskunft: In der Spalte stand "heute"
+   auch neben einer Aufgabe auf PASSIV -- an der sitzt aber ausdruecklich
+   niemand. Gemessen wird, was docs/aufbau.md misst: die Dauer seit dem
+   Eintragen. Ob gerade jemand dransitzt, sagt der Status daneben. #}
+{% macro dauer(n) -%}
+{% if n is none %}—{% elif n == 0 %}heute begonnen{% elif n == 1 %}1 Tag{% else %}{{ n }} Tage{% endif %}
+{%- endmacro %}
+
+{% if not projekt %}
+<section>
+  <div class="kartenkopf"><h2>Aufgaben</h2></div>
+  <p class="hint">
+    <strong>Es ist kein Projekt gewählt.</strong> Eine Aufgabe gehört
+    einem Projekt — ohne Auswahl gäbe es keinen Ort, an dem sie liegt.
+  </p>
+  <p class="kartenfuss">
+    Gewählt wird auf dem Reiter <a href="/">Projekte</a>, in der
+    Projektübersicht.
+  </p>
+</section>
+
+{% else %}
+
+{% set laufend = aufgaben | selectattr("status", "in", ["AKTIV", "PAUSE"]) | list %}
+
+<section id="aufgabenuebersicht">
+  <div class="kartenkopf">
+    <h2>Aufgabenübersicht</h2>
+    {% include "_projektmarke.html" %}
+    <span class="muted small" role="status">
+      {{ menge(aufgaben | length, "Aufgabe", "Aufgaben") }}</span>
+    <a class="kartenhilfe" href="/hilfe#aufgaben-uebersicht"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {# Die Zeile, die die Mappe im Verzeichnis von Hand pflegt. Hier faellt
+     sie ab: Was AKTIV oder PAUSE ist, ist das, woran jemand sitzt. #}
+  {% if laufend %}
+  <p class="inarbeit">
+    <strong>In Arbeit:</strong>
+    {% for a in laufend %}
+    <a href="#eintrag-{{ a.id }}">{{ a.kennung }} {{ a.titel }}</a>
+    {{ statusabzeichen(a.status, a.seit_deutsch) }}{% if not loop.last %} ·{% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+
+  {% if aufgaben %}
+  <table class="eng">
+    <thead>
+      <tr>
+        <th>Kennung</th>
+        <th>Aufgabe</th>
+        <th>Prio</th>
+        <th>Status</th>
+        <th class="nowrap">Arbeitsdauer</th>
+        <th class="nowrap">Abnahme</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in aufgaben %}
+      <tr {% if a.status == 'AKTIV' %}class="laeuft"{% endif %}>
+        <td><code>{{ a.kennung }}</code></td>
+        <td><a href="#eintrag-{{ a.id }}">{{ a.titel }}</a>
+          <div class="muted small">{{ a.bereich }}{% if not a.dahinter.strip() %} ·
+            <span class="warnung">ohne Ursache</span>{% endif %}</div></td>
+        <td>{{ prioabzeichen(a.prio) }}</td>
+        <td>{{ statusabzeichen(a.status, a.seit_deutsch) }}</td>
+        <td class="nowrap">{{ dauer(a.arbeitet_seit) }}</td>
+        {# Zahlen, keine Prozente: Vier Punkte sind vier Punkte, und
+           50 % sagt nicht, ob es zwei von vier oder fuenf von zehn
+           sind. #}
+        <td class="nowrap"><span class="haken {{ 'voll' if a.abnehmbar }}">{{ a.abnahme_fertig }} von {{ a.abnahme | length }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">
+    Noch keine Aufgabe. Der übliche Weg führt über
+    <a href="/sammlung?ansicht=durchsicht">die Durchsicht der Sammlung</a>.
+  </p>
+  {% endif %}
+
+  <p class="kartenfuss">
+    <strong>Eingetragen am misst hier die Arbeitsdauer</strong> — in der
+    Sammlung misst dasselbe Feld die Liegedauer. Zwei Fragen, ein Feld;
+    für die Befunde sind es zwei verschiedene Auswertungen.
+  </p>
+</section>
+
+{% if aufgaben %}
+<section id="aufgaben">
+  <div class="kartenkopf">
+    <h2>Aufgaben</h2>
+    <form method="get" action="/aufgaben" class="inline">
+      <input type="search" name="suche" class="kartensuche" value="{{ suche }}"
+             placeholder="Suchen…"
+             title="Sucht im Titel und in Was dahintersteckt">
+    </form>
+    <a class="kartenhilfe" href="/hilfe#aufgaben-angaben"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% for a in aufgaben %}
+  {# Offen ist, woran gerade jemand sitzt. Eine Liste, in der die Haelfte
+     der Karten aufgeklappt ist, hat keine geschlossene mehr. #}
+  <details class="eintragskarte" id="eintrag-{{ a.id }}"
+           {% if a.status == 'AKTIV' %}open{% endif %}>
+    <summary>
+      <div class="bezeichnung">
+        <code class="projektkennung">{{ a.kennung }}</code>
+        <span class="titelzeile">{{ a.titel }}</span>
+      </div>
+      <span class="badge bereich">{{ a.bereich }}</span>
+      {{ prioabzeichen(a.prio) }}
+      {{ statusabzeichen(a.status, a.seit_deutsch) }}
+      {% if not a.dahinter.strip() %}
+      <span class="badge missing">ohne Ursache</span>
+      {% endif %}
+    </summary>
+
+    <form method="post" action="/aufgaben/speichern" id="form-{{ a.id }}">
+      <input type="hidden" name="id" value="{{ a.id }}">
+      <dl class="angaben">
+        {# TITEL UND BEREICH seit dem 19.09.2026 (B-073) -- vorher liess
+           sich ein Tippfehler im Titel nur beheben, indem man die
+           Aufgabe verwarf und neu anlegte. Als Feld HIER und nicht in
+           der Zusammenfassung: Ein Klick in ein Feld in <summary> klappte
+           die Karte zu. Der Meilenstein macht es mit seiner Benennung
+           genauso. #}
+        <div>
+          <dt><label for="titel-{{ a.id }}">Titel</label></dt>
+          <dd class="weit">
+            <input type="text" id="titel-{{ a.id }}" name="titel"
+                   class="feld" value="{{ a.titel }}" required
+                   autocomplete="off">
+          </dd>
+        </div>
+        <div>
+          <dt><label for="bereich-{{ a.id }}">Bereich</label></dt>
+          <dd>
+            <select id="bereich-{{ a.id }}" name="bereich_id" required>
+              {% for b in projekt.bereiche %}
+              <option value="{{ b.id }}"
+                      {% if b.id == a.bereich_id %}selected{% endif %}>{{ b.wert }}</option>
+              {% endfor %}
+            </select>
+          </dd>
+        </div>
+        {# PFLICHT LAUT REGEL, ABER MAHNEND GEBAUT: Die Ursache kann man
+           nachtragen, sobald man sie versteht -- sperren gehoert zu dem,
+           was nicht nachwachsen kann. Ein leeres Feld wird ein Befund,
+           kein abgewiesenes Formular. #}
+        <div>
+          <dt><label for="dahinter-{{ a.id }}">Was dahintersteckt</label></dt>
+          <dd class="weit">
+            <textarea id="dahinter-{{ a.id }}" name="dahinter" rows="3"
+                      class="feld" data-war="{{ a.dahinter }}"
+                      placeholder="Der Satz, der in keiner der Beobachtungen stand">{{ a.dahinter }}</textarea>
+            {% if not a.dahinter.strip() %}
+            <span class="feldhinweis muted small">
+              <strong>Solange das leer ist, steht die Aufgabe als Befund
+              über der Seite.</strong> Zwei Sätze genügen — die Kernfunktion
+              ist das Zusammenlegen, der Kernwert ist die Ursache.
+            </span>
+            {% endif %}
+          </dd>
+        </div>
+        {% if a.ursprung %}
+        {# DER URSPRUNG IST EIN VERWEIS, KEINE KOPIE. Gespeichert ist die
+           Kennung, der Titel wird beim Anzeigen geholt. In der Mappe
+           kostet dieselbe Regel ein Pruefskript mit 206 Zeilen; hier
+           gibt es keine zweite Fassung, die veralten koennte. #}
+        <div>
+          <dt>Ursprung</dt>
+          <dd class="weit">
+            {% for u in a.ursprung %}
+            <a href="/sammlung?ansicht=eintragen#eintrag-{{ u.id }}"><code>{{ u.kennung }}</code>
+              {{ u.titel }}</a>{% if not loop.last %} · {% endif %}
+            {% endfor %}
+          </dd>
+        </div>
+        {% endif %}
+        <div>
+          <dt><label for="bedacht-{{ a.id }}">Was bedacht werden muss</label></dt>
+          <dd class="weit">
+            <textarea id="bedacht-{{ a.id }}" name="bedacht" rows="2"
+                      class="feld" data-war="{{ a.bedacht }}">{{ a.bedacht }}</textarea>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="ergebnis-{{ a.id }}">Was ist das Ergebnis</label></dt>
+          <dd class="weit">
+            <textarea id="ergebnis-{{ a.id }}" name="ergebnis" rows="2"
+                      class="feld" data-war="{{ a.ergebnis }}"
+                      placeholder="Der Zustand, der danach gilt — in Sätzen, nicht als Liste">{{ a.ergebnis }}</textarea>
+          </dd>
+        </div>
+      </dl>
+
+      {# ---- Liste 1: der FORTSCHRITT --------------------------------
+         Wie weit die Arbeit ist. Schlichte Zeilen mit Datum -- Erledigtes
+         wird nicht geloescht, es bekommt einen Haken und einen Tag. In
+         der Mappe ist das ein Textkniff; hier ist es ein Zustand je
+         Zeile. #}
+      <div class="arbeitsliste">
+        <h3>Was getan werden muss
+          {% if a.arbeit %}
+          <span class="muted small">— {{ a.arbeit_fertig }} von
+            {{ a.arbeit | length }} erledigt</span>
+          {% endif %}
+        </h3>
+        {% if a.arbeit %}
+        <div class="balken"><span
+          style="width: {{ (100 * a.arbeit_fertig / (a.arbeit | length)) | round }}%"></span></div>
+        <ul class="haekchen">
+          {% for p in a.arbeit %}
+          <li>
+            <input type="hidden" name="punkt" value="{{ p.id }}">
+            {# DER TEXT IST EIN FELD, seit dem 19.09.2026 (B-073): Ein
+               Tippfehler liess sich vorher nur beheben, indem man die
+               Zeile wegnahm und neu anlegte -- und dabei ging der Haken
+               verloren. Das Feld sieht aus wie Text, bis man hinzeigt. #}
+            <input type="checkbox" name="haken" value="{{ p.id }}"
+                   aria-label="erledigt" {% if p.erledigt %}checked{% endif %}>
+            <input type="text" name="text:{{ p.id }}" class="zeiletext"
+                   value="{{ p.text }}" required aria-label="Text der Zeile">
+            {% if p.erledigt %}
+            <span class="muted small">erledigt am {{ p.erledigt_deutsch }}</span>
+            {% endif %}
+            <button type="submit" class="weg" form="weg-{{ p.id }}"
+                    title="Zeile wegnehmen" aria-label="Zeile wegnehmen">&times;</button>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted small">Noch keine Zeile — sie wächst beim Arbeiten.</p>
+        {% endif %}
+        {# Das Feld haengt per form="..." an einem Formular ausserhalb der
+           Karte: HTML erlaubt kein Formular im Formular. Enter schickt
+           es ab -- ein Knopf daneben waere der zweite Weg fuer denselben
+           Schritt. #}
+        <input type="text" name="text" class="zeilezu"
+               form="dazu-arbeit-{{ a.id }}"
+               placeholder="Zeile dazu — Enter legt sie an">
+      </div>
+
+      {# ---- Liste 2: die FERTIGKEIT ---------------------------------
+         Woran man sie feststellt. ANDERS GEBAUT, und das ist der Punkt:
+         Nebeneinander saehen zwei gleiche Listen aus wie zweimal
+         dasselbe -- und dann verschwaende die Abnahme als eigenstaendige
+         Sache. Deshalb Rahmen, keine Daten, und ein Satz, der sagt, was
+         sie misst. #}
+      <div class="abnahme">
+        <h3>Wann es abgenommen ist
+          <span class="badge {{ 'ok' if a.abnehmbar else 'teils' }}">{{ a.abnahme_fertig }} von {{ a.abnahme | length }}</span>
+        </h3>
+        <p class="muted small">
+          Die Aufgabe ist fertig, wenn alle Haken hier stehen — nicht,
+          wenn die Liste darüber durch ist. <em>Die eine misst den
+          Fortschritt, diese die Fertigkeit.</em>
+        </p>
+        <ul class="haekchen">
+          {% for p in a.abnahme %}
+          <li>
+            <input type="hidden" name="punkt" value="{{ p.id }}">
+            <input type="checkbox" name="haken" value="{{ p.id }}"
+                   aria-label="abgenommen" {% if p.erledigt %}checked{% endif %}>
+            <input type="text" name="text:{{ p.id }}" class="zeiletext"
+                   value="{{ p.text }}" required aria-label="Text des Punkts">
+            {% if a.abnahme | length > 1 %}
+            <button type="submit" class="weg" form="weg-{{ p.id }}"
+                    title="Punkt wegnehmen" aria-label="Punkt wegnehmen">&times;</button>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        <input type="text" name="text" class="zeilezu"
+               form="dazu-abnahme-{{ a.id }}"
+               placeholder="Punkt dazu — Enter legt ihn an">
+      </div>
+
+      <dl class="angaben">
+        <div>
+          <dt><label for="status-{{ a.id }}">Status</label></dt>
+          <dd>
+            <select id="status-{{ a.id }}" name="status" data-war="{{ a.status }}">
+              {% for s in status %}
+              <option {% if s == a.status %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+            <input type="date" name="status_seit" class="datumsfeld"
+                   value="{{ a.status_seit if a.status_seit != '—' }}"
+                   data-war="{{ a.status_seit }}">
+            <span class="muted small">— mit Datum außer bei
+              <strong>PASSIV</strong>: Da sitzt niemand dran, und dann gibt
+              es kein Seit.</span>
+          </dd>
+        </div>
+        <div>
+          <dt><label for="prio-{{ a.id }}">Priorität</label></dt>
+          <dd>
+            <select id="prio-{{ a.id }}" name="prio" data-war="{{ a.prio }}">
+              {% for p in prios %}
+              <option {% if p == a.prio %}selected{% endif %}>{{ p }}</option>
+              {% endfor %}
+            </select>
+          </dd>
+        </div>
+        {# Bis zum 07.09.2026 stand hier ein Strich mit dem Satz, dass es
+           den Reiter noch nicht gibt. Er ist gebaut, und der Satz ist
+           ersetzt -- so, wie es dort vermerkt war. #}
+        <div>
+          <dt><label for="stein-{{ a.id }}">Meilenstein</label></dt>
+          <dd>
+            {% if steine %}
+            <select id="stein-{{ a.id }}" name="meilenstein_id"
+                    data-war="{{ a.meilenstein_id or '' }}">
+              <option value="">— keinem zugeordnet —</option>
+              {% for m in steine %}
+              <option value="{{ m.id }}"
+                      {% if m.id == a.meilenstein_id %}selected{% endif %}>{{ m.kennung }} {{ m.benennung }}</option>
+              {% endfor %}
+            </select>
+            {% if a.meilenstein %}
+            <a href="/meilensteine#eintrag-{{ a.meilenstein.id }}"
+               class="muted small">— dort ansehen</a>
+            {% endif %}
+            {% else %}
+            <span class="muted">— <span class="small">noch kein
+              Meilenstein angelegt; das geht unter
+              <a href="/meilensteine">Meilensteine</a></span></span>
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt>Eingetragen am</dt>
+          <dd>{{ a.eingetragen_deutsch }}
+            <span class="muted small">— Arbeitsdauer:
+              {{ dauer(a.arbeitet_seit) }}</span></dd>
+        </div>
+      </dl>
+
+      <div class="row kartenknoepfe">
+        <button type="submit">Speichern</button>
+      </div>
+    </form>
+
+    {# Die Knoepfe, die etwas abschliessen, stehen in EIGENEN Formularen:
+       Sonst schickte "Erledigt" nebenbei alle Felder mit, und ein
+       Klick taete zwei Dinge. #}
+    <div class="row kartenknoepfe">
+      <form method="post" action="/aufgaben/abschliessen" class="inline">
+        <input type="hidden" name="id" value="{{ a.id }}">
+        <input type="hidden" name="art" value="erledigt">
+        <button type="submit" class="ghost" {% if not a.abnehmbar %}disabled{% endif %}
+                title="{% if a.abnehmbar %}Alle Haken der Abnahme stehen{% else %}Erst wenn alle Haken der Abnahme stehen{% endif %}">Erledigt</button>
+      </form>
+      <form method="post" action="/aufgaben/abschliessen" class="inline"
+            onsubmit="return confirm('{{ a.kennung }} verwerfen? Die Aufgabe steht danach im Archiv.')">
+        <input type="hidden" name="id" value="{{ a.id }}">
+        <input type="hidden" name="art" value="verworfen">
+        <button type="submit" class="danger">Verwerfen</button>
+      </form>
+    </div>
+
+    <p class="kartenfuss">
+      <em>Erledigt</em> wird erst dunkel, wenn alle Haken der Abnahme
+      stehen. Die Liste darüber zählt dafür nicht: Sie misst, wie weit die
+      Arbeit ist, nicht ob sie fertig ist.
+    </p>
+  </details>
+
+  {# Die Formulare zum Dazuschreiben und Wegnehmen stehen AUSSERHALB des
+     Speichern-Formulars: HTML erlaubt kein Formular im Formular. Die
+     Felder darin verweisen per form="..." hierher. #}
+  <form method="post" action="/aufgaben/punkt" id="dazu-arbeit-{{ a.id }}">
+    <input type="hidden" name="id" value="{{ a.id }}">
+    <input type="hidden" name="art" value="ARBEIT">
+  </form>
+  <form method="post" action="/aufgaben/punkt" id="dazu-abnahme-{{ a.id }}">
+    <input type="hidden" name="id" value="{{ a.id }}">
+    <input type="hidden" name="art" value="ABNAHME">
+  </form>
+  {% for p in a.arbeit + a.abnahme %}
+  <form method="post" action="/aufgaben/punkt/weg" id="weg-{{ p.id }}">
+    <input type="hidden" name="id" value="{{ a.id }}">
+    <input type="hidden" name="punkt" value="{{ p.id }}">
+  </form>
+  {% endfor %}
+  {% endfor %}
+
+  <p class="kartenfuss">
+    Offen ist, was keinen Abschluss trägt. Was <em>erledigt</em>,
+    <em>verworfen</em> oder einem <em>Meilenstein</em> zugeordnet ist,
+    steht im Archiv unter History.
+  </p>
+</section>
+{% endif %}
+
+<section id="neue-aufgabe">
+  <div class="kartenkopf">
+    <h2>Neue Aufgabe</h2>
+    <a class="kartenhilfe" href="/hilfe#aufgaben-neu"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  <p class="hint">
+    <strong>Der übliche Weg führt über die Sammlung.</strong> Dort macht
+    <em>Zusammenlegen</em> aus einer oder mehreren Beobachtungen eine
+    Aufgabe und fragt im selben Zug nach Ursache und Abnahme — in dem
+    Augenblick, in dem das Denken gerade stattgefunden hat. Hier entsteht
+    eine Aufgabe ohne Ursprung; das ist erlaubt und der seltenere Fall.
+  </p>
+
+  <form method="post" action="/aufgaben/neu">
+    <dl class="angaben">
+      <div>
+        <dt><label for="n-titel">Titel</label></dt>
+        <dd class="weit">
+          <input type="text" id="n-titel" name="titel" class="feld" required
+                 autocomplete="off"
+                 placeholder="Eine Ursache statt mehrerer Beobachtungen"
+                 {% if not projekt.bereiche %}disabled{% endif %}>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-bereich">Bereich</label></dt>
+        <dd>
+          <select id="n-bereich" name="bereich" required
+                  {% if not projekt.bereiche %}disabled{% endif %}>
+            <option value="">— wählen —</option>
+            {% for b in projekt.bereiche %}
+            <option value="{{ b.id }}">{{ b.wert }}</option>
+            {% endfor %}
+          </select>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-prio">Priorität</label></dt>
+        <dd>
+          <select id="n-prio" name="prio">
+            {% for p in prios %}<option>{{ p }}</option>{% endfor %}
+          </select>
+          <span class="muted small">— darf offen bleiben</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-dahinter">Was dahintersteckt</label></dt>
+        <dd class="weit">
+          <textarea id="n-dahinter" name="dahinter" rows="3" class="feld"
+                    placeholder="Zwei Sätze genügen — die Ursache hinter der Beobachtung"></textarea>
+          <span class="feldhinweis muted small">Darf leer bleiben und
+            später kommen. Solange es leer ist, steht die Aufgabe als
+            Befund über der Seite: <em>Sperren gehört zu dem, was nicht
+            nachwachsen kann — eine Begründung wächst nach.</em></span>
+        </dd>
+      </div>
+
+      {# ---- DAS EINE PFLICHTFELD ------------------------------------
+         Ohne Abnahme wird die Aufgabe nicht angelegt. Der Unterschied zu
+         den fuenf Fehlerangaben der Sammlung ist kein Widerspruch: Die
+         machen einen Eintrag vollstaendiger, diese macht ihn erst zu
+         dem, was er ist.
+
+         EIN TEXTFELD, EINE ZEILE JE PUNKT -- weil die Regel eine Zahl
+         nennt: in dreissig Sekunden zu tippen. Fuenf Felder mit
+         Hinzufuegen-Knopf waeren dieselbe Liste und dreimal so lang. #}
+      <div class="pflichtfeld">
+        <dt><label for="n-abnahme">Wann es abgenommen ist</label>
+          <span class="badge missing">Pflicht</span></dt>
+        <dd class="weit">
+          <textarea id="n-abnahme" name="abnahme" rows="4" class="feld" required
+                    placeholder="Eine Zeile je Punkt — woran man feststellt, dass es fertig ist"
+                    {% if not projekt.bereiche %}disabled{% endif %}></textarea>
+          <span class="feldhinweis muted small">Eine Zeile wird ein
+            Häkchen. <strong>Lässt sie sich nicht beschreiben, ist es
+            keine Aufgabe</strong> — dann gehört die Sache in die
+            <a href="/sammlung">Sammlung</a>, bis sie sich beschreiben
+            lässt.</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-arbeit">Was getan werden muss</label></dt>
+        <dd class="weit">
+          <textarea id="n-arbeit" name="arbeit" rows="3" class="feld"
+                    placeholder="Eine Zeile je Schritt — darf leer bleiben und wächst beim Arbeiten"></textarea>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="n-datum">Eingetragen am</label></dt>
+        <dd>
+          <input type="date" id="n-datum" name="eingetragen"
+                 class="datumsfeld" value="{{ heute }}" required>
+          <span class="muted small">— ab hier zählt die Arbeitsdauer</span>
+        </dd>
+      </div>
+    </dl>
+    <div class="row kartenknoepfe">
+      <button type="submit" {% if not projekt.bereiche %}disabled{% endif %}>Aufgabe anlegen</button>
+      {# Wohin es kommt, an dem Knopf, der es anlegt -- der Augenblick, in
+         dem ein falsch gewaehltes Projekt Schaden anrichtet. Die Marke in
+         der ersten Karte ist dann oft weggescrollt, den Knopf sieht man. #}
+      <span class="muted small landet">— landet in
+        <strong>{{ gewaehlt.kennung }} {{ gewaehlt.name }}</strong></span>
+    </div>
+  </form>
+  <p class="kartenfuss">
+    Der Status einer neuen Aufgabe ist <strong>PASSIV</strong> — an ihr
+    sitzt noch niemand. Wer sie aufnimmt, stellt sie in ihrer Karte auf
+    AKTIV; das Datum dazu ist dann Pflicht.
+  </p>
+</section>
+{% endif %}
+
+<script>
+// Das Datum neben dem Status: PASSIV hat keines.
+//
+// Die Ablage laesst AKTIV oder PAUSE ohne Datum gar nicht zu, und der
+// Server sagt es als Meldung. Hier wird daraus eine Hilfe statt einer
+// Zurueckweisung: Wer den Status umstellt, bekommt das heutige Datum
+// eingetragen und das Feld freigeschaltet -- und bei PASSIV wird es
+// leer und still.
+//
+// Ohne JavaScript bleibt es beim alten Verhalten: Das Feld steht da, man
+// traegt selbst ein Datum ein, und ohne eines kommt die Meldung.
+(function () {
+  var heute = "{{ heute }}";
+  document.addEventListener("change", function (ereignis) {
+    var wahl = ereignis.target;
+    if (wahl.tagName !== "SELECT" || wahl.name !== "status") { return; }
+    var datum = wahl.parentNode.querySelector('input[name="status_seit"]');
+    if (!datum) { return; }
+    if (wahl.value === "PASSIV") {
+      datum.value = "";
+      datum.disabled = true;
+    } else {
+      datum.disabled = false;
+      if (!datum.value) { datum.value = heute; }
+    }
+  });
+  // Beim Aufbau einmal anwenden, damit ein PASSIV-Feld nicht bedienbar
+  // aussieht, obwohl es nichts festhalten kann.
+  var alle = document.querySelectorAll('select[name="status"]');
+  for (var i = 0; i < alle.length; i++) {
+    if (alle[i].value === "PASSIV") {
+      var d = alle[i].parentNode.querySelector('input[name="status_seit"]');
+      if (d) { d.disabled = true; }
+    }
+  }
+})();
+
+// Enter im Feld "Zeile dazu" legt sie an.
+//
+// Die Felder haengen per form="..." an einem Formular ausserhalb der
+// Karte -- HTML erlaubt kein Formular im Formular, und die Karte ist
+// eines. Ein eigener Knopf daneben waere der zweite Weg fuer denselben
+// Schritt.
+</script>
+{% endblock %}

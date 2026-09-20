@@ -1,0 +1,594 @@
+{% extends "base.html" %}
+{% block title %}Einrichtung &mdash; MARLEI Tasks{% endblock %}
+
+{# Der siebte gebaute Reiter.
+
+   ACHT KARTEN -- die sieben aus docs/uebernahme.md, Abschnitt 6, und der
+   Export als achte. In Boot gibt es ihn nicht; hier traegt er drei
+   Zwecke, und der dritte hat ihn zur eigenen Karte gemacht.
+
+   WAS NICHT MITKOMMT: *IP-Adresse uebernehmen*. Das ist Boot-eigen. #}
+{% block content %}
+
+{% macro groesse(bytes) -%}
+{% if bytes >= 1048576 %}{{ (bytes / 1048576) | round(1) }} MB
+{%- elif bytes >= 1024 %}{{ (bytes / 1024) | round(0) | int }} KB
+{%- else %}{{ bytes }} Bytes{% endif %}
+{%- endmacro %}
+
+{% macro menge(n, eins, viele) -%}
+{{ n }} {{ eins if n == 1 else viele }}
+{%- endmacro %}
+
+<section id="stand">
+  <div class="kartenkopf">
+    <h2>Stand</h2>
+    <a class="kartenhilfe" href="/hilfe#einrichtung-stand"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  {% if stand %}
+  <p><strong>Version</strong> <code>{{ stand }}</code></p>
+  {% else %}
+  <p class="muted">
+    Hier steht nichts — und das heißt nicht „Version 0", sondern: Diese
+    Anwendung ist nicht über <code>install.sh</code> hierhergekommen. Auf
+    einem Server, der so aufgesetzt wurde, liegt der Stand in
+    <code>webui/VERSION</code>. Geraten wird er nicht.
+  </p>
+  {% endif %}
+  {# NACH NEUEN VERSIONEN WIRD NICHT GESUCHT, und das steht da, statt
+     einen Knopf hinzustellen, der ins Leere fragt: Dieses Produkt hat
+     mit Absicht noch kein oeffentliches Repository. Beim Bau der
+     Veroeffentlichung ist diese Zeile zu ersetzen, nicht zu vergessen. #}
+  <p class="kartenfuss">
+    <strong>Nach neuen Versionen wird nicht gesucht.</strong> Dieses
+    Produkt liegt bisher nur auf HiDrive und hat mit Absicht noch kein
+    öffentliches Repository — es gäbe nichts, wo man fragen könnte. Die
+    Suche kommt mit der Veröffentlichung.
+  </p>
+</section>
+
+{# ==================================================================
+   DER EXPORT -- die achte Karte, und in Boot gibt es sie nicht.
+
+   Drei Zwecke: die Zusage aus docs/datenhaltung.md (*der Ausgang bleibt
+   Text*), die erste der beiden Sicherungen vor dem Zuruecksetzen -- und
+   seit dem 07.09.2026 der Weg, auf dem der Bestand eine
+   Versionsgeschichte bekommt.
+
+   AUSGEGEBEN WIRD DAS GEWAEHLTE PROJEKT, nicht alle auf einmal: Die
+   Vorauswahl gilt fuer Sammlung, Aufgaben, Meilensteine und
+   Entscheidungen -- sie gilt hier genauso.
+   ================================================================== #}
+<section id="export">
+  <div class="kartenkopf">
+    <h2>Export</h2>
+    {% if projekt and export_stand.dateien %}
+    <span class="muted small">
+      {% if export_offen %}nicht aktuell{% else %}aktuell{% endif %}</span>
+    {% endif %}
+    <a class="kartenhilfe" href="/hilfe#einrichtung-export"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  <p class="muted">
+    <strong>Der Ausgang bleibt Text.</strong> Was heute eine Mappe aus
+    Markdown-Dateien leistet — lesbar ohne dieses Werkzeug, gesichert
+    durch Kopieren —, leistet der Export. Geschrieben wird ein
+    Verzeichnis je Projekt, darin eine Datei je Register.
+  </p>
+
+  {% if not projekt %}
+  <p class="hint">
+    <strong>Es ist kein Projekt gewählt.</strong> Ausgegeben wird immer
+    das gewählte — gewählt wird unter <a href="/">Projekte</a>.
+  </p>
+  {% elif not export_stand.eingerichtet %}
+  <p class="hint">
+    <strong>Es ist kein Zielverzeichnis eingerichtet.</strong>
+    <code>MARLEI_EXPORT</code> sagt, wohin ausgegeben wird; solange dort
+    nichts steht, gibt es keinen Ausgang — und damit auch keine
+    Sicherung vor dem Zurücksetzen.
+  </p>
+  {% else %}
+  <table class="eng">
+    <tbody>
+      <tr><td class="nowrap muted">Projekt</td>
+        <td><code>{{ projekt.kennung }}</code> {{ projekt.name }}
+          <span class="muted small">— das gewählte, wie überall</span></td></tr>
+      <tr><td class="nowrap muted">Zielverzeichnis</td>
+        <td><code>{{ export_stand.ordner }}</code>
+          {% if export_stand.beschreibbar %}
+          <span class="badge ok">beschreibbar</span>
+          {% else %}
+          <span class="badge missing">nicht beschreibbar</span>
+          {% endif %}</td></tr>
+      <tr><td class="nowrap muted">Zuletzt ausgegeben</td>
+        <td>{% if export_stand.dateien %}
+          {{ menge(export_stand.dateien, "Datei", "Dateien") }} ·
+          {{ groesse(export_stand.bytes) }}
+          {% else %}<span class="muted">noch nie</span>{% endif %}</td></tr>
+      <tr><td class="nowrap muted">Stand der Ausgabe</td>
+        <td>{% if export_offen %}
+          <span class="warnung">{{ menge(export_offen | length, "Datei weicht ab", "Dateien weichen ab") }}</span>
+          <span class="muted small">— {{ export_offen | join(", ") }}</span>
+          {% else %}<span class="badge ok">aktuell</span>
+          <span class="muted small">— die Ausgabe entspricht der
+            Ablage</span>{% endif %}</td></tr>
+    </tbody>
+  </table>
+
+  <div class="dateiliste">
+    <h3>Was geschrieben wird
+      <span class="muted small">— {{ menge(export_dateien | length, "Datei", "Dateien") }}
+        in einem Verzeichnis</span></h3>
+    <ul class="muted small">
+      {% for name in export_dateien %}
+      <li><code>{{ name }}</code></li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {# DIE STABILITAETSZUSAGE STEHT AUF DER KARTE, nicht nur im Quelltext:
+     Wer sie spaeter aendert, sieht, was er kaputtmacht. Und der Vergleich
+     oben beweist sie nebenbei -- er baut aus, was ausgegeben wuerde, und
+     haelt es gegen das, was dasteht. #}
+  <p class="hint">
+    <strong>Bei unverändertem Bestand ist die Ausgabe byteweise
+    dieselbe.</strong> Keine Zeitstempel im Kopf, feste Sortierung,
+    gleiche Formatierung — sonst erzeugte jeder Lauf einen Unterschied
+    über alles, und die Versionsgeschichte im Repository sagte nichts
+    mehr. <em>Die Zeile darüber prüft genau das:</em> Sie vergleicht, was
+    ausgegeben würde, mit dem, was dasteht.
+  </p>
+
+  {% endif %}
+
+  {# BEIDE WEGE HINAUS IN EINER ZEILE -- sie beantworten dieselbe Frage
+     und gehoeren nebeneinander. Der Behaelter ist der flexe .row; das
+     Formular ist darin ein Element wie der Verweis daneben.
+
+     ZWEI BEDINGUNGEN, UND SIE SIND NICHT DIESELBE. Der linke Knopf
+     haengt am eingerichteten und beschreibbaren Ausgang -- fehlt der,
+     steht er grau da. Beide haengen am GEWAEHLTEN PROJEKT, und ohne das
+     steht hier gar nichts: Ein Knopf, der nur sagen kann "waehle erst
+     ein Projekt", ist einer, der nichts tut -- und ein Kaestchen, das
+     nichts tut, ist schlimmer als keines. Die Karte sagt es eine Zeile
+     darueber im Satz.
+
+     Aufgefallen an der laufenden Installation, an einem Browser ohne
+     Merkzettel.
+
+     **Er ist der Weg an den Bestand, der keine Shell braucht.** Wer den
+     Server nicht selbst bedienen kann oder darf, kommt hier trotzdem an
+     seine Ablage. #}
+  {% if projekt %}
+  <div class="row kartenknoepfe">
+    <form method="post" action="/einrichtung/export">
+      <button type="submit"
+              {% if not export_stand.beschreibbar %}disabled{% endif %}>{{ projekt.name }} ausgeben</button>
+    </form>
+    <a class="knopf" href="/einrichtung/export.zip">Als ZIP herunterladen</a>
+  </div>
+  <p class="muted small">
+    Dasselbe, was auch geschrieben würde — fünf Dateien in einem
+    Verzeichnis, gepackt. <strong>Der Download schreibt nichts:</strong>
+    Der eingerichtete Ausgang bleibt unberührt, und <em>Stand der
+    Ausgabe</em> sagt danach dasselbe wie davor. Auch das Paket ist bei
+    unverändertem Bestand byteweise dasselbe.
+  </p>
+  {% endif %}
+
+  <p class="kartenfuss">
+    <strong>Ausgegeben wird das gewählte Projekt</strong> — dasselbe, das
+    oben im Band steht. Und der Export schreibt nur: <strong>Er committet
+    nichts.</strong> Was im Repository landet, entscheidet, wer dort
+    <code>git commit</code> tippt.
+  </p>
+</section>
+
+<section id="ablageorte">
+  <div class="kartenkopf">
+    <h2>Ablageorte</h2>
+    <a class="kartenhilfe" href="/hilfe#einrichtung-ablageorte"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  <table class="eng">
+    <thead><tr><th>Was</th><th>Wo</th><th>Zustand</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="nowrap">Datenbank</td>
+        <td><code>{{ db_pfad }}</code></td>
+        <td>{% if db_bytes %}<span class="badge ok">da</span>
+          <span class="muted small">— {{ groesse(db_bytes) }}</span>
+          {% else %}<span class="badge missing">nicht lesbar</span>{% endif %}</td>
+      </tr>
+      {# DER ORT, NICHT DAS PROJEKT DARIN. Diese Zeile fragte bis zum
+         07.09.2026 ueber export_stand, und das braucht ein gewaehltes
+         Projekt: Ohne eines stand hier "MARLEI_EXPORT ist leer",
+         waehrend zwei Karten weiter unten der Pfad danebenstand. Eine
+         Karte, die einen Grund nennt, den es nicht gibt, ist schlimmer
+         als eine, die schweigt. #}
+      <tr>
+        <td class="nowrap">Export</td>
+        <td>{% if export_ort.eingerichtet %}<code>{{ export_ort.pfad }}</code>
+          {% else %}<span class="muted">nicht eingerichtet</span>{% endif %}</td>
+        <td>{% if not export_ort.eingerichtet %}
+          <span class="badge missing">fehlt</span>
+          <span class="muted small">— <code>MARLEI_EXPORT</code> ist
+            leer</span>
+          {% elif export_ort.beschreibbar %}
+          <span class="badge ok">da, beschreibbar</span>
+          {% else %}<span class="badge missing">nicht beschreibbar</span>{% endif %}</td>
+      </tr>
+    </tbody>
+  </table>
+  {# DIE GROESSE DER DATENBANK STEHT HIER und nicht auf Server Health:
+     Wo die Ablage als Ablageort steht, gehoert ihre Groesse daneben --
+     nicht auf eine eigene Karte in einem Reiter, den man selten
+     aufsucht. #}
+  <p class="kartenfuss">
+    <strong>Hier steht, ob es da und beschreibbar ist</strong> — was
+    eingestellt ist, steht eine Karte weiter unten. Zwei Fragen, zwei
+    Orte. Und die Größe der Ablage steht dort, wo sie hingehört: neben
+    ihrem Ablageort.
+  </p>
+</section>
+
+<section id="einstellungen">
+  <div class="kartenkopf">
+    <h2>Einstellungen</h2>
+    <a class="kartenhilfe" href="/hilfe#einrichtung-einstellungen"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  <table class="eng">
+    <thead><tr><th>Name</th><th>Wert</th><th>Wofür</th></tr></thead>
+    <tbody>
+      {% for e in einstellungen %}
+      <tr>
+        <td class="nowrap"><code>{{ e.name }}</code></td>
+        <td>{% if e.wert %}<code>{{ e.wert }}</code>
+          {% else %}<span class="muted">— nicht gesetzt</span>{% endif %}</td>
+        <td class="muted">{{ e.wofuer }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {# DER PORT STEHT NICHT IN DER TABELLE, und das ist kein Versehen: Die
+     Tabelle zeigt die Umgebungsdatei, und der Port steht dort nicht. Er
+     gehoert dem nginx davor -- einem Dienst, der root gehoert und den
+     diese Anwendung nicht anfassen kann und nicht anfassen soll.
+
+     **Dieselbe Grenze wie bei der Firewall eine Karte weiter unten.**
+     Ein Feld, das hier den Port aenderte, muesste als root in
+     /etc/nginx schreiben und einen Dienst neu laden -- aus einer
+     Oberflaeche heraus, die niemanden fragt, wer er ist. Gesagt wird,
+     was zu tun ist; getan wird es von dem, der sich anmelden kann. #}
+  <h3>Der Port</h3>
+  {# ZWEI SYSTEME, ZWEI SÄTZE — und der Unterschied ist keine Formsache:
+     Unter Linux gehört der Port dem nginx davor und steht nirgends in der
+     Umgebungsdatei. Unter Windows gibt es diesen nginx nicht; dort hört
+     die Anwendung selbst auf dem Port, und die Zahl kommt aus der Adresse
+     — derselben, aus der auch diese Karte sie liest. Ein Satz, der beides
+     abdecken will, wäre auf beiden Systemen halb falsch. #}
+  {% if windows %}
+  <p class="muted">
+    Erreichbar ist diese Oberfläche unter
+    <strong>Port {{ oberflaechenport }}</strong>. <strong>Er steht in der
+    Adresse oben im Band</strong> — also in <code>MARLEI_BASE_URL</code>:
+    Ohne nginx davor hört die Anwendung selbst auf diesem Port, und der
+    Start liest die Zahl aus genau dieser Adresse. Ändern heißt: erneut
+    installieren, mit der Zahl daneben.
+  </p>
+  <div class="befehlszeile">
+    <pre id="portbefehl">.\setup\windows\install.ps1 -Port 9090</pre>
+    <button type="button" class="kopierknopf" data-quelle="portbefehl"
+            title="Befehl kopieren" aria-label="Befehl kopieren">kopieren</button>
+  </div>
+  <p class="muted small">
+    Im geklonten Projektordner auszuführen, in einer PowerShell
+    <strong>als Administrator</strong>. Der Lauf prüft vorher, ob der Port
+    frei ist, und bricht ab, statt einen fremden zu verdecken. Danach
+    ändert sich die Adresse: Sie steht anschließend im Kopfband.
+    <strong>Eine Firewallregel auf den alten Port zieht nicht mit</strong> —
+    sie nennt weiter die alte Zahl.
+  </p>
+  {% else %}
+  <p class="muted">
+    Erreichbar ist diese Oberfläche unter
+    <strong>Port {{ oberflaechenport }}</strong>. <strong>Er steht nicht
+    in der Umgebungsdatei</strong> — er gehört dem nginx davor. Ändern
+    heißt: erneut installieren, mit der Zahl daneben.
+  </p>
+  <div class="befehlszeile">
+    <pre id="portbefehl">sudo MARLEI_PORT=9090 ./setup/linux/install.sh</pre>
+    <button type="button" class="kopierknopf" data-quelle="portbefehl"
+            title="Befehl kopieren" aria-label="Befehl kopieren">kopieren</button>
+  </div>
+  <p class="muted small">
+    Im geklonten Projektordner auszuführen. Der Lauf prüft vorher, ob der
+    Port frei ist, und bricht ab, statt einen fremden zu überschreiben —
+    <strong>läuft auf dieser Maschine MARLEI Boot, ist die 80 vergeben.</strong>
+    Danach ändert sich die Adresse: Sie steht anschließend im Kopfband.
+  </p>
+  {% endif %}
+
+  <p class="kartenfuss">
+    <strong>Diese Karte ändert nichts.</strong> Die Umgebungsdatei gehört
+    {% if windows %}den Administratoren{% else %}root{% endif %}, die
+    Anwendung kann dort nicht schreiben — <em>und das ist Absicht.</em> Sie
+    beantwortet die Frage, wie dieser Server aufgesetzt ist, ohne dass man
+    sich {% if windows %}an der Maschine{% else %}per SSH{% endif %}
+    anmelden muss.
+  </p>
+</section>
+
+<section id="firewall">
+  <div class="kartenkopf">
+    <h2>Firewall</h2>
+    {% if firewall.aktiv %}
+    <span class="badge teils">{{ firewall.namen | join(", ") }} aktiv</span>
+    {% elif firewall.unklar %}
+    {# DIE DRITTE ANTWORT, und sie steht hier vor der zweiten: Keine
+       eingeschaltet UND keine, von der sich das sagen ließe, ist nicht
+       dasselbe wie "nichts im Weg". Ein Abzeichen, das Freiheit zusagt,
+       wäre an dieser Stelle die eine Behauptung, die diese Karte sonst
+       nirgends macht. #}
+    <span class="badge teils">nicht feststellbar</span>
+    {% elif firewall.gefunden %}
+    <span class="badge ok">nichts im Weg</span>
+    {% endif %}
+    <a class="kartenhilfe" href="/hilfe#einrichtung-firewall"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% if firewall.gefunden %}
+  <table class="eng">
+    <tbody>
+      {% for f in firewall.gefunden %}
+      <tr><td class="nowrap muted">{{ f.name }}</td>
+        <td>{% if f.an %}<strong>eingeschaltet</strong>
+          {% elif f.an is none %}nicht feststellbar
+          {% elif windows %}aus
+          {% else %}installiert, aber aus{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">
+    Keine Firewall gefunden. Gesucht wurde nach <code>ufw</code>,
+    <code>nftables</code> und <code>firewalld</code> —
+    <em>gefunden</em> heißt hier: installiert, nicht: eingeschaltet.
+  </p>
+  {% endif %}
+
+  {% if windows %}
+  {# Unter Windows sind es drei Zeilen für EINE Firewall: Sie gehört zum
+     System und führt je Netzart ein eigenes Profil. Welches gerade gilt,
+     hängt daran, wie das Netz eingestuft ist, in dem diese Maschine
+     steht — und das sagt diese Karte nicht, weil sie es nicht weiß. #}
+  <p class="muted small">
+    <strong>Drei Zeilen, eine Firewall.</strong> Windows führt je Netzart
+    ein eigenes Profil; welches gerade greift, hängt daran, wie das Netz
+    eingestuft ist, in dem diese Maschine steht. Im eigenen Netz ist es
+    meist <em>Privat</em>.
+  </p>
+  {% endif %}
+
+  <h3>Was diese Anwendung braucht</h3>
+  <table class="eng">
+    <thead><tr><th>Port</th><th>Dienst</th><th>Wofür</th></tr></thead>
+    <tbody>
+      {% for p in ports %}
+      <tr><td class="nowrap"><code>{{ p.port }}</code></td>
+        <td class="nowrap muted">{{ p.dienst }}</td>
+        <td class="muted">{{ p.wofuer }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted small">{{ nicht_oeffnen }}</p>
+
+  {# GEMELDET WIRD, NICHT GEPRUEFT, und das hat einen technischen Grund:
+     Die Regeln liegen root-only. Ein Kasten, der aussieht, als haette er
+     geprueft, waere schlimmer als einer, der sagt, was er nicht weiss. #}
+  <p class="kartenfuss">
+    <strong>Die Firewall wird gemeldet, nicht eingerichtet</strong> — sie
+    gehört der Maschine, nicht diesem Dienst. Und sie wird auch nicht
+    geprüft: <em>ob</em> eine läuft, ist ohne
+    {% if windows %}Administratorrechte{% else %}root{% endif %}
+    zu erfahren, <em>was sie durchlässt</em>, nicht. Dass es hier eine
+    Zeile ist statt Boots
+    sieben Ports über vier Dienste, macht die Frage nicht kleiner: Ist
+    eine Firewall an, und blockt sie mich?
+  </p>
+</section>
+
+<section id="fehlerbericht">
+  <div class="kartenkopf">
+    <h2>Fehlerbericht</h2>
+    <a class="kartenhilfe" href="/hilfe#einrichtung-fehlerbericht"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  <p class="muted">
+    Etwas funktioniert nicht? Schreiben Sie eine E-Mail an
+    <a href="mailto:{{ bericht_adresse }}?subject=MARLEI%20Tasks"><code>{{ bericht_adresse }}</code></a>.
+    Im Betreff bitte folgendes einfügen: <strong>MARLEI Tasks</strong>
+  </p>
+  <p class="muted">
+    Erzeugen Sie einen Fehlerbericht. Dieser Bericht sammelt, was bei
+    einer Rückfrage sonst einzeln erfragt werden müsste — worauf der
+    Server läuft, welche Version, wie groß die Ablage ist.
+    <strong>Der Server verschickt nichts</strong>: Er erzeugt den Text,
+    Sie lesen ihn und schicken ihn an uns.
+  </p>
+
+  <form method="get" action="/einrichtung" class="row sichernspalte">
+    <span>
+      <label>
+        <input type="checkbox" name="umgebung_mit" value="1"
+               {{ "checked" if bericht_umgebung }}>
+        Freiwillige Angaben zur Serverumgebung
+      </label>
+      <span class="muted small">— Ablageorte, Größe der Ablage, Firewall
+        und die Zahl der Einträge je Projekt</span>
+    </span>
+    <input type="hidden" name="fehlerbericht" value="1">
+    <button type="submit" class="folgeknopf">Bericht erzeugen</button>
+  </form>
+
+  {% if bericht_text %}
+  <div class="befehlszeile">
+    <pre class="ipxe" id="berichttext">{{ bericht_text }}</pre>
+    <button type="button" class="kopierknopf" data-quelle="berichttext"
+            title="Bericht kopieren" aria-label="Bericht kopieren">kopieren</button>
+  </div>
+  <p class="muted small">
+    <a href="/einrichtung/bericht.txt?umgebung_mit={{ '1' if bericht_umgebung else '0' }}">Als
+    Datei herunterladen</a> — zum Anhängen an eine Mail. Auf dem Server
+    bleibt nichts liegen.
+  </p>
+  {% else %}
+  <p class="muted small">
+    Ohne den Haken enthält der Bericht nur Angaben, die auf jedem Server
+    gleich aussehen — <strong>nichts aus Ihren Projekten.</strong> Auch
+    mit Haken stehen dort nur Zahlen und Pfade: keine Titel, keine Texte,
+    keine Namen.
+  </p>
+  {% endif %}
+</section>
+
+{# Zweite Karte und kein Absatz in der ersten: Getrennte Anliegen,
+   getrennte Karten, dieselbe Adresse. #}
+<section id="verbesserungen">
+  <div class="kartenkopf">
+    <h2>Verbesserungen</h2>
+    <a class="kartenhilfe" href="/hilfe#einrichtung-verbesserungen"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  <p class="muted">
+    Sie haben Ideen oder Vorschläge, die unser Produkt verbessern
+    könnten? Schreiben Sie eine E-Mail an
+    <a href="mailto:{{ bericht_adresse }}?subject=MARLEI%20Tasks%20-%20Verbesserungen"><code>{{ bericht_adresse }}</code></a>.
+    Im Betreff bitte folgendes einfügen:
+    <strong>MARLEI Tasks - Verbesserungen</strong>
+  </p>
+  <p class="muted">
+    Beschreiben Sie uns, was wir noch besser machen können. Wenn Sie
+    Fragen zu unserem Produkt haben, dann können Sie denselben Weg
+    verwenden.
+  </p>
+</section>
+
+{# ==================================================================
+   DIE WERKSEINSTELLUNG. Sie kommt aus Boot mit -- aber sie ist hier
+   GEFAEHRLICHER, und das muss die Karte zeigen: Boot raeumt
+   Wiederholbares weg, ein Abbild holt man erneut. Hier loescht derselbe
+   Knopf die Eintraege, und die gibt es nirgends sonst -- ausser im
+   Export, und deshalb steht der davor.
+   ================================================================== #}
+<section id="werkseinstellung">
+  <div class="kartenkopf">
+    <h2>Werkseinstellung</h2>
+    <a class="kartenhilfe" href="/hilfe#einrichtung-werkseinstellung"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% if not projekt %}
+  <p class="hint">
+    <strong>Es ist kein Projekt gewählt.</strong> Die Werkseinstellung
+    trifft immer das gewählte — gewählt wird unter
+    <a href="/">Projekte</a>.
+  </p>
+
+  {% elif werkseinstellung != 'wort' %}
+  <p class="hint">
+    <strong>{{ projekt.name }} wird auf den Zustand zurückgesetzt, in dem
+    es angelegt wurde.</strong> Das lässt sich nicht rückgängig machen —
+    und anders als in MARLEI Boot ist hier nichts davon wiederholbar:
+    <em>Ein Abbild holt man erneut, einen eingetragenen Gedanken nicht.</em>
+  </p>
+  <p class="muted">Gelöscht wird aus <strong>{{ projekt.name }}</strong>:</p>
+  <ul class="muted">
+    <li>{{ menge(bestand.sammlung, "Eintrag", "Einträge") }} der Sammlung,
+      {{ menge(bestand.aufgaben, "Aufgabe", "Aufgaben") }},
+      {{ menge(bestand.meilensteine, "Meilenstein", "Meilensteine") }} und
+      {{ menge(bestand.entscheidungen, "Entscheidung", "Entscheidungen") }}
+      — samt Häkchenlisten, Umwegen und Verläufen</li>
+    <li>die {{ menge(projekt.bereiche | length, "Bereich", "Bereiche") }}
+      des Projekts</li>
+  </ul>
+  <p class="muted">Erhalten bleibt:</p>
+  <ul class="muted">
+    <li>das Projekt selbst mit Name, Beschreibung und Vision</li>
+    <li>alle anderen Projekte — die Werkseinstellung trifft nur das
+      gewählte</li>
+  </ul>
+
+  {# DER EXPORT STEHT VOR DER FRAGE, nicht danach: Ein Knopf, der
+     unwiederbringliche Arbeit loescht, muss den Weg zurueck anbieten,
+     BEVOR er fragt. #}
+  <div class="vorher">
+    <h3>Vorher ausgeben</h3>
+    {% if not export_stand.eingerichtet %}
+    <p class="muted small">
+      <strong>Es gibt keinen Ausgang.</strong>
+      <code>MARLEI_EXPORT</code> ist nicht gesetzt — was hier gelöscht
+      wird, ist danach weg. Ohne Zielverzeichnis lässt sich das nicht
+      abfedern.
+    </p>
+    {% elif export_offen %}
+    <p class="muted small">
+      Die letzte Ausgabe weicht in
+      {{ menge(export_offen | length, "Datei", "Dateien") }} ab. Ohne
+      einen frischen Export ist das, was seither entstanden ist, nach dem
+      Zurücksetzen weg.
+    </p>
+    {% else %}
+    <p class="muted small">
+      <span class="badge ok">aktuell</span> Die Ausgabe unter
+      <code>{{ export_stand.ordner }}</code> entspricht der Ablage — es
+      geht nichts verloren, was dort nicht schon steht.
+    </p>
+    {% endif %}
+    <form method="post" action="/einrichtung/export" class="row kartenknoepfe">
+      <input type="hidden" name="weiter" value="werkseinstellung">
+      <button type="submit"
+              {% if not export_stand.beschreibbar %}disabled{% endif %}>Jetzt ausgeben, dann weiter</button>
+      <a href="/einrichtung?werkseinstellung=wort#werkseinstellung"
+         class="muted small">Ohne Export weiter</a>
+    </form>
+  </div>
+
+  {% else %}
+  {# Der zweite Schritt: das Losungswort. DASSELBE WIE BEIM LOESCHEN --
+     der Projektname. Ein festes Wort bestaetigt nur, DASS
+     zurueckgesetzt wird; der Name bestaetigt, WELCHES. #}
+  <p class="hint">
+    <strong>{{ projekt.name }} wird jetzt zurückgesetzt.</strong>
+    {{ menge(bestand.sammlung, "Eintrag", "Einträge") }} der Sammlung,
+    {{ menge(bestand.aufgaben, "Aufgabe", "Aufgaben") }},
+    {{ menge(bestand.meilensteine, "Meilenstein", "Meilensteine") }} und
+    {{ menge(bestand.entscheidungen, "Entscheidung", "Entscheidungen") }}
+    gehen dabei weg.
+  </p>
+  <form method="post" action="/einrichtung/werkseinstellung" class="row">
+    <label for="losungswort" class="muted small">
+      Zum Fortfahren <strong>{{ projekt.name }}</strong> eintippen:
+    </label>
+    {# Das Feld steht LEER da und traegt den Namen nur als grauen
+       Hinweis. Waere es vorbelegt, genuegte ein Druck auf die
+       Eingabetaste -- dann koennte man die Abfrage auch weglassen. #}
+    <input type="text" id="losungswort" name="wort" autocomplete="off"
+           placeholder="{{ projekt.name }}" size="18" autofocus>
+    <button type="submit" class="danger">Zurücksetzen</button>
+    <a href="/einrichtung#werkseinstellung" class="muted small">Abbrechen</a>
+  </form>
+  {% endif %}
+
+  <p class="kartenfuss">
+    <em>IP-Adresse übernehmen</em> gibt es hier nicht. Das ist Boot-eigen:
+    Dort steht die Serveradresse in den iPXE-Skripten, deshalb ist ein
+    Adresswechsel ein Ereignis. Für Tasks ist er keins.
+  </p>
+</section>
+{% endblock %}

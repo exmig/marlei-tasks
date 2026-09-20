@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+{% block title %}Projekte &mdash; MARLEI Tasks{% endblock %}
+
+{# Der erste gebaute Reiter.
+
+   DREI KARTEN, UND IHRE REIHENFOLGE IST BEGRUENDET: Die Uebersicht steht
+   oben, weil dort die eine Handlung sitzt, wegen der jemand diesen Reiter
+   ueberhaupt aufmacht -- das Projekt waehlen, an dem er arbeiten will.
+   Die Angaben darunter liest er seltener, und ein neues Projekt legt er
+   fast nie an. Dasselbe Prinzip wie in der Reiterleiste: sortiert nach
+   der Haeufigkeit im Betrieb, nicht nach dem Ablauf beim Aufsetzen.
+
+   GEWAEHLT WIRD NUR IN DER UEBERSICHT. In den Eintragskarten steht kein
+   zweiter Waehlen-Knopf: Zwei Wege zu demselben Schritt lehren, dass es
+   zwei Schritte sind.
+
+   Warum so: docs/aufbau.md, Abschnitt 2, und docs/gestaltung.md. #}
+{% block content %}
+
+{# Das Abzeichen eines Zustands -- an zwei Stellen gebraucht, in der
+   Uebersicht und an jeder Eintragskarte, und beide muessen dasselbe
+   zeigen.
+
+   ABGESCHLOSSEN traegt NICHT die Fehlfarbe: Fertig ist kein Mangel. Es
+   bekommt dieselbe gedaempfte Fuellung wie RUHT -- der Unterschied
+   zwischen beiden steht im Wort, nicht in der Farbe. Gruen bleibt AKTIV
+   allein, denn nur dort wird gerade gearbeitet. #}
+{% macro zustandsabzeichen(zustand) -%}
+<span class="badge {{ 'ok' if zustand == 'AKTIV' else 'teils' }}">{{ zustand }}</span>
+{%- endmacro %}
+
+{# Eine Menge mit dem passenden Wort dahinter.
+
+   Aufgefallen beim ersten Blick auf die gebaute Seite: Der Loeschschritt
+   sagte *"mit ihm gehen 0 Eintraege der Sammlung, 0 Aufgaben"* -- das ist
+   kein Satz, den jemand schreiben wuerde, und bei EINER Aufgabe stuende
+   dort "1 Aufgaben". Eine Zahl in einem Satz braucht das Wort, das zu ihr
+   gehoert.
+
+   HIER STAND, DASS DER KARTENFUSS UNTEN DAS NICHT BRAUCHT -- eine
+   Aufzaehlung von Etiketten, kein Satz. Am 07.09.2026 an echten Daten
+   widerlegt: Sobald in einem Projekt genau eine Aufgabe und genau eine
+   Entscheidung standen, las sich die Zeile "1 Aufgaben - 1
+   Entscheidungen", und niemand liest das als Etikett. Die Vorgabe am
+   selben Tag: in Einzahl.
+
+   Vorher waren ueberall Nullen, und Null ist immer Mehrzahl -- deshalb
+   ist es erst mit dem ersten echten Bestand aufgefallen. #}
+{% macro menge(n, eins, viele) -%}
+{{ n }} {{ eins if n == 1 else viele }}
+{%- endmacro %}
+
+{# Ein Formular fuer die ganze Seite, wie unter Systeme in Boot: Die
+   Felder in den Karten haengen per form="seite" daran, gespeichert wird
+   alles auf einmal. Drei Knoepfe taeuschten drei Vorgaenge vor, und es
+   ist einer. #}
+<form id="seite" method="post" action="/projekte/speichern"></form>
+
+<section id="projektuebersicht">
+  <div class="kartenkopf">
+    <h2>Projektübersicht</h2>
+    <span class="muted small">{{ projekte | length }}
+      Projekt{{ "e" if projekte | length != 1 }}</span>
+    <a class="kartenhilfe" href="/hilfe#projekte-uebersicht"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {# KEIN GEWAEHLTES PROJEKT IST EIN ZUSTAND UND MUSS DASTEHEN.
+
+     Aufgefallen im September 2026, als die gebaute Seite zum ersten Mal
+     in einem echten Browser geoeffnet wurde: In der Karte
+     Projektuebersicht war kein Projekt als gewaehlt markiert, und es
+     war nicht zu erkennen, wie man eines auswaehlt.
+
+     Der Knopf war da. Was fehlte, war die Auskunft, dass gerade keines
+     gilt -- denn die stand nur als ABWESENHEIT da: keine Marke im Band,
+     keine markierte Zeile. **Eine Abwesenheit liest niemand.** Das ist
+     dieselbe Falle wie in Abschnitt 2 von docs/aufbau.md, nur andersherum:
+     Dort ist die Auswahl unsichtbar, weil man den Reiter gewechselt hat;
+     hier, weil es sie noch nicht gibt.
+
+     Die Zeile steht ueber der Tabelle und nicht darunter: Wer sie
+     braucht, hat noch nicht angefangen zu lesen. #}
+  {% if projekte and not gewaehlt_id %}
+  <p class="hint">
+    <strong>Es ist kein Projekt gewählt.</strong> Sammlung, Aufgaben,
+    Meilensteine und Entscheidungen haben deshalb nichts zu zeigen — der
+    Knopf <em>wählen</em> steht rechts in jeder Zeile. Danach steht das
+    Projekt oben im Band und gilt, bis es dort ein anderes tut.
+  </p>
+  {% endif %}
+
+  {% if projekte %}
+  <table class="eng">
+    <thead>
+      <tr>
+        <th>Kennung</th>
+        <th>Projekt</th>
+        <th>Zustand</th>
+        <th>Eingetragen</th>
+        {# Keine Ueberschrift: Was der Knopf tut, steht auf ihm. #}
+        <th class="waehlspalte"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in projekte %}
+      <tr {% if p.id == gewaehlt_id %}class="ist-gewaehlt"{% endif %}>
+        <td><code>{{ p.kennung }}</code></td>
+        <td><a href="#eintrag-{{ p.id }}">{{ p.name }}</a></td>
+        <td>{{ zustandsabzeichen(p.zustand) }}</td>
+        <td class="nowrap muted">{{ p.eingetragen_deutsch }}</td>
+        <td class="waehlspalte">
+          {% if p.id == gewaehlt_id %}
+          <button type="button" class="gewaehlt" disabled
+                  title="Dieses Projekt gilt gerade — es steht oben im Band">gewählt</button>
+          {% else %}
+          <form method="post" action="/projekte/waehlen">
+            <input type="hidden" name="id" value="{{ p.id }}">
+            <button type="submit" class="ghost" data-waehlen
+                    title="Gilt danach für Sammlung, Aufgaben, Meilensteine und Entscheidungen">wählen</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">
+    Noch kein Projekt. Unten in <a href="#neues-projekt">Neues Projekt</a>
+    entsteht das erste — ohne eines haben Sammlung, Aufgaben, Meilensteine
+    und Entscheidungen nichts zu zeigen.
+  </p>
+  {% endif %}
+
+  <p class="kartenfuss">
+    Die Auswahl gilt für Sammlung, Aufgaben, Meilensteine und
+    Entscheidungen — sie steht deshalb oben im Band und nicht nur hier.
+    Befunde laufen als einzige über alle Projekte.
+  </p>
+</section>
+
+{% if projekte %}
+<section id="projekte">
+  <div class="kartenkopf">
+    <h2>Projekte</h2>
+    {# Keine Zahl hier: Sie steht eine Karte weiter oben und waere zwei
+       Handbreit darunter dieselbe Auskunft ein zweites Mal. #}
+    <button type="submit" form="seite" id="seite-speichern" disabled
+            title="Nichts geändert — es gibt nichts zu speichern">Speichern</button>
+    <a class="kartenhilfe" href="/hilfe#projekte-angaben"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  {% for p in projekte %}
+  {# OFFEN IST GENAU EINE KARTE: die des gewaehlten Projekts -- oder die,
+     an der gerade das Loeschen haengt. Alle anderen stehen zu.
+
+     Der Grund ist derselbe wie bei Boots Quellen: Eine Liste, in der die
+     Haelfte der Karten aufgeklappt ist, hat keine geschlossene mehr, und
+     dann faellt die eine, um die es geht, nicht mehr auf. Umgekehrt waere
+     es unsinnig, ausgerechnet die Karte zuzuklappen, an der gearbeitet
+     wird -- das gewaehlte Projekt ist die Antwort auf die Frage, wegen
+     der jemand diese Seite geoeffnet hat. #}
+  <details class="eintragskarte" id="eintrag-{{ p.id }}"
+           {% if p.id == loeschen_id or p.id == gewaehlt_id %}open{% endif %}>
+    <summary>
+      <div class="bezeichnung">
+        <code class="projektkennung">{{ p.kennung }}</code>
+        {# Das Namensfeld ist die Ueberschrift. Ein Klick hinein darf die
+           Karte nicht auf- und zuklappen -- darum kuemmert sich das
+           Skript unten. #}
+        <input type="text" class="name" name="name:{{ p.id }}" form="seite"
+               value="{{ p.name }}" data-war="{{ p.name }}" maxlength="60"
+               title="Muss eindeutig sein — er ist das Losungswort beim Löschen">
+      </div>
+      {% if p.id == gewaehlt_id %}
+      <span class="badge gewaehlt">gewählt</span>
+      {% endif %}
+      {{ zustandsabzeichen(p.zustand) }}
+    </summary>
+
+    {% if p.id == loeschen_id %}
+    {# ---------------------------------------------------------------
+       Der Loeschschritt. Er ersetzt die Angaben, statt unter ihnen zu
+       stehen: Wer hier ist, hat genau eine Frage zu beantworten.
+
+       ZWEI SICHERUNGEN, UND SIE FANGEN VERSCHIEDENE FEHLER AB -- der
+       Ausgang den, es ueberhaupt getan zu haben; der Name den, es am
+       falschen getan zu haben. Warum so: docs/aufbau.md, Abschnitt 2.
+       --------------------------------------------------------------- #}
+    {% set liegt_drin = p.bestand.values() | sum %}
+    <p class="hint">
+      <strong>Das Projekt {{ p.name }} wird gelöscht.</strong>
+      Das lässt sich nicht rückgängig machen —
+      {% if liegt_drin %}
+      mit ihm gehen {{ menge(p.bestand.sammlung, "Eintrag", "Einträge") }}
+      der Sammlung, {{ menge(p.bestand.aufgaben, "Aufgabe", "Aufgaben") }},
+      {{ menge(p.bestand.meilensteine, "Meilenstein", "Meilensteine") }}
+      und {{ menge(p.bestand.entscheidungen, "Entscheidung", "Entscheidungen") }}.
+      {% else %}
+      es ist allerdings leer: Verloren gehen nur seine Beschreibung, seine
+      Vision und seine Bereiche.
+      {% endif %}
+    </p>
+    {# HIER STAND, DASS ES DEN AUSGANG NOCH NICHT GIBT. Seit dem
+       07.09.2026 gibt es ihn, und damit ist dieser Satz der, den
+       docs/aufbau.md Abschnitt 6 zu ersetzen verlangt hat -- nicht zu
+       vergessen, sondern zu ersetzen.
+
+       Der Hinweis auf das WAEHLEN ist kein Beiwerk: Geloescht wird hier
+       jedes Projekt, ausgegeben aber immer nur das gewaehlte. Ohne den
+       Satz exportiert jemand A und loescht B. #}
+    <p class="muted small">
+      Vorher sichern: <a href="/einrichtung#export">Jetzt ausgeben</a>
+      schreibt den ganzen Bestand als Text weg — der Export gilt für das
+      <strong>gewählte</strong> Projekt, dieses hier also erst wählen.
+    </p>
+    <form method="post" action="/projekte/loeschen" class="row">
+      <input type="hidden" name="id" value="{{ p.id }}">
+      <label for="losung-{{ p.id }}" class="muted small">
+        Zum Fortfahren <strong>{{ p.name }}</strong> eintippen:
+      </label>
+      {# Das Feld steht LEER da und traegt den Namen nur als grauen
+         Hinweis. Waere es vorbelegt, genuegte ein Druck auf die
+         Eingabetaste -- dann koennte man die Abfrage auch weglassen. #}
+      <input type="text" id="losung-{{ p.id }}" name="wort" autocomplete="off"
+             placeholder="{{ p.name }}" size="18" autofocus>
+      <button type="submit" class="danger">Löschen</button>
+      <a href="/#eintrag-{{ p.id }}" class="muted small">Abbrechen</a>
+    </form>
+
+    {% else %}
+    <dl class="angaben">
+      <div>
+        <dt><label for="beschreibung-{{ p.id }}">Beschreibung</label></dt>
+        <dd class="weit">
+          <textarea id="beschreibung-{{ p.id }}" class="feld" rows="2"
+                    name="beschreibung:{{ p.id }}" form="seite"
+                    data-war="{{ p.beschreibung }}">{{ p.beschreibung }}</textarea>
+        </dd>
+      </div>
+      {# DIE VISION IST EIN FELD UND KEIN REITER. Ein Projekt hat genau
+         eine; als Eingabefeld steht sie bei dem, wofuer sie gilt. Ein
+         eigener Reiter haette fuer 2 % des Bestands eine Seite gekostet
+         und offengelassen, fuer welches Projekt sie spricht. #}
+      <div>
+        <dt><label for="vision-{{ p.id }}">Vision</label></dt>
+        <dd class="weit">
+          <textarea id="vision-{{ p.id }}" class="feld" rows="3"
+                    name="vision:{{ p.id }}" form="seite"
+                    placeholder="Wohin es gehen soll — darf leer bleiben und später kommen"
+                    data-war="{{ p.vision }}">{{ p.vision }}</textarea>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="zustand-{{ p.id }}">Zustand</label></dt>
+        <dd>
+          <select id="zustand-{{ p.id }}" name="zustand:{{ p.id }}"
+                  form="seite" data-war="{{ p.zustand }}">
+            {% for z in zustaende %}
+            <option {% if z == p.zustand %}selected{% endif %}>{{ z }}</option>
+            {% endfor %}
+          </select>
+          <span class="muted small">— <strong>RUHT</strong> bleibt in der
+            Liegeprobe, <strong>ABGESCHLOSSEN</strong> stellt sie still</span>
+        </dd>
+      </div>
+      {# Der Bereich ist projektspezifisch und wird deshalb HIER gepflegt.
+         Kategorie und Prioritaet beschreiben die Art eines Eintrags und
+         sind ueberall dieselben; der Bereich beschreibt den Gegenstand,
+         und Boots sechs gelten in keinem anderen Projekt. #}
+      <div>
+        <dt>Bereiche</dt>
+        <dd class="weit">
+          <div class="row bereichsliste">
+            {% for b in p.bereiche %}
+            <span class="badge teils">{{ b.wert }}
+              <form method="post" action="/projekte/bereich/loeschen">
+                <input type="hidden" name="id" value="{{ p.id }}">
+                <input type="hidden" name="bereich" value="{{ b.id }}">
+                <button type="submit" class="weg"
+                        title="{% if b.benutzt %}Geht nicht — {{ b.benutzt }} Eintrag/Einträge stehen darauf{% else %}Bereich entfernen{% endif %}"
+                        aria-label="Bereich {{ b.wert }} entfernen">&times;</button>
+              </form>
+            </span>
+            {% else %}
+            <span class="muted small">noch keiner</span>
+            {% endfor %}
+            {# Ein eigenes Formular, kein Feld am Seitenformular: Ein
+               Bereich entsteht sofort, er wird nicht mitgespeichert. #}
+            <form method="post" action="/projekte/bereich" class="inline">
+              <input type="hidden" name="id" value="{{ p.id }}">
+              <input type="text" name="wert" size="14" placeholder="hinzufügen…"
+                     title="Der Bereich beschreibt den Gegenstand und gilt nur in diesem Projekt">
+            </form>
+          </div>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="datum-{{ p.id }}">Eingetragen am</label></dt>
+        <dd>
+          <input type="date" id="datum-{{ p.id }}" class="datumsfeld"
+                 name="eingetragen_am:{{ p.id }}" form="seite"
+                 value="{{ p.eingetragen_am }}" data-war="{{ p.eingetragen_am }}">
+        </dd>
+      </div>
+    </dl>
+
+    <div class="row kartenknoepfe">
+      {# Der zerstoerende Knopf zuletzt: erst sieht man, womit man es zu
+         tun hat, dann kann man es wegwerfen. Er fuehrt nur in den
+         Schritt -- geloescht wird erst hinter dem Losungswort. #}
+      <form method="get" action="/">
+        <input type="hidden" name="loeschen" value="{{ p.id }}">
+        <button type="submit" class="danger"
+                title="Fragt erst nach dem Projektnamen — gelöscht wird noch nichts">
+          Projekt löschen</button>
+      </form>
+    </div>
+
+    {# Der Bestand ist kein Feld -- er ist abgelesen und spricht ueber den
+       Eintrag, statt ihn zu sein. Deshalb die Fusszeile: Eine Unterkarte
+       darf eine haben (docs/gestaltung.md). #}
+    <p class="kartenfuss">
+      {% if p.bestand.values() | sum %}
+      {{ menge(p.bestand.sammlung, "Eintrag", "Einträge") }} in der
+      Sammlung ·
+      {{ menge(p.bestand.aufgaben, "Aufgabe", "Aufgaben") }} ·
+      {{ menge(p.bestand.meilensteine, "Meilenstein", "Meilensteine") }} ·
+      {{ menge(p.bestand.entscheidungen, "Entscheidung", "Entscheidungen") }}
+      {% else %}
+      {# Viermal null ist keine Auskunft, sondern eine Zeile, die man
+         erst lesen muss, um zu sehen, dass nichts dasteht. #}
+      Noch nichts eingetragen.
+      {% endif %}
+    </p>
+    {% endif %}
+  </details>
+  {% endfor %}
+
+  <p class="kartenfuss">
+    Gewählt wird oben in der Projektübersicht — hier stehen die Angaben.
+    Die Fußzeile jeder Karte sagt, was darin liegt.
+  </p>
+</section>
+{% endif %}
+
+<section id="neues-projekt">
+  <div class="kartenkopf">
+    <h2>Neues Projekt</h2>
+    <a class="kartenhilfe" href="/hilfe#projekte-neu"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+  <form method="post" action="/projekte/neu">
+    <dl class="angaben">
+      <div>
+        <dt><label for="neu-name">Name</label></dt>
+        <dd class="weit">
+          <input type="text" id="neu-name" name="name" class="feld" required
+                 maxlength="60" autocomplete="off"
+                 title="Muss eindeutig sein — er ist das Losungswort beim Löschen und beim Zurücksetzen">
+        </dd>
+      </div>
+      <div>
+        <dt><label for="neu-beschreibung">Beschreibung</label></dt>
+        <dd class="weit">
+          <textarea id="neu-beschreibung" name="beschreibung" rows="2"
+                    class="feld"></textarea>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="neu-vision">Vision</label></dt>
+        <dd class="weit">
+          <textarea id="neu-vision" name="vision" rows="3" class="feld"
+                    placeholder="Wohin es gehen soll — darf leer bleiben und später kommen"></textarea>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="neu-zustand">Zustand</label></dt>
+        <dd>
+          <select id="neu-zustand" name="zustand">
+            {% for z in zustaende %}<option>{{ z }}</option>{% endfor %}
+          </select>
+        </dd>
+      </div>
+      {# KEINE VORGABE, und das ist kein Versehen: Ein erfundenes Datum
+         waere schlimmer als eine Nachfrage. Deshalb steht das Feld leer
+         da und ist zugleich Pflicht. #}
+      <div>
+        <dt><label for="neu-datum">Eingetragen am</label></dt>
+        <dd>
+          <input type="date" id="neu-datum" name="eingetragen"
+                 class="datumsfeld" required>
+          <span class="muted small">— keine Vorgabe: ein erfundenes Datum
+            wäre schlimmer als eine Nachfrage</span>
+        </dd>
+      </div>
+      <div>
+        <dt><label for="neu-bereiche">Bereiche</label></dt>
+        <dd class="weit">
+          <input type="text" id="neu-bereiche" name="bereiche" class="feld"
+                 placeholder="systeme, quellen, server — mit Komma getrennt, später änderbar">
+        </dd>
+      </div>
+    </dl>
+    <div class="row kartenknoepfe">
+      <button type="submit">Projekt anlegen</button>
+    </div>
+  </form>
+  <p class="kartenfuss">
+    Ein neues Projekt ist danach gleich das gewählte. Die Kennung vergibt
+    die Ablage; Kennungen zählen über alle Projekte und werden nie
+    wiederverwendet.
+  </p>
+</section>
+
+<script>
+// Der Speichern-Knopf wird erst dunkel, wenn etwas anders dasteht als
+// beim Aufbau der Seite -- derselbe Wortlaut und dieselbe Regel wie unter
+// Systeme in Boot. Ein Knopf, der immer dunkel ist, sagt bei jedem Blick
+// "hier ist etwas zu tun", und das stimmt fast nie.
+(function () {
+  var knopf = document.getElementById("seite-speichern");
+  if (!knopf) { return; }
+  var felder = document.querySelectorAll('[form="seite"][data-war]');
+
+  function offen() {
+    for (var i = 0; i < felder.length; i++) {
+      if (felder[i].value !== felder[i].dataset.war) { return true; }
+    }
+    return false;
+  }
+
+  function pruefen() {
+    var etwas = offen();
+    knopf.disabled = !etwas;
+    knopf.title = etwas
+      ? "Änderungen an allen Projekten übernehmen"
+      : "Nichts geändert — es gibt nichts zu speichern";
+  }
+
+  for (var i = 0; i < felder.length; i++) {
+    felder[i].addEventListener("input", pruefen);
+    felder[i].addEventListener("change", pruefen);
+  }
+  pruefen();
+
+  // WER DAS PROJEKT WECHSELT, VERLIERT SONST STILL, WAS ER GETIPPT HAT.
+  // Waehlen ist ein eigenes Formular; es schickt die Felder am
+  // Seitenformular nicht mit. Ohne diese Frage waere die Arbeit weg, und
+  // niemand haette es gemerkt -- genau die Falle, gegen die das gewaehlte
+  // Projekt im Band gebaut ist, nur andersherum.
+  document.addEventListener("submit", function (ereignis) {
+    var form = ereignis.target;
+    if (!form.querySelector("[data-waehlen]")) { return; }
+    if (offen() && !confirm(
+        "Es stehen ungespeicherte Änderungen an einem Projekt. " +
+        "Beim Wechseln gehen sie verloren. Trotzdem wechseln?")) {
+      ereignis.preventDefault();
+    }
+  });
+})();
+
+// Ein Klick ins Namensfeld darf die Karte nicht auf- und zuklappen.
+//
+// Das Feld sitzt im <summary>, und ein Klick dorthin schaltet das
+// <details> um -- man setzt den Cursor und die Karte klappt zu. Dasselbe
+// gilt fuer die Abzeichen daneben, wenn jemand daneben trifft.
+document.addEventListener("click", function (ereignis) {
+  if (ereignis.target.closest("summary input, summary .badge")) {
+    ereignis.preventDefault();
+    if (ereignis.target.tagName === "INPUT") { ereignis.target.focus(); }
+  }
+});
+
+// Enter im Bereichsfeld legt den Bereich an.
+//
+// Das Feld steht in einem eigenen Formular mit genau einem Feld und ohne
+// Knopf -- dort schickt Enter von selbst ab. Ein Knopf daneben waere der
+// zweite Weg fuer denselben Schritt und machte die Zeile breiter als die
+// Abzeichen davor.
+</script>
+{% endblock %}
