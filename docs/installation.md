@@ -24,6 +24,7 @@ geschätzten Zahl.
 | | Debian | Windows |
 |---|---|---|
 | **System** | Debian, Ubuntu oder Raspberry Pi OS. Das Skript benutzt `apt-get`, `systemd` und die Paketnamen dieser Familie und bricht auf allem anderen ab, statt auf halbem Weg liegenzubleiben. | Windows 10 oder 11 (oder eine Serverfassung daneben), PowerShell 5.1 — beides ab Werk dabei. Dazu **Python 3.10 oder neuer**: Anders als auf Debian bringt Windows keins mit. |
+| **Werkzeuge** | `git`, um den Stand zu holen. Auf einer schlanken Installation fehlt es und kommt mit `sudo apt-get install git`. Python bringt das System mit. | **Beides fehlt ab Werk: `git` und Python.** Windows 11 bringt `ssh`, `curl` und `tar` mit, Git nicht — und Python ebenso wenig. Wie sie hinkommen, steht bei *Installieren auf Windows*. |
 | **Maschine** | Sehr wenig. Eine SQLite-Datei, ein Python-Prozess, ein nginx — 1 GB Arbeitsspeicher und ein Kern genügen. | Noch weniger, denn der nginx fällt weg. Was der Dienst tatsächlich braucht, steht danach auf **Server Health**. |
 | **Netz** | Eine Adresse, die bleibt. Sie steht in `MARLEI_BASE_URL` und damit im Kopfband; ändert sie sich, ist ein erneuter Lauf die Antwort. | Dasselbe — und hier hängt mehr daran: **Aus dieser Adresse nimmt der Start den Port.** |
 | **Rechte** | `root`, einmal. Danach läuft alles unter einem eigenen Dienstkonto ohne Anmelderecht. | Administrator, einmal. Danach läuft die Aufgabe unter dem eigenen Konto `marlei-tasks` ohne Anmelderecht. |
@@ -67,6 +68,33 @@ in Ruhe.
 ---
 
 ## 3. Installieren auf Windows
+
+### Zuerst: Git und Python
+
+**Windows bringt weder das eine noch das andere mit.** Git holt den Stand
+und hält ihn später aktuell — `update.ps1` macht einen `git pull` —, und
+Python ist das, worauf die Anwendung läuft. Beides liegt im
+Paketmanager, der auf Windows 11 ab Werk dabei ist:
+
+```powershell
+winget install --id Git.Git -e
+winget install --id Python.Python.3.12 -e
+```
+
+**Danach das PowerShell-Fenster schließen und ein neues öffnen.** Ein
+laufendes Fenster kennt den erweiterten Suchpfad nicht; wer im selben
+weitermacht, bekommt *„Der Befehl … wurde nicht gefunden"* und hält es
+für einen Fehlschlag der Installation. Zur Probe im neuen Fenster:
+
+```powershell
+git --version
+python --version
+```
+
+*Wer Python lieber von python.org holt: Beim Installieren **„Add
+python.exe to PATH"** anhaken, sonst findet das Setup es nicht.*
+
+### Dann das Setup
 
 In einer PowerShell **als Administrator**, im geklonten Projekt:
 
