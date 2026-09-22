@@ -102,22 +102,29 @@
 
     {% block content %}{% endblock %}
   </main>
-  {# Die Fusszeile beantwortet "welche Version ist das" -- mehr nicht.
+  {# Die Fusszeile beantwortet "welche Version ist das, und wo geht es
+     weiter" -- mehr nicht.
 
-     ANDERS ALS IN BOOT stehen hier weder Lizenz noch Quelltext: Beide
-     Verweise zeigten heute ins Leere, denn dieses Produkt liegt nur auf
-     HiDrive und hat mit Absicht noch kein oeffentliches Repository. Die
-     Lizenzentscheidung gilt weiter, nur ihr Sichtbarwerden hat keine
-     Eile; beide Zeilen kommen mit der Veroeffentlichung zurueck.
+     LIZENZ UND QUELLTEXT STEHEN SEIT DEM 22.09.2026 WIEDER HIER. Bis
+     dahin fehlten beide: Dieses Produkt lag nur auf HiDrive und hatte mit
+     Absicht kein oeffentliches Repository, ein Verweis darauf haette ins
+     Leere gezeigt. Seit dem 21.09.2026 gibt es das Repository, und damit
+     ist die Fusszeile dieselbe wie in MARLEI Boot -- vier Angaben.
 
-     Der Stand fehlt, wenn die Anwendung nicht ueber install.sh
-     hierhergekommen ist. Dann steht dort nichts -- lieber keine Angabe als
-     eine erfundene. Warum so: docs/gestaltung.md, "Was in der Fußzeile
-     steht". #}
+     Der Quelltextverweis ist dabei kein Schmuck: Die AGPL legt ihn fuer
+     eine Oberflaeche nahe, die ueber das Netz benutzt wird (Paragraf 13),
+     und diese hier wird genau so benutzt.
+
+     Der Stand fehlt, wenn die Anwendung nicht ueber install.sh bzw.
+     install.ps1 hierhergekommen ist. Dann steht dort nichts -- lieber
+     keine Angabe als eine erfundene. Warum so: docs/gestaltung.md, "Was
+     in der Fußzeile steht". #}
   <footer class="muted">
     <p>
       MARLEI Tasks{% if stand_kurz %}
       <span class="fusstrenner">&middot;</span> Version: <code>{{ stand_kurz }}</code>{% endif %}
+      <span class="fusstrenner">&middot;</span> <a href="/hilfe#lizenz">AGPL-3.0</a>
+      <span class="fusstrenner">&middot;</span> <a href="https://github.com/exmig/marlei-tasks">Quelltext</a>
     </p>
   </footer>
 <script>

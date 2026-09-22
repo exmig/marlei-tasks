@@ -136,8 +136,18 @@ with TestClient(anwendung.app) as c:
            "die eigene steht hinter der geteilten und darf ueberschreiben")
     pruefe('id="befunde"' in start, "der Behaelter fuer die Befunde ist da")
     pruefe("192.168.178.99" in start, "die Adresse steht im Band")
-    pruefe("AGPL" not in start and "github.com" not in start,
-           "die Fusszeile zeigt nicht auf ein Repository, das es nicht gibt")
+    # Bis zum 22.09.2026 stand hier die Gegenprobe: dass die Fusszeile
+    # NICHT auf ein Repository zeigt, das es nicht gab. Seit dem
+    # 21.09.2026 gibt es es, und die AGPL legt den Verweis fuer eine
+    # ueber das Netz benutzte Oberflaeche nahe -- die Pruefung dreht sich
+    # deshalb um. Der Lizenzverweis geht ins eigene Hilfekapitel und
+    # nicht nach draussen: Wer wissen will, was die Lizenz fuer ihn
+    # bedeutet, soll nicht auf gnu.org landen.
+    pruefe('href="/hilfe#lizenz">AGPL-3.0</a>' in start,
+           "die Fusszeile verweist auf das Lizenzkapitel der Hilfe")
+    pruefe('href="https://github.com/exmig/marlei-tasks">Quelltext</a>'
+           in start,
+           "und auf den Quelltext -- was AGPL Paragraf 13 nahelegt")
 
     r = c.get("/befunde.html?von=/sammlung")
     pruefe(r.status_code == 200, "/befunde.html antwortet (das Skript holt es "

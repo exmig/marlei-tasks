@@ -6,7 +6,6 @@ python tests/test_datenbank.py          # braucht nichts ausser Python
 python -m venv venv                     # fuer den Rest:
 ./venv/bin/pip install -r webui/requirements.txt httpx
 ./venv/bin/python tests/test_app.py
-./venv/bin/python tools/pruefe-gemeinsam.py
 ```
 
 Unter Windows dasselbe mit den Pfaden, die es dort gibt:
@@ -17,7 +16,6 @@ py -3 tests\test_datenbank.py
 py -3 -m venv venv
 .\venv\Scripts\pip install -r webui\requirements.txt httpx
 .\venv\Scripts\python tests\test_app.py
-.\venv\Scripts\python tools\pruefe-gemeinsam.py
 ```
 
 **Beide Reihen laufen auf beiden Systemen, und sie pruefen auf beiden
@@ -56,8 +54,9 @@ der gebaut ist. Zuerst der Rahmen:
   zu zeigen.
 - Beide Stylesheets werden geladen, und das eigene steht **hinter** dem
   geteilten — sonst überschriebe die falsche Datei.
-- Die Fußzeile zeigt **nicht** auf ein Repository, das es noch nicht
-  gibt.
+- Die Fußzeile verweist auf das **Lizenzkapitel der Hilfe** und auf den
+  **Quelltext**. Bis zum 22.09.2026 stand hier die Gegenprobe — dass sie
+  auf kein Repository zeigt, das es nicht gibt.
 - Das gewählte Projekt steht auf **allen neun** Reitern im Band, nicht
   nur auf dem, wo es gewählt wurde. Das ist der ganze Punkt: Eine
   Auswahl, die vier Seiten filtert und dort unsichtbar ist, lässt
@@ -457,15 +456,10 @@ Systemen geprüft — nicht nur auf dem, auf dem die Reihe gerade läuft:
   wer er ist.
 
 
-**pruefe-gemeinsam.py** ist kein Test der Anwendung, sondern des
-Abschreibens: Es hält die mit MARLEI Boot geteilten Dateien gegeneinander
-(`tools/gemeinsam.txt`). Es setzt keine Regel durch — die Regel lautet,
-eine Änderung an einer geteilten Datei in **derselben Sitzung** in beide
-Repositories zu tragen. Das Skript findet nur, was durchrutscht.
-
-**Es liegt in beiden Repositories und läuft in beiden.** Ein Prüfer auf
-nur einer Seite meldet nur, was auf dieser Seite auffällt: Wer in Boot
-etwas an `style.css` ändert, bekommt dort keine Meldung. Skript und
-Liste stehen deshalb selbst als `gleich` in der Liste — damit bewacht
-der Prüfer die Doppelung, die er schafft. Das Gegenüber sucht er neben
-dem eigenen Projektordner; `--gegen` gibt es von Hand an.
+**Ein drittes Skript steht hier nicht mehr.** `pruefe-gemeinsam.py`
+prüft nicht die Anwendung, sondern das Abschreiben zwischen den Modulen
+der Suite — es beschreibt also die Arbeit an diesem Werkzeug und nicht
+das Werkzeug. Es liegt beim Entwickeln im Ordner `tools/`, wird aber
+nicht mitveröffentlicht; in MARLEI Boot steht es aus demselben Grund
+seit jeher in `.gitignore`. Wer an dem Werkzeug selbst arbeitet, findet
+es dort samt seiner Liste.
