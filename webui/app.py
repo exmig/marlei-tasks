@@ -1663,8 +1663,11 @@ async def stein_aufgabe(request: Request) -> RedirectResponse:
     aufgabe = str(formular.get("aufgabe", ""))
     loesen = str(formular.get("loesen", "")) == "ja"
     if not aufgabe.isdigit():
+        # Der erste Eintrag der Auswahl ist seit dem 22.09.2026 leer --
+        # wer auf "Hinzufügen" klickt, ohne etwas auszusuchen, landet
+        # hier. Kein Fehler, nur nichts getan, und das steht dann da.
         return _meldung("/meilensteine#eintrag-%s" % nummer,
-                        "Keine Aufgabe gewaehlt.")
+                        "Keine Aufgabe gewählt.")
     with datenbank.verbindung() as conn:
         projekt, stein = _stein_der_zaehlt(request, conn, nummer)
         if not projekt or not stein:

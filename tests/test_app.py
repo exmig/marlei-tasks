@@ -964,6 +964,26 @@ with TestClient(anwendung.app) as c:
            or "Windows" in c.get("/meilensteine").text,
            "und das Abzeichen ist an diesem Stein verschwunden")
 
+    # DIE AUSWAHL STARTET LEER, seit dem 22.09.2026. Vorher stand dort
+    # zugeklappt die erste freie Aufgabe -- eine Kennung wie die
+    # zugeordneten darüber, und genau so einmal falsch gelesen. Dazu die
+    # zweite Falle: Ein Klick auf „Hinzufügen" fügte dann eine Aufgabe
+    # zu, die niemand ausgesucht hatte.
+    seite = c.get("/meilensteine").text
+    pruefe('<option value="">— bitte wählen —</option>' in seite,
+           "die Auswahl beginnt mit einem leeren Eintrag")
+    pruefe('class="muted small">Aufgabe hinzufügen</label>' in seite,
+           "und ihre Beschriftung ist sichtbar, nicht nur für Vorleser")
+    r = c.post("/meilensteine/aufgabe",
+               data={"id": stein["id"], "aufgabe": ""},
+               follow_redirects=False)
+    with datenbank.verbindung() as conn:
+        m = datenbank.meilenstein(conn, stein["id"])
+    pruefe(r.status_code == 303
+           and "gewählt" in unquote(r.headers["location"])
+           and len(m["aufgaben"]) == 1,
+           "ohne Auswahl passiert nichts, und es steht da")
+
     print("\nDie Abnahme haengt an den Aufgaben")
     r = c.post("/meilensteine/abnehmen", data={"id": stein["id"]},
                follow_redirects=False)

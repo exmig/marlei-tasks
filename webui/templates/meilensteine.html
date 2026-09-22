@@ -323,11 +323,26 @@
         selbst eine Aufgabe.</em>
       </p>
       {% endif %}
+      {# DIE BESCHRIFTUNG IST SICHTBAR, und die Auswahl startet leer.
+
+         Vorher stand hier ein Dropdown ohne sichtbare Beschriftung,
+         direkt unter der Liste der zugeordneten Aufgaben -- und
+         zugeklappt zeigte es die erste FREIE Aufgabe, also eine Kennung
+         wie jede darueber. Am 22.09.2026 genau so falsch gelesen: "A-036
+         haengt an M-010", dabei stand dort das Angebot, sie
+         hinzuzufuegen.
+
+         Der leere erste Eintrag ist dabei der wichtigere Teil. Er
+         aendert, was man zugeklappt sieht -- eine Aufforderung statt
+         einer Kennung -- und nimmt nebenbei die zweite Falle weg: Mit
+         vorgewaehltem ersten Eintrag fuegte ein Klick auf "Hinzufuegen"
+         eine Aufgabe zu, die niemand ausgesucht hatte. #}
       {% if freie %}
       <form method="post" action="/meilensteine/aufgabe" class="row">
         <input type="hidden" name="id" value="{{ m.id }}">
-        <label for="dazu-{{ m.id }}" class="sr-nur">Aufgabe hinzufügen</label>
+        <label for="dazu-{{ m.id }}" class="muted small">Aufgabe hinzufügen</label>
         <select id="dazu-{{ m.id }}" name="aufgabe" class="dazuwahl">
+          <option value="">— bitte wählen —</option>
           {% for a in freie %}
           <option value="{{ a.id }}">{{ a.kennung }} {{ a.titel }}</option>
           {% endfor %}
