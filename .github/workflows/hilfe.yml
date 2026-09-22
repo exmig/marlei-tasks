@@ -1,0 +1,116 @@
+# ===========================================================================
+# Die Hilfe ins Netz stellen -- bei jeder Aenderung, ohne dass jemand daran
+# denken muss.
+#
+# WOFUER. Die Hilfe ist die Fuehrung durch neun Register: was jede Karte
+# tut, warum sie so steht, wo die Grenzen sind. Zu sehen bekommt sie sonst
+# nur, wer MARLEI Tasks vorher installiert und sich anmeldet -- also gerade
+# nicht der, der noch ueberlegt, ob sich das lohnt. GitHub zeigt eine
+# HTML-Vorlage als Quelltext, und in Markdown nachgebaut fiele genau das
+# weg, worum es geht: dass es aussieht wie die Anwendung.
+#
+# WARUM VON SELBST. Eine Seite von Hand nachzuziehen heisst, sie veralten zu
+# lassen; nach drei Monaten ist sie schlechter als keine, weil eine alte
+# Oberflaeche wie ein totes Projekt aussieht. Wer sie einmal von Hand
+# hochlaedt, macht die Arbeit zweimal.
+#
+# ZWEI SEITEN. index.html zeigt Linux, hilfe-windows.html zeigt Windows,
+# und jede verweist auf die andere. Der Grund steht in
+# tools/hilfe-vorschau.py -- kurz: MARLEI Tasks laeuft auf beiden, die
+# Vorlage traegt sechs Weichen, und eine veroeffentlichte Seite weiss
+# nicht, wer sie liest. Das ist der Unterschied zu MARLEI Boot, aus dem
+# dieser Ablauf abgeschrieben ist.
+#
+# WENN ER FEHLSCHLAEGT. GitHub schickt eine Mail an den, der geschoben hat,
+# und der Lauf steht rot unter Actions. Eine Marke im README waere die
+# sichtbarste Meldung -- sie steht mit Absicht nicht dort: Die Startseite
+# richtet sich an Betreiber, nicht an Entwickler, und ein rotes Zeichen
+# dort sagt ihnen "kaputt", wo nur eine Seite nicht neu gebaut wurde.
+#
+# WAS HIER NICHT PASSIERT. Es wird nichts installiert und nichts getestet.
+# Dieser Ablauf rendert eine Vorlage und legt das Ergebnis ab -- mehr nicht.
+# ===========================================================================
+name: Hilfe veröffentlichen
+
+on:
+  push:
+    branches: [main]
+    # Nur was die Seite wirklich veraendert. Ohne diese Liste liefe der
+    # Ablauf bei jedem Commit -- und ein Ablauf, der staendig grundlos
+    # laeuft, wird nicht mehr angesehen, wenn er einmal rot ist.
+    #
+    # Kuerzer als in MARLEI Boot, und das ist kein Versehen: Dort laedt das
+    # Werkzeug zwei Module aus webui/ nach, hier keines. hilfe.html setzt
+    # keinen einzigen Wert ein; was die Seite sonst braucht, steht in
+    # base.html und dem Stueck _befunde.html, das sie einbindet.
+    paths:
+      - 'webui/templates/hilfe.html'
+      - 'webui/templates/base.html'
+      - 'webui/templates/_befunde.html'
+      - 'webui/static/**'
+      - 'tools/hilfe-vorschau.py'
+      - '.github/workflows/hilfe.yml'
+  # Von Hand ausloesbar: fuer den ersten Lauf und fuer den Fall, dass jemand
+  # nachsehen will, ob es noch geht.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Zwei Laeufe gleichzeitig wuerden sich beim Ablegen in die Quere kommen.
+# Abgebrochen wird der laufende NICHT: Er ist womoeglich schon halb
+# veroeffentlicht, und eine halbe Seite ist schlimmer als eine alte.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.ablegen.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      # Nicht webui/requirements.txt: Das Werkzeug rendert nur eine Vorlage
+      # und braucht weder FastAPI noch uvicorn noch die Datenbank. Was es
+      # braucht, steht hier -- und faellt auf, wenn es mehr wird.
+      - name: Was zum Rendern gebraucht wird
+        run: pip install 'jinja2>=3.1'
+
+      # --streng: Bricht ab, wenn auf einer der beiden Seiten noch ein
+      # Verweis auf eine Route des Servers steht, ein Formular absendet,
+      # eine Seitenkarte darauf gelandet ist oder im Band "ohne Kennwort"
+      # steht. Alles vier waere still falsch -- ein Klick ins 404, ein Knopf
+      # ohne Wirkung, eine Aussage ueber eine fremde Maschine.
+      - name: Seiten bauen und prüfen
+        run: python tools/hilfe-vorschau.py build/hilfe --streng
+
+      # EINMAL VON HAND, und zwar vorher: Settings -> Pages -> Build and
+      # deployment -> Source: GitHub Actions.
+      #
+      # In MARLEI Boot versuchte der erste Lauf am 05.09.2026, die Seite
+      # selbst anzulegen (enablement: true), und bekam "Create Pages site
+      # failed: Resource not accessible by integration". In einem
+      # Repository, das einer Organisation gehoert -- und exmig ist eine --,
+      # darf der GITHUB_TOKEN eine Pages-Seite nicht erschaffen: lesen und
+      # ablegen ja, anlegen nein. Der Versuch bleibt deshalb auch hier
+      # draussen: Ein Schritt, der jedes Mal dasselbe nicht darf, ist kein
+      # Komfort, sondern ein rotes Kreuz mit Ansage.
+      - name: Pages einrichten
+        uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/hilfe
+
+      - name: Ablegen
+        id: ablegen
+        uses: actions/deploy-pages@v5

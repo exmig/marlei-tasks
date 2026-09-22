@@ -96,7 +96,7 @@ gleichzeitig schreiben, ist es die falsche Grundlage.
 | Schritt | Wo es steht |
 |---|---|
 | 1. Installieren — ein Befehl | [docs/installation.md](docs/installation.md) |
-| 2. Bedienen | der Reiter **Hilfe** in der Anwendung selbst |
+| 2. Bedienen | der Reiter **Hilfe** in der Anwendung selbst, oder [dieselbe Seite im Netz](https://exmig.github.io/marlei-tasks/) |
 | 3. Warum es so gebaut ist | [docs/aufbau.md](docs/aufbau.md) und [docs/datenhaltung.md](docs/datenhaltung.md) |
 
 ```bash
