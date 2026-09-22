@@ -984,6 +984,32 @@ with TestClient(anwendung.app) as c:
            and len(m["aufgaben"]) == 1,
            "ohne Auswahl passiert nichts, und es steht da")
 
+    # DAS ABNAHMEDATUM, seit dem 22.09.2026. Vorher stempelte der Knopf
+    # immer heute -- und genau aus diesem Datum rechnet die Straße die
+    # Dauer. Abgenommen wird aber fast nie an dem Tag, an dem die letzte
+    # Aufgabe fertig wurde.
+    seite = c.get("/meilensteine").text
+    pruefe('name="datum"' in seite and 'max="%s"' % datenbank.heute() in seite,
+           "an der Abnahme steht ein Datumsfeld, vorbelegt mit heute")
+    r = c.post("/meilensteine/abnehmen",
+               data={"id": zweiter["id"], "datum": "2099-01-01"},
+               follow_redirects=False)
+    pruefe("art=schlecht" in r.headers["location"]
+           and "Zukunft" in unquote(r.headers["location"]),
+           "in der Zukunft wird nicht abgenommen -- geprüft im Server und "
+           "nicht nur mit max im Browser")
+    r = c.post("/meilensteine/abnehmen",
+               data={"id": zweiter["id"], "datum": "2020-01-01"},
+               follow_redirects=False)
+    pruefe("art=schlecht" in r.headers["location"]
+           and "eingetragen" in unquote(r.headers["location"]),
+           "und vor dem Eintrag auch nicht -- die Dauer wäre negativ")
+    r = c.post("/meilensteine/abnehmen",
+               data={"id": zweiter["id"], "datum": "kein Datum"},
+               follow_redirects=False)
+    pruefe("art=schlecht" in r.headers["location"],
+           "und was kein Datum ist, wird abgewiesen")
+
     print("\nDie Abnahme haengt an den Aufgaben")
     r = c.post("/meilensteine/abnehmen", data={"id": stein["id"]},
                follow_redirects=False)
@@ -1007,6 +1033,29 @@ with TestClient(anwendung.app) as c:
            "Datum entstehen in einem Zug")
     # DIE MELDUNG SAGT, WAS DER EINE KNOPF GETAN HAT.
     satz = unquote(r.headers["location"])
+    # Und mit einem nachgetragenen Datum landet genau dieses in der
+    # Ablage -- samt der Dauer, die daraus faellt. Gerechnet wird bis zum
+    # Abnahmedatum und nicht bis heute; sonst nennte die Meldung eine
+    # andere Zahl als die Straße daneben.
+    with datenbank.verbindung() as conn:
+        dritter = datenbank.meilenstein_anlegen(
+            conn, projekt, "Nachgetragen", "2026-09-01")
+        a_spaet = datenbank.aufgabe_anlegen(
+            conn, projekt, "Dazu", bereiche["server"], "2026-09-01",
+            abnahme=["geht"])
+        datenbank.aufgabe_zuschlagen(conn, a_spaet, dritter)
+        datenbank.aufgabe_abschliessen(conn, a_spaet, "erledigt")
+    r_alt = c.post("/meilensteine/abnehmen",
+                   data={"id": dritter, "datum": "2026-09-08"},
+                   follow_redirects=False)
+    with datenbank.verbindung() as conn:
+        m_alt = datenbank.meilenstein(conn, dritter)
+    pruefe(m_alt["abnahme_am"] == "2026-09-08"
+           and m_alt["abschluss_am"] == "2026-09-08",
+           "ein nachgetragenes Datum landet in beiden Feldern")
+    pruefe("7 Tagen" in unquote(r_alt.headers["location"]),
+           "und die Dauer rechnet bis dorthin, nicht bis heute")
+
     pruefe("Dauer" in satz and "Umweg" in satz,
            "und die Meldung nennt Dauer und Umwege -- die drei anderen "
            "Handgriffe fallen ab, statt getan zu werden")
@@ -1015,7 +1064,8 @@ with TestClient(anwendung.app) as c:
     pruefe("zeigen=alle" in c.get("/meilensteine").text,
            "der Filter dorthin steht in der Kopfzeile")
     with datenbank.verbindung() as conn:
-        pruefe(len(datenbank.meilensteine(conn, projekt, offen_nur=False)) == 2,
+        # Drei: die beiden dieses Blocks und der nachgetragene von oben.
+        pruefe(len(datenbank.meilensteine(conn, projekt, offen_nur=False)) == 3,
                "aus der Ablage verschwindet er nicht")
 
     print("\nWas dazwischenkam")

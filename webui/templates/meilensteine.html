@@ -424,8 +424,24 @@
         einzeln vergessen lassen, sind einer.</strong>
       </p>
       <div class="row kartenknoepfe">
-        <form method="post" action="/meilensteine/abnehmen" class="inline">
+        {# DAS DATUM STEHT NEBEN DEM KNOPF, seit dem 22.09.2026.
+
+           Vorher stempelte die Abnahme immer den heutigen Tag. Das ist
+           fast nie der Tag, an dem die letzte Aufgabe fertig wurde --
+           und genau aus diesem Datum rechnet die Strasse die Dauer. Ein
+           Knopf, der immer heute stempelt, macht jede Dauer um die Tage
+           laenger, die zwischen Fertigwerden und Draufsehen liegen.
+
+           Vorbelegt mit heute, weil das der haeufige Fall bleibt; "max"
+           verhindert im Browser die Zukunft. Geprueft wird trotzdem im
+           Server -- siehe _abnahmedatum_taugt(): Ein Feld mit "max" ist
+           eine Auskunft, keine Pruefung. #}
+        <form method="post" action="/meilensteine/abnehmen" class="row inline">
           <input type="hidden" name="id" value="{{ m.id }}">
+          <label for="abnahme-{{ m.id }}" class="muted small">Abgenommen am</label>
+          <input type="date" id="abnahme-{{ m.id }}" name="datum"
+                 class="datumsfeld" value="{{ heute }}" max="{{ heute }}"
+                 {% if not m.abnehmbar %}disabled{% endif %}>
           <button type="submit" {% if not m.abnehmbar %}disabled{% endif %}
                   title="{% if m.abnehmbar %}Alle Aufgaben sind erledigt{% else %}Erst wenn alle zugeordneten Aufgaben erledigt sind{% endif %}">
             {% if m.abnehmbar %}Abnehmen

@@ -1844,12 +1844,12 @@ def strasse(conn: sqlite3.Connection, projekt_id: int) -> list[dict]:
             (projekt_id,)):
         m = _stein_ausbauen(conn, dict(z))
         m["abnahme_deutsch"] = datum_zeigen(m["abnahme_am"])
-        m["dauer"] = _tage_zwischen(m["eingetragen_am"], m["abnahme_am"])
+        m["dauer"] = tage_zwischen(m["eingetragen_am"], m["abnahme_am"])
         steine.append(m)
     return steine
 
 
-def _tage_zwischen(von: str, bis: str) -> int | None:
+def tage_zwischen(von: str, bis: str) -> int | None:
     """Wie viele Tage zwischen zwei Daten liegen -- oder None."""
     try:
         return (date.fromisoformat(bis) - date.fromisoformat(von)).days
@@ -1938,7 +1938,7 @@ def _archiveintrag(art: str, register: str, satz: dict, titel: str,
         "eingetragen_deutsch": datum_zeigen(eingetragen),
         "fertig_am": fertig_am,
         "fertig_deutsch": datum_zeigen(fertig_am),
-        "dauer": _tage_zwischen(eingetragen, fertig_am),
+        "dauer": tage_zwischen(eingetragen, fertig_am),
         "satz": satz,
     }
 

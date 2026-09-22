@@ -26,6 +26,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sqlite3
+from datetime import date
 from pathlib import Path
 from urllib.parse import quote
 
@@ -1685,6 +1686,40 @@ async def stein_aufgabe(request: Request) -> RedirectResponse:
                         "gelöst" if loesen else "zugeordnet"), "gut")
 
 
+def _abnahmedatum_taugt(tag: str, stein: dict) -> str:
+    """Leer, wenn das Datum taugt -- sonst der Satz, der es sagt.
+
+    **Zwei Faelle sind keine Tippfehler, sondern Unmoeglichkeiten**, und
+    beide wuerden still eine falsche Dauer erzeugen:
+
+      in der Zukunft   Ein Meilenstein, der morgen abgenommen wurde, ist
+                       eine Behauptung ueber etwas, das nicht passiert
+                       ist.
+      vor dem Eintrag  Abgenommen, bevor es ihn gab -- die Dauer waere
+                       negativ, und die Strasse zeigte einen Stein, der
+                       rueckwaerts gebaut wurde.
+
+    Geprueft wird hier und nicht im Browser: Ein Datumsfeld mit ``max``
+    ist eine Auskunft, keine Pruefung -- es faellt weg, sobald jemand das
+    Formular direkt abschickt.
+    """
+    try:
+        gewaehlt = date.fromisoformat(tag)
+    except ValueError:
+        return "»%s« ist kein Datum." % tag
+    if gewaehlt > date.today():
+        return "Abgenommen wird nicht in der Zukunft."
+    eingetragen = stein.get("eingetragen_am", "")
+    try:
+        if eingetragen and gewaehlt < date.fromisoformat(eingetragen):
+            return ("%s wurde am %s eingetragen — davor kann er nicht "
+                    "abgenommen worden sein."
+                    % (stein["kennung"], datenbank.datum_zeigen(eingetragen)))
+    except ValueError:
+        pass
+    return ""
+
+
 @app.post("/meilensteine/abnehmen")
 async def stein_abnehmen(request: Request) -> RedirectResponse:
     """Die Abnahme -- vier Handgriffe in einem Knopf.
@@ -1694,11 +1729,19 @@ async def stein_abnehmen(request: Request) -> RedirectResponse:
     """
     formular = await request.form()
     nummer = str(formular.get("id", ""))
+    tag = str(formular.get("datum", "")).strip() or datenbank.heute()
     with datenbank.verbindung() as conn:
         projekt, stein = _stein_der_zaehlt(request, conn, nummer)
         if not projekt or not stein:
             return _meldung("/meilensteine", "Diesen Meilenstein gibt es "
                                              "nicht.", "schlecht")
+        # DAS DATUM WIRD GEPRUEFT UND NICHT GEGLAUBT. Es geht in die
+        # Dauer auf der Straße ein, und eine Dauer, die niemand
+        # nachrechnen kann, ist schlimmer als keine.
+        fehler = _abnahmedatum_taugt(tag, stein)
+        if fehler:
+            return _meldung("/meilensteine#eintrag-%s" % nummer, fehler,
+                            "schlecht")
         if not stein["abnehmbar"]:
             offen = len(stein["aufgaben"]) - stein["aufgaben_fertig"]
             if not stein["aufgaben"]:
@@ -1711,8 +1754,13 @@ async def stein_abnehmen(request: Request) -> RedirectResponse:
                 "%s: %d Aufgabe%s ist noch offen."
                 % (stein["kennung"], offen, "n" if offen > 1 else ""),
                 "schlecht")
-        datenbank.meilenstein_abnehmen(conn, int(nummer))
-        dauer = datenbank.tage_seit(stein["eingetragen_am"])
+        datenbank.meilenstein_abnehmen(conn, int(nummer), tag)
+        # Gerechnet wird bis zum ABNAHMEDATUM und nicht bis heute. Bis
+        # zum 22.09.2026 stand hier tage_seit(), und das war richtig,
+        # solange nur heute gestempelt werden konnte -- mit einem
+        # nachgetragenen Datum nennte es eine andere Zahl als die
+        # Straße daneben.
+        dauer = datenbank.tage_zwischen(stein["eingetragen_am"], tag)
 
     return _meldung(
         "/meilensteine",
