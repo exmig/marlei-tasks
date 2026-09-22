@@ -37,8 +37,19 @@
 {{ n }} {{ eins if n == 1 else viele }}
 {%- endmacro %}
 
+{# NULL TAGE HEISST EIN TAG, seit dem 22.09.2026. Vorher stand dort "am
+   selben Tag" -- sachlich richtig und in einer Zeile voller Zahlen ein
+   Fremdkoerper: Wer die Spalte ueberfliegt, vergleicht Zahlen, und
+   zwischen "20 Tage" und "1 Tag" stand ploetzlich ein halber Satz.
+
+   Dass damit 0 und 1 dasselbe anzeigen, ist Absicht und keine
+   Ungenauigkeit: Gemessen wird in ganzen Tagen. Was am selben Tag
+   anfing und fertig wurde, hat einen Tag gedauert; was einen Tag spaeter
+   fertig wurde, auch. Wer die beiden Faelle unterscheiden will, braucht
+   keine andere Beschriftung, sondern eine feinere Messung -- und die
+   gibt die Ablage nicht her, dort stehen Daten und keine Zeiten. #}
 {% macro tage(n) -%}
-{% if n is none %}—{% elif n == 0 %}am selben Tag{% elif n == 1 %}1 Tag{% else %}{{ n }} Tage{% endif %}
+{% if n is none %}—{% elif n <= 1 %}1 Tag{% else %}{{ n }} Tage{% endif %}
 {%- endmacro %}
 
 {% if not projekt %}
@@ -211,16 +222,15 @@
          ueberfliegt man diese Liste -- der Wortlaut steht darunter, wenn
          man ihn braucht.
 
-         Bei einem UMZUG ist die Dauer keine Arbeitsdauer, sondern die
-         Liegezeit bis zum Umzug. Deshalb steht dort ein anderes Wort und
-         keine Zahl ohne Deutung. #}
+         BEI EINEM UMZUG IST DIE ZAHL EINE LIEGEZEIT und keine
+         Arbeitsdauer. Hier stand deshalb bis zum 22.09.2026 "lag 6 Tage"
+         -- das Wort ist wieder heraus: Die Abschlussmarke in derselben
+         Zeile sagt bereits "aufgabe" oder "meilenstein", und der Filter
+         darueber trennt Enden von Umzuegen. Zweimal dasselbe zu sagen
+         macht die Zeile laenger und nicht klarer. #}
       <span class="archivdaten muted small nowrap">
         {{ e.eingetragen_deutsch }} &rarr; {{ e.fertig_deutsch }}
-        {% if e.abschlussart == 'ende' %}
         <span class="dauerzahl">{{ tage(e.dauer) }}</span>
-        {% else %}
-        <span class="dauerzahl">lag {{ tage(e.dauer) }}</span>
-        {% endif %}
       </span>
     </summary>
 

@@ -968,3 +968,24 @@ main.anmeldung { max-width: 28rem; margin-top: 2.5rem; }
    Abschnitten der Karte steht ohnehin eine Trennlinie, und die bringt
    ihren Abstand mit (.kartentrenner in style.css). */
 #stand form + p { margin-top: .5rem; }
+
+/* Die Kopfzeile im Archiv ist leiser als die in den Registern.
+   ------------------------------------------------------------------------
+
+   NUR HIER, und deshalb unter #archiv: .titelzeile gilt fuer jede
+   Eintragskarte -- Sammlung, Aufgaben, Meilensteine. Dort ist der Titel
+   das, wonach man sucht, und er darf hervorstechen.
+
+   Im Archiv nicht. Die Zeile traegt seit dem 22.09.2026 (E-027) alles,
+   was frueher im Quittungsbuch stand: Kennung, Register, Abschluss,
+   beide Daten, Dauer. Ein fetter Titel in .95rem zwischen lauter
+   gedaempften Angaben liest sich dann wie eine Ueberschrift ueber ihnen,
+   dabei ist er eine Angabe unter ihnen.
+
+   Dieselbe Groesse wie die Kennung daneben, und ohne Fettung. Die
+   Schriftfarbe bleibt: Sie ist das, woran man die Zeile wiedererkennt --
+   gedaempft wie die Kennung waere die Zeile ohne Halt. */
+#archiv .bezeichnung .titelzeile {
+  font-weight: 400;
+  font-size: .82rem;
+}
