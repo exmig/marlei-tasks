@@ -878,3 +878,93 @@ section > h3 { margin: 1rem 0 .2rem; font-size: .92rem; }
 /* Die Anmeldeseite: eine Karte, schmal und mittig. Ein Kennwortfeld ueber
    sechzig Zeichen Breite sieht aus wie ein Formular, das noch mehr will. */
 main.anmeldung { max-width: 28rem; margin-top: 2.5rem; }
+
+/* ==========================================================================
+   DER SCHIEBEREGLER auf der Karte Stand -- ein Knopf, kein Kaestchen.
+
+   Warum ein <button> und kein <input type="checkbox">: siehe die
+   Anmerkung an der Stelle in einrichtung.html. Kurz -- ein Kaestchen, das
+   sich selbst abschickt, braucht JavaScript, und ohne es saehe der
+   Schalter aus, als sei er kaputt.
+
+   Gebaut aus zwei Kindern statt aus Pseudoelementen am Knopf selbst: Die
+   Bahn braucht ein eigenes Element, an dem der Knauf haengen kann, und
+   das Wort daneben soll mitklicken.
+   ========================================================================== */
+.schalter {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  background: none;
+  border: none;
+  padding: .1rem;
+  cursor: pointer;
+  /* Der Knopf traegt selbst keine Flaeche -- sichtbar ist nur, was in
+     ihm steht. Der Fokusrahmen muss deshalb an ihn und nicht an die
+     Bahn: Sonst sieht man beim Tabben nicht, wo man ist. */
+  border-radius: 999px;
+}
+.schalter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Das Wort. Es steht VOR der Bahn, damit die Bahn am rechten Rand der
+   Zeile endet -- bündig mit der Auswahl darunter. */
+.schalterwort {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--muted);
+  /* Feste Breite, damit die Bahn nicht springt, wenn aus "aus" ein "an"
+     wird. Zwei Zeichen plus Luft. */
+  min-width: 1.7rem;
+  text-align: right;
+}
+.schalter[aria-checked="true"] .schalterwort { color: var(--accent-mig); }
+
+.schalterbahn {
+  position: relative;
+  display: inline-block;
+  width: 2.3rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--knopf-flaeche);
+  transition: background-color .15s ease, border-color .15s ease;
+}
+/* Der Knauf. "left" statt "transform", weil die Bahn eine feste Groesse
+   hat und die Rechnung damit an einer Stelle steht. */
+.schalterbahn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: .15rem;
+  width: .85rem;
+  height: .85rem;
+  margin-top: -.425rem;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: left .15s ease, background-color .15s ease;
+}
+.schalter[aria-checked="true"] .schalterbahn {
+  background: var(--accent-mig);
+  border-color: var(--accent-mig);
+}
+.schalter[aria-checked="true"] .schalterbahn::after {
+  left: calc(100% - 1rem);
+  background: #ffffff;
+}
+.schalter:hover .schalterbahn { border-color: var(--muted); }
+
+/* Wer keine Bewegung will, bekommt keine. Der Schalter springt dann --
+   das ist kein Verlust: Die Auskunft ist der Zustand, nicht der Weg
+   dorthin. */
+@media (prefers-reduced-motion: reduce) {
+  .schalterbahn, .schalterbahn::after { transition: none; }
+}
+
+/* Die Lagezeile gehoert zur Auswahl darueber und nicht zum naechsten
+   Abschnitt -- sie rueckt deshalb nur wenig ab. Zwischen den drei
+   Abschnitten der Karte steht ohnehin eine Trennlinie, und die bringt
+   ihren Abstand mit (.kartentrenner in style.css). */
+#stand form + p { margin-top: .5rem; }

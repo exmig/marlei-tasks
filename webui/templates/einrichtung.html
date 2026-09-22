@@ -59,36 +59,7 @@
   </p>
   {% endif %}
 
-  {# DER OFFLINE-MODUS UND DIE SUCHE -- zwei Schalter, und der Unterschied
-     ist der ganze Grund, warum es zwei sind:
-
-       Offline-Modus   eine Eigenschaft der MASCHINE -- hier ist kein
-                       Ausgang. Gilt fuer alles, was nach draussen fragt,
-                       heute und kuenftig.
-       nie/woechentlich/monatlich
-                       eine Gewohnheit des BEDIENERS -- wie oft
-                       nachgesehen wird, wenn gesucht werden darf.
-
-     Zusammengelegt stuenden hier zwei Bedienelemente mit derselben
-     Wirkung, und man raet, welches gilt. Warum der Schalter ueberhaupt
-     in der Oberflaeche steht und nicht in der Umgebungsdatei wie in
-     MARLEI Boot: webui/einstellungen.py. #}
   <hr class="kartentrenner">
-  <form method="post" action="/einrichtung/offline" class="row sichernspalte">
-    <span>
-      <strong>Offline-Modus</strong>
-      <span class="muted small">— diese Maschine fragt nie nach draußen</span>
-    </span>
-    {# Der Wert geht mit, nicht der Zustand des Kaestchens: Ein nicht
-       angehaktes Kaestchen schickt gar nichts mit, und "aus" waere dann
-       nicht von "nichts abgeschickt" zu unterscheiden. #}
-    <input type="hidden" name="offline"
-           value="{{ '0' if updatestand.offline else '1' }}">
-    <button type="submit" class="folgeknopf">
-      {{ "Ausschalten" if updatestand.offline else "Einschalten" }}
-    </button>
-  </form>
-
   {% if updatestand.offline %}
   <p class="muted small">
     <strong>Es wird nicht nachgesehen.</strong> Solange der Offline-Modus
@@ -148,6 +119,65 @@
     {% endif %}
   </p>
   {% endif %}
+
+  <hr class="kartentrenner">
+  {# DER OFFLINE-MODUS STEHT ZULETZT, und die Reihenfolge der drei
+     Abschnitte ist kein Zufall -- von oben nach unten wird die Frage
+     grundsaetzlicher:
+
+       Version        was hier laeuft
+       Suche          wie oft nachgesehen wird -- eine Gewohnheit des
+                      BEDIENERS, und er aendert sie am ehesten
+       Offline-Modus  ob ueberhaupt gefragt wird -- eine Eigenschaft der
+                      MASCHINE, einmal gesetzt und dann jahrelang nicht
+                      mehr angefasst
+
+     Was am seltensten angefasst wird, steht unten. Und der Schalter, der
+     den Abschnitt darueber verschwinden laesst, steht hinter ihm statt
+     davor: So liest man erst, was da ist, und dann, wie man es
+     abstellt.
+
+     ZUSAMMENGELEGT waeren die beiden ein Raetsel darueber, welches gilt
+     -- zwei Bedienelemente mit derselben Wirkung. Warum der Schalter
+     ueberhaupt in der Oberflaeche steht und nicht in der Umgebungsdatei
+     wie in MARLEI Boot: webui/einstellungen.py. #}
+  <form method="post" action="/einrichtung/offline" class="row sichernspalte">
+    <span>
+      <strong>Offline-Modus</strong>
+      <span class="muted small">— diese Maschine fragt nie nach draußen</span>
+    </span>
+    {# Der Wert geht mit, nicht der Zustand eines Kaestchens: Ein nicht
+       angehaktes Kaestchen schickt gar nichts mit, und "aus" waere dann
+       nicht von "nichts abgeschickt" zu unterscheiden. #}
+    <input type="hidden" name="offline"
+           value="{{ '0' if updatestand.offline else '1' }}">
+    {# EIN KNOPF, DER WIE EIN SCHIEBEREGLER AUSSIEHT -- und kein
+       Kaestchen mit einem Skript daran.
+
+       Ein <input type="checkbox">, das sich beim Umlegen selbst
+       abschickt, braucht JavaScript; ohne es passierte beim Klicken gar
+       nichts, und der Schalter saehe aus, als sei er kaputt. Ein
+       <button type="submit"> schickt von sich aus ab. Er traegt deshalb
+       role="switch" samt aria-checked -- die Rolle sagt der Vorlesehilfe,
+       was das Ding ist, das Formular erledigt die Wirkung.
+
+       DAS WORT STEHT DANEBEN, nicht nur die Farbe. Dieselbe Regel wie
+       bei der Kennzeichnung im Band: Die Farbe allein waere ein Code,
+       den man kennen muss. Wer Rot und Gruen nicht unterscheidet, liest
+       hier trotzdem "an" oder "aus".
+
+       Und er ersetzt die Woerter "Einschalten"/"Ausschalten": Zwei
+       gleich aussehende Knoepfe untereinander -- hier "Einschalten",
+       darunter "Speichern" -- klebten zusammen und sahen aus, als
+       gehoerten sie zusammen. Sie tun Verschiedenes. #}
+    <button type="submit" class="schalter" role="switch"
+            aria-checked="{{ 'true' if updatestand.offline else 'false' }}"
+            title="{{ "Offline-Modus ausschalten" if updatestand.offline
+                      else "Offline-Modus einschalten" }}">
+      <span class="schalterwort">{{ "an" if updatestand.offline else "aus" }}</span>
+      <span class="schalterbahn"></span>
+    </button>
+  </form>
 </section>
 
 {# ==================================================================
