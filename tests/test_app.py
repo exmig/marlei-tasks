@@ -1187,9 +1187,14 @@ with TestClient(anwendung.app) as c:
     seite = c.get("/history").text
     pruefe("Hier wird nichts eingetragen" in seite,
            "und das steht über allem, nicht in einer Karte")
-    pruefe("Straße" in seite and "Quittungsbuch" in seite
-           and "Archiv" in seite,
-           "die drei Ansichten stehen im Umschalter")
+    # ZWEI ANSICHTEN, seit dem 22.09.2026 (E-027). Das Quittungsbuch
+    # zeigte eine Teilmenge des Archivs und verwies auf eben diese
+    # Einträge -- doppelt war nicht die Buchführung, sondern die
+    # Darstellung.
+    pruefe("Straße" in seite and "Archiv" in seite
+           and "Quittungsbuch" not in seite,
+           "zwei Ansichten stehen im Umschalter, das Quittungsbuch ist "
+           "darin aufgegangen")
 
     print("\nDie Straße")
     strasse = c.get("/history?ansicht=strasse").text
@@ -1201,19 +1206,43 @@ with TestClient(anwendung.app) as c:
         pruefe(steine[0]["benennung"] in strasse,
                "und der abgenommene Stein steht darauf")
 
-    print("\nDas Quittungsbuch")
-    buch = c.get("/history?ansicht=quittung").text
-    pruefe("verworfen</em> bekommt eine Zeile" in buch
-           or "bekommt eine Zeile" in buch,
-           "der Unterschied steht im Kartenfuß: verworfen bekommt eine "
-           "Zeile, aufgabe nicht")
+    print("\nEnde oder Umzug -- die Zusage aus dem Quittungsbuch")
+    # DAS IST DER TEIL, DER BEIM ZUSAMMENLEGEN VERLOREN GEHEN KONNTE.
+    # Ein Eintrag, aus dem eine Aufgabe wurde, ist nicht fertig geworden
+    # -- er ist umgezogen. Zählt man beides zusammen, zählt dieselbe
+    # Arbeit zweimal, und zwar still.
+    pruefe(datenbank.abschlussart("erledigt") == "ende"
+           and datenbank.abschlussart("verworfen") == "ende"
+           and datenbank.abschlussart("aufgabe") == "umzug"
+           and datenbank.abschlussart("meilenstein") == "umzug",
+           "verworfen ist ein Ende, aufgabe und meilenstein sind Umzüge")
+
     with datenbank.verbindung() as conn:
-        zeilen = datenbank.quittungsbuch(conn, projekt)
+        enden = datenbank.archiv(conn, projekt, schluss="ende")
+        umzuege = datenbank.archiv(conn, projekt, schluss="umzug")
+        alles = datenbank.archiv(conn, projekt)
+    pruefe(len(enden) + len(umzuege) == len(alles),
+           "jeder Archiveintrag ist genau eines von beiden")
     umgezogen = [t for t in _sammlung_alle(projekt)
                  if t["abschluss"] == "aufgabe"]
     if umgezogen:
-        pruefe(all(q["kennung"] != umgezogen[0]["kennung"] for q in zeilen),
-               "ein Eintrag, aus dem eine Aufgabe wurde, steht nicht darin")
+        pruefe(all(e["kennung"] != umgezogen[0]["kennung"] for e in enden)
+               and any(u["kennung"] == umgezogen[0]["kennung"]
+                       for u in umzuege),
+               "ein Eintrag, aus dem eine Aufgabe wurde, zählt als Umzug "
+               "und nicht als Abschluss")
+
+    seite = c.get("/history?ansicht=archiv").text
+    pruefe("zählt deshalb nicht als Abschluss" in seite
+           and "dieselbe Arbeit zweimal" in seite,
+           "und der Kartenfuß sagt, warum das keine Kosmetik ist")
+
+    # Alte Lesezeichen aufs Quittungsbuch landen dort, wo dessen Inhalt
+    # jetzt steht -- nicht still auf der Straße.
+    r = c.get("/history?ansicht=quittung", follow_redirects=False)
+    pruefe(r.status_code == 200 and "Archiv" in r.text and "Enden" in r.text,
+           "ein alter Verweis aufs Quittungsbuch führt ins Archiv, "
+           "gefiltert auf die Enden")
 
     print("\nDas Archiv")
     archiv = c.get("/history?ansicht=archiv").text
@@ -1227,6 +1256,12 @@ with TestClient(anwendung.app) as c:
            "der Filter nach Register antwortet")
     pruefe(c.get("/history?ansicht=archiv&art=X").status_code == 200,
            "und ein erfundenes Register faellt auf alle zurueck")
+    for wert in ("ende", "umzug"):
+        pruefe(c.get("/history?ansicht=archiv&schluss=%s" % wert)
+               .status_code == 200,
+               "der Filter nach Abschlussart antwortet -- %s" % wert)
+    pruefe(c.get("/history?ansicht=archiv&schluss=X").status_code == 200,
+           "und eine erfundene Abschlussart faellt auf alle zurueck")
     pruefe(c.get("/history?ansicht=erfunden").status_code == 200,
            "eine erfundene Ansicht faellt auf die Straße zurück")
 

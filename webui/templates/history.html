@@ -3,13 +3,25 @@
 
 {# Der sechste gebaute Reiter -- und der einzige, der nur zeigt.
 
-   DREI ANSICHTEN, UND SIE SIND DIE DREI MAPPENDATEIEN.
+   ZWEI ANSICHTEN AUS DREI MAPPENDATEIEN.
    02-roadmap (4 %) · 06-erledigt (6 %) · 07-archiv (43 %) -- zusammen
-   53 % des Bestands. Sie beantworten drei verschiedene Fragen:
+   53 % des Bestands.
 
-     Strasse        Wie sind wir hierhergekommen?
-     Quittungsbuch  Was ist wann fertig geworden?
-     Archiv         Was stand da im Wortlaut?
+     Strasse   Wie sind wir hierhergekommen?
+     Archiv    Was wurde wann abgeschlossen, und was stand darin?
+
+   BIS ZUM 22.09.2026 WAREN ES DREI (E-027). Das Quittungsbuch stand
+   daneben und beantwortete "was ist wann fertig geworden" -- mit
+   Zeilen, die eine Teilmenge des Archivs waren, und einem Verweis auf
+   eben diese Archiveintraege. Das sah nach doppelter Buchfuehrung aus
+   und war keine: Beide Ansichten fragten dieselben drei Tabellen ab.
+   Doppelt war nicht die Buchfuehrung, sondern die Darstellung.
+
+   WAS DABEI NICHT VERLORENGEHEN DURFTE, ist der Unterschied zwischen
+   einem ENDE und einem UMZUG -- er war der ganze Inhalt des
+   Quittungsbuchs und steht jetzt in datenbank.abschlussart(). Ohne ihn
+   zaehlte dieselbe Arbeit zweimal: der Eintrag, aus dem eine Aufgabe
+   wurde, und die Aufgabe selbst.
 
    HIER WIRD NICHTS EINGETRAGEN. Jede Zeile faellt aus den fuenf
    Registern ab; es gibt auf diesem Reiter keine einzige POST-Route.
@@ -48,14 +60,11 @@
 <div class="row ansichten">
   <a class="knopf {{ 'gewaehlt' if ansicht == 'strasse' }}"
      href="/history?ansicht=strasse">Straße</a>
-  <a class="knopf {{ 'gewaehlt' if ansicht == 'quittung' }}"
-     href="/history?ansicht=quittung">Quittungsbuch</a>
   <a class="knopf {{ 'gewaehlt' if ansicht == 'archiv' }}"
      href="/history?ansicht=archiv">Archiv</a>
   <span class="muted small">
     {% if ansicht == 'strasse' %}Wie sind wir hierhergekommen — Dauer und was dazwischenkam.
-    {% elif ansicht == 'quittung' %}Was ist wann fertig geworden — eine Zeile je Eintrag.
-    {% else %}Was stand da im Wortlaut — der ganze Eintrag, unverändert.{% endif %}
+    {% else %}Was wann abgeschlossen wurde, und was im Wortlaut darin stand.{% endif %}
   </span>
 </div>
 
@@ -64,9 +73,8 @@
 <p class="hint nurschau">
   <strong>Hier wird nichts eingetragen.</strong> Alles auf diesem Reiter
   fällt aus den fünf Registern ab — die Straße aus den abgenommenen
-  Meilensteinen, das Quittungsbuch aus den Abschlüssen, das Archiv aus
-  dem, was dort steht. In der Mappe sind das drei Dateien, die von Hand
-  gepflegt werden.
+  Meilensteinen, das Archiv aus dem, was abgeschlossen wurde. In der
+  Mappe sind das drei Dateien, die von Hand gepflegt werden.
 </p>
 
 {% if ansicht == 'strasse' %}
@@ -144,65 +152,6 @@
   </p>
 </section>
 
-{% elif ansicht == 'quittung' %}
-<section id="quittungsbuch">
-  <div class="kartenkopf">
-    <h2>Quittungsbuch</h2>
-    <span class="muted small" role="status">
-      {{ menge(quittungen | length, "Zeile", "Zeilen") }}</span>
-    <form method="get" action="/history" class="inline">
-      <input type="hidden" name="ansicht" value="quittung">
-      <input type="search" name="suche" class="kartensuche" value="{{ suche }}"
-             placeholder="Suchen…">
-    </form>
-    <a class="kartenhilfe" href="/hilfe#history-quittung"
-       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
-  </div>
-
-  {% if quittungen %}
-  <table class="eng">
-    <thead>
-      <tr>
-        <th>Kennung</th>
-        <th>Bezeichnung</th>
-        <th>Abschluss</th>
-        <th class="nowrap">Eingetragen</th>
-        <th class="nowrap">Fertig</th>
-        <th class="nowrap">Dauer</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for q in quittungen %}
-      <tr>
-        <td><code>{{ q.kennung }}</code></td>
-        <td><a href="/history?ansicht=archiv#eintrag-{{ q.art }}-{{ q.id }}">{{ q.titel }}</a>
-          <div class="muted small">{{ q.register }}</div></td>
-        <td>{{ abschlussabzeichen(q.abschluss) }}</td>
-        <td class="nowrap muted">{{ q.eingetragen_deutsch }}</td>
-        <td class="nowrap muted">{{ q.fertig_deutsch }}</td>
-        <td class="nowrap">{{ tage(q.dauer) }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="muted">
-    {% if suche %}Nichts gefunden zu <strong>{{ suche }}</strong> —
-      <a href="/history?ansicht=quittung">alle zeigen</a>.
-    {% else %}Noch nichts abgeschlossen.{% endif %}
-  </p>
-  {% endif %}
-
-  {# DER UNTERSCHIED, DER LEICHT VERLOREN GEHT. #}
-  <p class="kartenfuss">
-    <strong>Ein Unterschied geht hier leicht verloren:</strong>
-    <em>verworfen</em> bekommt eine Zeile, <em>aufgabe</em> nicht — es
-    ist nicht fertig, es zieht um. Ein Eintrag der Sammlung, aus dem eine
-    Aufgabe wurde, steht deshalb nicht hier; seine Zeile schreibt die
-    Aufgabe, wenn sie fertig ist.
-  </p>
-</section>
-
 {% else %}
 <section id="archiv">
   <div class="kartenkopf">
@@ -218,6 +167,19 @@
          href="/history?ansicht=archiv&amp;art=A">Aufgaben {{ zahlen.archiv_je_art.A }}</a>
       <a class="knopf {{ 'gewaehlt' if art == 'M' }}"
          href="/history?ansicht=archiv&amp;art=M">Meilensteine {{ zahlen.archiv_je_art.M }}</a>
+    </div>
+    {# ZWEITE REIHE, UND SIE TRAEGT DIE FRAGE DES ALTEN QUITTUNGSBUCHS.
+       Die erste filtert, WOHER ein Eintrag kommt; diese, WAS sein
+       Abschluss bedeutet. Wer "Enden" waehlt, sieht genau das, was
+       frueher im Quittungsbuch stand -- ohne dass es dafuer eine eigene
+       Ansicht braucht. Siehe datenbank.abschlussart(). #}
+    <div class="row filter">
+      <a class="knopf {{ 'gewaehlt' if not schluss }}"
+         href="/history?ansicht=archiv{{ '&amp;art=' ~ art if art }}">jeder Abschluss</a>
+      <a class="knopf {{ 'gewaehlt' if schluss == 'ende' }}"
+         href="/history?ansicht=archiv&amp;schluss=ende{{ '&amp;art=' ~ art if art }}">Enden {{ zahlen.enden }}</a>
+      <a class="knopf {{ 'gewaehlt' if schluss == 'umzug' }}"
+         href="/history?ansicht=archiv&amp;schluss=umzug{{ '&amp;art=' ~ art if art }}">Umzüge {{ zahlen.umzuege }}</a>
     </div>
     <form method="get" action="/history" class="inline">
       <input type="hidden" name="ansicht" value="archiv">
@@ -244,6 +206,22 @@
       <span class="badge bereich">{{ e.satz.bereich }}</span>
       {% endif %}
       {{ abschlussabzeichen(e.abschluss) }}
+      {# WAS FRUEHER DIE ZEILE IM QUITTUNGSBUCH WAR: die beiden Daten und
+         die Dauer. Sie stehen zugeklappt da, denn genau danach
+         ueberfliegt man diese Liste -- der Wortlaut steht darunter, wenn
+         man ihn braucht.
+
+         Bei einem UMZUG ist die Dauer keine Arbeitsdauer, sondern die
+         Liegezeit bis zum Umzug. Deshalb steht dort ein anderes Wort und
+         keine Zahl ohne Deutung. #}
+      <span class="archivdaten muted small nowrap">
+        {{ e.eingetragen_deutsch }} &rarr; {{ e.fertig_deutsch }}
+        {% if e.abschlussart == 'ende' %}
+        <span class="dauerzahl">{{ tage(e.dauer) }}</span>
+        {% else %}
+        <span class="dauerzahl">lag {{ tage(e.dauer) }}</span>
+        {% endif %}
+      </span>
     </summary>
 
     <dl class="angaben">
@@ -375,6 +353,18 @@
   </p>
   {% endfor %}
 
+  {# DER UNTERSCHIED, DER LEICHT VERLOREN GEHT. Stand bis zum 22.09.2026
+     unter dem Quittungsbuch und gehoert seitdem hierher -- er ist der
+     Grund, warum es die zweite Filterreihe oben gibt. #}
+  <p class="kartenfuss">
+    <strong>Ein Unterschied geht hier leicht verloren:</strong>
+    <em>verworfen</em> ist ein Ende, <em>aufgabe</em> und
+    <em>meilenstein</em> sind keines — da ist nichts fertig geworden, es
+    ist umgezogen. Ein Eintrag der Sammlung, aus dem eine Aufgabe wurde,
+    zählt deshalb nicht als Abschluss; seine Zeile schreibt die Aufgabe,
+    wenn sie fertig ist. <strong>Wer beides zusammen zählt, zählt
+    dieselbe Arbeit zweimal.</strong>
+  </p>
   <p class="kartenfuss">
     In einer Datenbank verschwindet nichts — das Archiv ist deshalb keine
     zweite Ablage, sondern dieselbe von der anderen Seite gesehen. Die

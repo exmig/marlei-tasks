@@ -788,22 +788,31 @@ pruefe(weg[0]["dauer"] == 7,
 pruefe(len(weg[0]["dazwischen"]) == 1,
        "und die Umwege aus dem, was notiert wurde, als es passierte")
 
-print("\nDas Quittungsbuch")
-buch = datenbank.quittungsbuch(conn7, ph)
+print("\nEnde oder Umzug -- was frueher das Quittungsbuch trennte")
+# Seit dem 22.09.2026 (E-027) gibt es keine zweite Ansicht mehr, sondern
+# einen Filter. Die Zusage dahinter ist dieselbe geblieben, und sie ist
+# der Grund fuer diesen Block: Wer Enden und Umzuege zusammenzaehlt,
+# zaehlt dieselbe Arbeit zweimal.
+buch = datenbank.archiv(conn7, ph, schluss="ende")
 kennungen = [q["kennung"] for q in buch]
 pruefe("B-002" in kennungen,
-       "ein VERWORFENER Eintrag der Sammlung bekommt eine Zeile")
+       "ein VERWORFENER Eintrag der Sammlung zaehlt als Ende")
 pruefe("B-001" not in kennungen,
        "einer, aus dem eine Aufgabe wurde, NICHT -- es ist nicht fertig, "
        "es zieht um")
+pruefe("B-001" in [u["kennung"] for u in
+                   datenbank.archiv(conn7, ph, schluss="umzug")],
+       "er steht dafuer unter den Umzuegen -- verschwunden ist er nicht")
 pruefe("A-001" in kennungen and "M-001" in kennungen,
-       "die erledigte Aufgabe und der abgenommene Stein bekommen je eine")
-pruefe(kennungen == sorted(kennungen, key=lambda k: k, reverse=True)
-       or buch[0]["fertig_am"] >= buch[-1]["fertig_am"],
+       "die erledigte Aufgabe und der abgenommene Stein zaehlen als Ende")
+pruefe(buch[0]["fertig_am"] >= buch[-1]["fertig_am"],
        "sortiert nach dem Abschlussdatum, das Juengste oben")
 zeile = [q for q in buch if q["kennung"] == "A-001"][0]
 pruefe(zeile["dauer"] == 8 and zeile["register"] == "Aufgaben",
        "mit Dauer und Register in derselben Zeile")
+pruefe(len(buch) + len(datenbank.archiv(conn7, ph, schluss="umzug"))
+       == len(datenbank.archiv(conn7, ph)),
+       "und jeder Eintrag ist genau eines von beiden")
 
 print("\nEin verworfener Stein bekommt ein Datum, aber keine Abnahme")
 zweiter = datenbank.meilenstein_anlegen(conn7, ph, "Faellt aus", "2026-08-30")
@@ -811,8 +820,9 @@ datenbank.meilenstein_verwerfen(conn7, zweiter, "2026-09-06")
 m = datenbank.meilenstein(conn7, zweiter)
 pruefe(m["abnahme_am"] == datenbank.STRICH and m["abschluss_am"] == "2026-09-06",
        "abnahme_am bleibt leer -- er wurde nicht abgenommen, er faellt weg")
-pruefe(any(q["kennung"] == "M-002" for q in datenbank.quittungsbuch(conn7, ph)),
-       "trotzdem steht er im Quittungsbuch: verworfen bekommt eine Zeile")
+pruefe(any(q["kennung"] == "M-002"
+           for q in datenbank.archiv(conn7, ph, schluss="ende")),
+       "trotzdem zaehlt er als Ende: verworfen ist ein Ende")
 pruefe(not any(s["kennung"] == "M-002" for s in datenbank.strasse(conn7, ph)),
        "auf der Strasse steht er nicht -- dort stehen nur die "
        "abgenommenen")

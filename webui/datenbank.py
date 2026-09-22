@@ -1857,57 +1857,8 @@ def _tage_zwischen(von: str, bis: str) -> int | None:
         return None
 
 
-# Woraus das Quittungsbuch seine Zeilen zieht: Register, Tabelle,
-# Titelspalte, Buchstabe -- und welche Abschluesse eine Zeile bekommen.
-#
-# **DER UNTERSCHIED, DER LEICHT VERLOREN GEHT:** `verworfen` bekommt eine
-# Zeile, `aufgabe` nicht -- *es ist nicht fertig, es zieht um.* Ein
-# Eintrag der Sammlung, aus dem eine Aufgabe wurde, steht deshalb nicht
-# im Quittungsbuch; seine Zeile schreibt die Aufgabe, wenn sie fertig
-# ist. Dasselbe gilt fuer eine Aufgabe, die in einem Meilenstein
-# aufgeht.
-QUITTUNGSFAELLE = (
-    ("B", "topics", "titel", "Sammlung", ("verworfen",)),
-    ("A", "aufgaben", "titel", "Aufgaben", ("erledigt", "verworfen")),
-    ("M", "meilensteine", "benennung", "Meilensteine",
-     ("erledigt", "verworfen")),
-)
-
-
-def quittungsbuch(conn: sqlite3.Connection, projekt_id: int,
-                  suche: str = "") -> list[dict]:
-    """Eine Zeile je Eintrag, mehr soll es nicht sein.
-
-    **Nach dem Abschlussdatum sortiert, das Juengste oben** -- die Frage
-    ist *was ist zuletzt fertig geworden* und nicht *in welcher
-    Reihenfolge wurde es eingetragen*.
-    """
-    zeilen = []
-    for art, tabelle, titelspalte, register, abschluesse in QUITTUNGSFAELLE:
-        fragezeichen = ",".join("?" * len(abschluesse))
-        for z in conn.execute(
-                "SELECT id, %s AS titel, abschluss, abschluss_am, "
-                "eingetragen_am FROM %s WHERE projekt_id = ? "
-                "AND abschluss IN (%s)" % (titelspalte, tabelle, fragezeichen),
-                (projekt_id, *abschluesse)):
-            if suche.strip() and suche.strip().lower() not in z["titel"].lower():
-                continue
-            zeilen.append({
-                "art": art, "id": z["id"], "kennung": kennung(art, z["id"]),
-                "titel": z["titel"], "register": register,
-                "abschluss": z["abschluss"],
-                "eingetragen_am": z["eingetragen_am"],
-                "eingetragen_deutsch": datum_zeigen(z["eingetragen_am"]),
-                "fertig_am": z["abschluss_am"],
-                "fertig_deutsch": datum_zeigen(z["abschluss_am"]),
-                "dauer": _tage_zwischen(z["eingetragen_am"], z["abschluss_am"]),
-            })
-    zeilen.sort(key=lambda q: (q["fertig_am"], q["kennung"]), reverse=True)
-    return zeilen
-
-
 def archiv(conn: sqlite3.Connection, projekt_id: int, art: str = "",
-           suche: str = "") -> list[dict]:
+           suche: str = "", schluss: str = "") -> list[dict]:
     """Was abgeschlossen ist -- im Wortlaut, mit allen Feldern.
 
     **In einer Datenbank verschwindet nichts.** Das Archiv ist deshalb
@@ -1918,6 +1869,10 @@ def archiv(conn: sqlite3.Connection, projekt_id: int, art: str = "",
     **Und hier wird nichts geaendert.** Ein Archiv, in dem man
     nachtraeglich schreiben kann, ist keines. Diese Funktion liest nur;
     einen Weg zurueck gibt es (noch) nicht.
+
+    ``schluss`` filtert seit dem 22.09.2026 nach "ende" oder "umzug" --
+    das ist die Frage, die bis dahin das Quittungsbuch stellte. Leer
+    heisst: beides. Siehe abschlussart() und E-027.
     """
     raus = []
     if art in ("", "B"):
@@ -1935,6 +1890,8 @@ def archiv(conn: sqlite3.Connection, projekt_id: int, art: str = "",
             if m["abschluss"] != STRICH:
                 raus.append(_archiveintrag("M", "Meilensteine", m,
                                            m["benennung"], m["abschluss_am"]))
+    if schluss in ("ende", "umzug"):
+        raus = [e for e in raus if e["abschlussart"] == schluss]
     if suche.strip():
         wort = suche.strip().lower()
         raus = [e for e in raus if wort in e["titel"].lower()]
@@ -1942,19 +1899,57 @@ def archiv(conn: sqlite3.Connection, projekt_id: int, art: str = "",
     return raus
 
 
+# WAS EIN ABSCHLUSS BEDEUTET -- die Unterscheidung, die frueher der
+# ganze Inhalt des Quittungsbuchs war und die beim Zusammenlegen der
+# beiden Ansichten am 22.09.2026 beinahe verlorengegangen waere (E-027).
+#
+#   ende      Hier hoert es auf. "erledigt" und "verworfen" -- beides
+#             zaehlt, auch das Verwerfen: Das ist ein Ende.
+#   umzug     Es ist NICHT fertig, es ist umgezogen. Ein Eintrag der
+#             Sammlung, aus dem eine Aufgabe wurde; eine Aufgabe, die
+#             einem Meilenstein zugeordnet wurde. Die Zeile schreibt
+#             das, was daraus geworden ist -- wenn es fertig ist.
+#
+# **Ohne diese Unterscheidung zaehlte dieselbe Arbeit zweimal**, und zwar
+# still: Ein Eintrag, der zur Aufgabe wurde, und die Aufgabe selbst
+# stuenden beide als Abschluss da. Das ist keine Kosmetik, das ist eine
+# falsche Zahl.
+UMZUG = ("aufgabe", "meilenstein")
+
+
+def abschlussart(abschluss: str) -> str:
+    """"ende" oder "umzug" -- siehe UMZUG."""
+    return "umzug" if abschluss in UMZUG else "ende"
+
+
 def _archiveintrag(art: str, register: str, satz: dict, titel: str,
                    fertig_am: str) -> dict:
+    # Die Dauer wird hier gerechnet und nicht in der Ansicht: Sie faellt
+    # aus zwei Daten ab, die ohnehin im Satz stehen, und eine Zahl, die
+    # an zwei Stellen gerechnet wird, geht an einer davon irgendwann
+    # auseinander.
+    eingetragen = satz.get("eingetragen_am", "")
     return {
         "art": art, "register": register, "id": satz["id"],
         "kennung": satz["kennung"], "titel": titel,
-        "abschluss": satz["abschluss"], "fertig_am": fertig_am,
+        "abschluss": satz["abschluss"],
+        "abschlussart": abschlussart(satz["abschluss"]),
+        "eingetragen_am": eingetragen,
+        "eingetragen_deutsch": datum_zeigen(eingetragen),
+        "fertig_am": fertig_am,
         "fertig_deutsch": datum_zeigen(fertig_am),
+        "dauer": _tage_zwischen(eingetragen, fertig_am),
         "satz": satz,
     }
 
 
 def history_zahlen(conn: sqlite3.Connection, projekt_id: int) -> dict:
-    """Die Zahlen in den drei Kartenkoepfen."""
+    """Die Zahlen in den zwei Kartenkoepfen.
+
+    "quittungen" ist am 22.09.2026 weggefallen und durch "enden" ersetzt
+    -- dieselbe Zahl, nur ohne eigene Ansicht dahinter: wie viele
+    Abschluesse wirklich Enden sind und keine Umzuege. Siehe E-027.
+    """
     steine = strasse(conn, projekt_id)
     dauern = [s["dauer"] for s in steine if s["dauer"] is not None]
     im_archiv = archiv(conn, projekt_id)
@@ -1962,8 +1957,9 @@ def history_zahlen(conn: sqlite3.Connection, projekt_id: int) -> dict:
         "steine": len(steine),
         "tage": sum(dauern),
         "umwege": sum(len(s["dazwischen"]) for s in steine),
-        "quittungen": len(quittungsbuch(conn, projekt_id)),
         "archiv": len(im_archiv),
+        "enden": len([e for e in im_archiv if e["abschlussart"] == "ende"]),
+        "umzuege": len([e for e in im_archiv if e["abschlussart"] == "umzug"]),
         "archiv_je_art": {a: len([e for e in im_archiv if e["art"] == a])
                           for a in ("B", "A", "M")},
     }

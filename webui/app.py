@@ -1910,8 +1910,14 @@ async def entscheidung_weg(request: Request) -> RedirectResponse:
 # ==================================================================== #
 #
 # **Der einzige Reiter, der nur zeigt.** Es gibt hier keine POST-Route:
-# Alles faellt aus den fuenf Registern ab. Drei Ansichten, und sie sind
-# die drei Mappendateien -- Strasse, Quittungsbuch, Archiv.
+# Alles faellt aus den fuenf Registern ab. Zwei Ansichten aus drei
+# Mappendateien -- Strasse und Archiv.
+#
+# **Bis zum 22.09.2026 waren es drei** (E-027). Das Quittungsbuch stand
+# daneben und zeigte eine Teilmenge des Archivs, mit einem Verweis auf
+# eben diese Eintraege. Was es beantwortete, beantwortet jetzt ein Filter
+# im Archiv -- und die Unterscheidung, die dahinterstand, steht in
+# datenbank.abschlussart().
 #
 # **Und einen Weg zurueck gibt es nicht.** Ein versehentlich
 # abgeschlossener Eintrag laesst sich hier nicht wiedereroeffnen; das ist
@@ -1919,19 +1925,28 @@ async def entscheidung_weg(request: Request) -> RedirectResponse:
 # darin steht, ist es kein Problem; es wird eins, wenn es das erste Mal
 # passiert.
 
-HISTORY_ANSICHTEN = ("strasse", "quittung", "archiv")
+HISTORY_ANSICHTEN = ("strasse", "archiv")
 
 
 @app.get("/history", response_class=HTMLResponse)
 def history_seite(request: Request, ansicht: str = "strasse",
-                  art: str = "", suche: str = "") -> HTMLResponse:
+                  art: str = "", suche: str = "",
+                  schluss: str = "") -> HTMLResponse:
+    # ALTE LESEZEICHEN AUF DAS QUITTUNGSBUCH landen im Archiv, gefiltert
+    # auf die Enden -- das ist genau das, was dort stand. Ein stilles
+    # Zurueckfallen auf die Strasse waere die bequemere Zeile und die
+    # falsche: Wer "quittung" aufruft, sucht Abschluesse und keine
+    # Meilensteine. Siehe E-027.
+    if ansicht == "quittung":
+        ansicht, schluss = "archiv", schluss or "ende"
     if ansicht not in HISTORY_ANSICHTEN:
         ansicht = "strasse"
     if art not in ("", "B", "A", "M"):
         art = ""
+    if schluss not in ("", "ende", "umzug"):
+        schluss = ""
 
     steine: list = []
-    quittungen: list = []
     im_archiv: list = []
     zahlen: dict = {}
     offene: list = []
@@ -1945,16 +1960,16 @@ def history_seite(request: Request, ansicht: str = "strasse",
                 # Was noch vor uns liegt -- der letzte Punkt der Strasse
                 # heisst "hier" und zeigt darauf.
                 offene = datenbank.meilensteine(conn, projekt["id"])
-            elif ansicht == "quittung":
-                quittungen = datenbank.quittungsbuch(conn, projekt["id"], suche)
             else:
-                im_archiv = datenbank.archiv(conn, projekt["id"], art, suche)
+                im_archiv = datenbank.archiv(conn, projekt["id"], art, suche,
+                                             schluss)
 
     return html.TemplateResponse(
         request, "history.html",
         rahmen(request, "history", projekt=projekt, ansicht=ansicht,
-               steine=steine, offene=offene, quittungen=quittungen,
-               archiv=im_archiv, zahlen=zahlen, art=art, suche=suche))
+               steine=steine, offene=offene,
+               archiv=im_archiv, zahlen=zahlen, art=art, suche=suche,
+               schluss=schluss))
 
 
 # ==================================================================== #
