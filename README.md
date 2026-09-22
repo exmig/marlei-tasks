@@ -157,7 +157,11 @@ Absicht.
 
 Beiträge in Form von Code werden derzeit **nicht** angenommen; der Grund
 steht offen in [CONTRIBUTING.md](CONTRIBUTING.md). Rückmeldungen dagegen
-sind sehr willkommen.
+sind sehr willkommen — **am besten aus der Anwendung heraus, Reiter
+*Einrichtung*, Karte *Fehlerbericht*:** Der Knopf dort erzeugt einen Text
+mit System, Version und Größe der Ablage, und der geht an
+[support@exmig.de](mailto:support@exmig.de). Wer noch gar nicht so weit
+gekommen ist, schreibt an dieselbe Adresse.
 
 Eine Sicherheitslücke gehört nicht in ein offenes Issue —
 [SECURITY.md](SECURITY.md) sagt, wohin.
