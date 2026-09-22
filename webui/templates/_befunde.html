@@ -27,12 +27,21 @@
   <div class="kartenfuss row">
     {# DER WEG DORTHIN GEHOERT AN DIE KARTE: Wer sie anklickt, landet im
        richtigen Projekt -- die Vorauswahl wird dabei umgestellt, denn
-       ohne das zeigte der Reiter dahinter ein anderes Projekt. #}
+       ohne das zeigte der Reiter dahinter ein anderes Projekt.
+
+       EIN BEFUND OHNE PROJEKT geht den kurzen Weg: Es gibt nichts
+       umzustellen. "Ansehen" hiesse dort ausserdem das Falsche -- man
+       sieht sich nicht ein Projekt an, sondern geht dorthin, wo der
+       Befund herkommt. #}
+    {% if befund.projekt_id %}
     <form method="post" action="/projekte/waehlen">
       <input type="hidden" name="id" value="{{ befund.projekt_id }}">
       <input type="hidden" name="ziel" value="{{ befund.ziel }}">
       <button type="submit" class="ghost">Ansehen &rarr;</button>
     </form>
+    {% else %}
+    <a class="ghost" href="{{ befund.ziel }}">Dorthin &rarr;</a>
+    {% endif %}
     {# Nur Gelb und Blau. Rot ist nie wegklickbar: Ein Werkzeug, das
        seine Arbeit nicht tut, darf nicht aussehen wie eines, das sie
        tut. #}

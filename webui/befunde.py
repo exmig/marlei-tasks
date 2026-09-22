@@ -45,6 +45,7 @@ andere Text der Oberflaeche auch steht. Die Zahlen kommen aus
 from __future__ import annotations
 
 import datenbank
+import updatewacht
 
 # Die Reihenfolge, in der die Karten stehen, wenn mehrere gleichzeitig
 # gelten: dringend zuerst, von oben nach unten.
@@ -99,6 +100,12 @@ KATALOG = (
     # wegen dem die Befunde ueberhaupt ueber alle Projekte laufen.
     {"kennung": "durchsicht", "stufe": "info", "feld": "durchsicht_her",
      "ziel": "/sammlung?ansicht=durchsicht#durchsicht"},
+    # Und der einzige, der ueberhaupt keinem Projekt gehoert: Er betrifft
+    # die Installation und nicht den Bestand. Kein "feld", weil er nicht
+    # aus datenbank.befundzahlen() kommt -- er entsteht unten, nach der
+    # Schleife ueber die Projekte.
+    {"kennung": "neuefassung", "stufe": "info", "feld": None,
+     "ziel": "/einrichtung#stand"},
 )
 
 KENNUNGEN = tuple(e["kennung"] for e in KATALOG)
@@ -141,6 +148,8 @@ def sammeln(conn) -> list[dict]:
     befunde: list[dict] = []
     for p in datenbank.befundzahlen(conn):
         for eintrag in KATALOG:
+            if eintrag["feld"] is None:
+                continue          # gehoert keinem Projekt -- siehe unten
             zahl = p[eintrag["feld"]]
 
             if eintrag["kennung"] == "durchsicht":
@@ -180,6 +189,42 @@ def sammeln(conn) -> list[dict]:
                 "zahl": zahl,
                 "ziel": eintrag["ziel"],
             })
+
+    # -- Eine neuere Fassung. Der einzige Befund, der keinem Projekt
+    # gehoert: Er betrifft die Installation und nicht den Bestand.
+    # Wissenswert, aber niemand muss deswegen aufstehen -- das Werkzeug
+    # laeuft weiter, und wann aktualisiert wird, entscheidet der
+    # Betreiber.
+    #
+    # GEFRAGT WIRD HIER NICHT; gelesen wird nur, was der Waechter zuletzt
+    # hinterlegt hat. Ein Befund entsteht auf jeder Seite -- eine
+    # Netzabfrage darin waere ein Aufruf je Seitenaufbau.
+    lage = updatewacht.stand()
+    if lage["neuer"]:
+        eintrag = next(e for e in KATALOG if e["kennung"] == "neuefassung")
+        befunde.append({
+            "stufe": eintrag["stufe"],
+            "kennung": eintrag["kennung"],
+            "projekt_id": datenbank.OHNE_PROJEKT,
+            # Kein Projektname, und deshalb sagt der Titel selbst, worum
+            # es geht. Bei den anderen steht er vorn ("marlei-boot: 3
+            # Aufgaben ..."), weil man sonst nicht wuesste, wo etwas
+            # liegt; hier gibt es kein Wo.
+            "projekt": "",
+            "projekt_kennung": "",
+            # Kurz, weil der Text darunter denselben Satz ausschreibt:
+            # Zugeklappt ist der Titel das Einzige, was jemand sieht, und
+            # "3 Änderungen liegen bereit" sagt die Folge schon ganz.
+            "titel": _menge(lage["voraus"], "Änderung liegt bereit",
+                            "Änderungen liegen bereit"),
+            # Die Zahl der Aenderungen: Sie steigt, wenn weitere
+            # dazukommen -- und genau dann soll die Karte wiederkommen.
+            "marke": lage["voraus"],
+            "zahl": lage["voraus"],
+            "ziel": eintrag["ziel"],
+            "fassung": lage,
+        })
+
     return sortiert(befunde)
 
 

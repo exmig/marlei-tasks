@@ -1,0 +1,42 @@
+{# Die einzige blaue Karte, und der einzige Befund ohne Projekt: Er
+   betrifft die Installation und nicht den Bestand.
+
+   WISSENSWERT, NIEMAND MUSS DESWEGEN HANDELN. Das Werkzeug laeuft
+   weiter, und wann aktualisiert wird, entscheidet der Betreiber --
+   deshalb steht hier ein Befehl und kein Knopf. Ein Knopf, der das
+   Update selbst ausfuehrte, hiesse: Code mit erhoehten Rechten aus einer
+   Oberflaeche heraus starten. Ob es ihn geben soll, ist eine eigene
+   Frage (A-033) und nicht die dieser Karte.
+
+   GEZAEHLT WERDEN AENDERUNGEN UND NICHT VERSIONSNUMMERN: Dieses Werkzeug
+   wird ueber "git clone" und ein Update-Skript verteilt, der
+   Installationsstand ist also fast nie ein Tag. Siehe
+   webui/updatewacht.py. #}
+<p>
+  Seit dieser Stand eingespielt wurde, {{ "ist" if befund.fassung.voraus == 1 else "sind" }}
+  im Repository
+  <strong>{{ befund.fassung.voraus }}
+  {{ "Änderung" if befund.fassung.voraus == 1 else "Änderungen" }}</strong>
+  dazugekommen{% if befund.fassung.zweig and befund.fassung.zweig != "main" %}
+  (Zweig <code>{{ befund.fassung.zweig }}</code>){% endif %}.
+</p>
+<p>
+  Geholt werden sie mit einem Befehl im Projektordner — <strong>ohne
+  {% if windows %}erhöhte Rechte{% else %}<code>sudo</code>{% endif %}</strong>,
+  das Skript fragt selbst danach:
+</p>
+{# Kopieren statt abtippen: Unter Linux wird der Befehl auf einer anderen
+   Maschine eingegeben, meist in einer SSH-Sitzung daneben. Derselbe Knopf
+   wie beim Fehlerbericht unter Einrichtung. #}
+<div class="befehlszeile">
+  <pre class="ipxe" id="befehl-update">{% if windows %}cd marlei-tasks
+.\setup\windows\update.ps1{% else %}cd marlei-tasks
+./setup/linux/update.sh{% endif %}</pre>
+  <button type="button" class="kopierknopf" data-quelle="befehl-update"
+          title="Befehl kopieren" aria-label="Befehl kopieren">kopieren</button>
+</div>
+<p class="kartenfuss">
+  Das Skript holt den neuen Stand und richtet ihn ein — auch das, was mehr
+  braucht als <code>git pull</code>. Es sichert die Ablage vorher.
+  &middot; <a href="/einrichtung#stand">Wie oft nachgesehen wird &rarr;</a>
+</p>

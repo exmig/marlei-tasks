@@ -350,13 +350,31 @@ CREATE TABLE IF NOT EXISTS entscheidungen (
 -- Projekt**: Sonst naehme das Stillstellen in einem Projekt dieselbe Lage
 -- in einem anderen mit, und ein Befund verschwaende, den nie jemand
 -- gesehen hat.
+--
+-- **PROJEKT 0 HEISST: GEHOERT DER MASCHINE.** Seit dem 22.09.2026 gibt es
+-- einen Befund, der keinem Projekt gehoert -- dass eine neuere Fassung
+-- bereitliegt. Er betrifft die Installation, nicht den Bestand. Damit er
+-- sich wie jeder andere wegklicken laesst, traegt er die 0, und der
+-- Fremdschluessel auf projekte ist dafuer gefallen.
+--
+-- Das ist ein Verlust, und er steht hier, damit er nicht uebersehen wird:
+-- Die Ablage garantiert nicht mehr, dass jede Kenntnisnahme zu einem
+-- echten Projekt gehoert. Dass sie es tut, haelt jetzt eine Pruefung in
+-- tests/test_datenbank.py. Der Preis war die kleinere Wahl gegen eine
+-- zweite Tabelle, deren Doppelung jede kuenftige Meldung der Maschine
+-- geerbt haette.
 CREATE TABLE IF NOT EXISTS kenntnis (
-    projekt_id INTEGER NOT NULL REFERENCES projekte(id),
+    projekt_id INTEGER NOT NULL,
     befund     TEXT NOT NULL,
     seit       TEXT NOT NULL,
     PRIMARY KEY (projekt_id, befund)
 );
 """
+
+# Die Nummer, unter der ein Befund steht, der keinem Projekt gehoert.
+# Null, weil SQLite seine Schluessel bei 1 beginnt -- sie kann also nie
+# mit einem echten Projekt zusammenstossen.
+OHNE_PROJEKT = 0
 
 
 # Die Suche ueber die Sammlung -- fuer die Buendelprobe.
@@ -464,6 +482,37 @@ def anlegen(conn: sqlite3.Connection) -> bool:
     Buendelprobe muss sich dann anders behelfen.
     """
     conn.executescript(SCHEMA)
+
+    # EIN UMBAU, DEN NACHZUEGLER NICHT KANN: Hier faellt keine Spalte
+    # weg, sondern eine Bedingung. "CREATE TABLE IF NOT EXISTS" nimmt aus
+    # einer vorhandenen Tabelle nichts heraus, und ALTER TABLE kennt in
+    # SQLite kein DROP CONSTRAINT -- die Tabelle muss neu gebaut werden.
+    #
+    # Ohne das scheitert auf einer bestehenden Ablage das Wegklicken des
+    # Befunds, der keinem Projekt gehoert: Projekt 0 gibt es in "projekte"
+    # nicht, und der Fremdschluessel weist den INSERT ab. Die Meldung
+    # dabei waere "FOREIGN KEY constraint failed" -- an einem Knopf, der
+    # nur eine Karte zuklappen soll.
+    #
+    # Die Zeilen werden mitgenommen und nicht weggeworfen. Sie sind zwar
+    # von kurzer Lebensdauer (kenntnis_aufraeumen vergisst, was nicht mehr
+    # gilt), aber eine weggeklickte Karte, die nach einem Update wieder
+    # dasteht, sieht aus wie ein Fehler.
+    if any(conn.execute("PRAGMA foreign_key_list(kenntnis)")):
+        spalten = ", ".join(r["name"] for r in conn.execute(
+            "PRAGMA table_info(kenntnis)"))
+        conn.executescript("""
+            CREATE TABLE kenntnis_neu (
+                projekt_id INTEGER NOT NULL,
+                befund     TEXT NOT NULL,
+                seit       TEXT NOT NULL,
+                marke      INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (projekt_id, befund)
+            );
+            INSERT INTO kenntnis_neu (%s) SELECT %s FROM kenntnis;
+            DROP TABLE kenntnis;
+            ALTER TABLE kenntnis_neu RENAME TO kenntnis;
+        """ % (spalten, spalten))
 
     for tabelle, spalten in NACHZUEGLER.items():
         vorhanden = {r["name"] for r in conn.execute(

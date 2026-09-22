@@ -1346,8 +1346,55 @@ with TestClient(anwendung.app) as c:
            "eine Antwort ohne Auskunft wird von keiner Antwort "
            "unterschieden")
 
+    # ================================================================ #
+    # DIE BLAUE KARTE -- der einzige Befund, der keinem Projekt gehört.
+    #
+    # Ohne sie sähe die Auskunft nur, wer Einrichtung öffnet. Sie steht
+    # deshalb auf jeder Seite, und sie ist der Grund, warum `kenntnis`
+    # seit dem 22.09.2026 ohne Fremdschlüssel auskommt: Projekt 0 heißt
+    # „gehört der Maschine“.
+    # ================================================================ #
+    updatewacht.blick(hole=lambda: {"ahead_by": 2, "behind_by": 0})
+    seite = c.get("/meilensteine").text
+    pruefe("Änderungen liegen bereit" in seite,
+           "die Karte steht auf einem Reiter, nicht nur unter Einrichtung")
+    pruefe("update.sh" in seite or "update.ps1" in seite,
+           "und sie nennt den Befehl, mit dem geholt wird")
+    pruefe("Dorthin" in seite and 'action="/projekte/waehlen"'
+           not in seite.split('stufe-info')[-1][:900],
+           "ein Befund ohne Projekt stellt keine Vorauswahl um")
+
+    # Wegklicken: dieselbe Mechanik wie bei jedem anderen Befund, nur mit
+    # der 0. Vor dem 22.09.2026 hätte der Fremdschlüssel hier zugeschlagen
+    # -- und zwar an einem Knopf, der nur eine Karte zuklappen soll.
+    r = c.post("/befund/kenntnis",
+               data={"kennung": "neuefassung", "projekt": "0", "marke": "2",
+                     "zurueck": "/meilensteine"}, follow_redirects=False)
+    pruefe(r.status_code == 303, "die blaue Karte lässt sich wegklicken")
+    seite = c.get("/meilensteine").text
+    # Auf die Marke geprüft, nicht auf den Satz der Sammelzeile: Der
+    # bricht in der Vorlage um, und „zur Kenntnis genommen“ stünde dann
+    # über zwei Zeilen.
+    pruefe('class="bekanntzeile"' in seite
+           and "2 Änderungen liegen bereit" in seite,
+           "weggeklickt heißt leise, nicht weg")
+    pruefe('class="seitenkarte stufe-info"' not in seite,
+           "und die Karte selbst steht nicht mehr da")
+
+    # „Ich weiß Bescheid, bis es schlimmer wird.“ Kommt eine Änderung
+    # dazu, steigt die Marke über die gemerkte -- und die Karte ist zurück.
+    updatewacht.blick(hole=lambda: {"ahead_by": 5, "behind_by": 0})
+    seite = c.get("/meilensteine").text
+    pruefe("5 Änderungen liegen bereit" in seite
+           and 'class="seitenkarte stufe-info"' in seite,
+           "steigt die Zahl, ist es ein neuer Befund und die Karte kommt "
+           "zurück")
+
     einstellungen.setze("updatepruefung", 0)
     updatewacht.vergiss()
+    seite = c.get("/meilensteine").text
+    pruefe("liegen bereit" not in seite,
+           "und ohne Suche steht dort nichts mehr")
 
     print("\nDer Export")
     with datenbank.verbindung() as conn:

@@ -1029,6 +1029,68 @@ pruefe(datenbank.ablageort(str(tmp / "anderswo.db")) == tmp / "anderswo.db",
        "und ein gesetztes gewinnt immer")
 
 
+# ===================================================================== #
+print("\nProjekt 0 -- ein Befund, der keinem Projekt gehoert")
+# ===================================================================== #
+#
+# Seit dem 22.09.2026 traegt "kenntnis" keinen Fremdschluessel mehr:
+# Der Befund "eine neuere Fassung liegt bereit" betrifft die
+# Installation und nicht den Bestand, und er soll sich wegklicken
+# lassen wie jeder andere.
+#
+# DER UMBAU AUF EINER BESTEHENDEN ABLAGE ist der Fall, der zaehlt.
+# "CREATE TABLE IF NOT EXISTS" nimmt aus einer vorhandenen Tabelle nichts
+# heraus, und SQLite kennt kein DROP CONSTRAINT -- ohne den Umbau in
+# anlegen() scheiterte das Wegklicken auf jeder Maschine, die vor diesem
+# Tag installiert wurde, mit "FOREIGN KEY constraint failed".
+
+alt = Path(tempfile.mkdtemp()) / "alt.db"
+mit_fk = sqlite3.connect(alt)
+mit_fk.executescript("""
+    CREATE TABLE projekte (id INTEGER PRIMARY KEY, name TEXT);
+    INSERT INTO projekte (id, name) VALUES (1, 'eins');
+    CREATE TABLE kenntnis (
+        projekt_id INTEGER NOT NULL REFERENCES projekte(id),
+        befund     TEXT NOT NULL,
+        seit       TEXT NOT NULL,
+        marke      INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (projekt_id, befund)
+    );
+    INSERT INTO kenntnis VALUES (1, 'luecken', '2026-09-01', 3);
+""")
+mit_fk.commit()
+mit_fk.close()
+
+frisch = sqlite3.connect(alt)
+frisch.row_factory = sqlite3.Row
+frisch.execute("PRAGMA foreign_keys = ON")
+datenbank.anlegen(frisch)
+
+pruefe(not list(frisch.execute("PRAGMA foreign_key_list(kenntnis)")),
+       "der Fremdschluessel auf projekte ist weg")
+uebrig = list(frisch.execute("SELECT * FROM kenntnis"))
+pruefe(len(uebrig) == 1 and uebrig[0]["befund"] == "luecken"
+       and uebrig[0]["marke"] == 3,
+       "und die weggeklickten Karten sind dabei mitgekommen, nicht "
+       "weggeworfen")
+frisch.execute(
+    "INSERT INTO kenntnis (projekt_id, befund, seit, marke) "
+    "VALUES (0, 'neuefassung', '2026-09-22', 2)")
+pruefe(True, "Projekt 0 laesst sich eintragen -- »gehoert der Maschine«")
+
+# Und die Zusage, die das Schema nicht mehr gibt, haelt jetzt diese
+# Pruefung: Jede Kenntnisnahme gehoert zu einem echten Projekt ODER zur
+# 0. Eine dritte Moeglichkeit gaebe es nur durch einen Fehler im Code.
+frisch.execute("INSERT INTO kenntnis VALUES (99, 'luecken', '2026-09-22', 1)")
+verwaist = [z["projekt_id"] for z in frisch.execute(
+    "SELECT projekt_id FROM kenntnis WHERE projekt_id <> 0 "
+    "AND projekt_id NOT IN (SELECT id FROM projekte)")]
+pruefe(verwaist == [99],
+       "eine Kenntnisnahme ohne Projekt faellt jetzt einer Abfrage auf "
+       "und nicht mehr der Ablage -- der Preis des Umbaus")
+frisch.close()
+
+
 print()
 if FEHLER:
     print("%d Pruefung(en) fehlgeschlagen:" % len(FEHLER))
