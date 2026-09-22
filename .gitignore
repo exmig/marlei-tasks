@@ -26,3 +26,22 @@ build/
 # (docs/datenhaltung.md, Abschnitt 8) -- aber er gehoert nicht ins
 # Repository, sondern dorthin, wo der Betreiber ihn hinlegt.
 export/
+
+
+# Zwei Werkzeuge, die nur beim Entwickeln gebraucht werden: eine Liste
+# und der Pruefer dazu. Sie beschreiben nicht dieses Werkzeug, sondern
+# die Arbeit an ihm, und gehoeren deshalb nicht in den veroeffentlichten
+# Stand. Unversioniert arbeiten sie genauso -- der Pruefer liest die
+# Dateien von der Platte und nicht aus Git.
+#
+# Bewusst hier eingetragen, weil ein "git add -A" sie sonst wortlos
+# mitnimmt.
+#
+# Nachgezogen am 22.09.2026: In marlei-boot stand das von Anfang an so,
+# in marlei-tasks nicht -- und seit der Veroeffentlichung am 21.09.2026
+# lagen beide Dateien oeffentlich auf GitHub. Aus dem naechsten Stand
+# sind sie heraus; in der Geschichte der zwei Commits davor bleiben sie
+# stehen, und das ist in Ordnung: Es steht nichts darin, was nicht
+# jeder lesen darf.
+tools/gemeinsam.txt
+tools/pruefe-gemeinsam.py
