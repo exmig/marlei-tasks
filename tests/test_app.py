@@ -15,6 +15,7 @@ Braucht anders als test_datenbank.py die Abhaengigkeiten aus
 webui/requirements.txt, dazu httpx fuer den Testclient.
 """
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -2165,6 +2166,50 @@ with TestClient(anwendung.app) as c:
     pruefe("alte einzeilige" in aktualisieren
            and "alte einzeilige" in ps_akt,
            "und beide lesen die alte einzeilige Datei weiter")
+
+    # ================================================================ #
+    # EIN LEER GESETZTER NAME ZÄHLT ALS KEINER.
+    #
+    # `os.environ.get(name, vorgabe)` gibt bei einer **leer gesetzten**
+    # Variable den leeren String zurück und nicht die Vorgabe -- und
+    # `Path("")` ist `Path(".")`. Die Falle steht seit jeher in
+    # `datenbank.ablageort()` beschrieben, und am 22.09.2026 ist sie an
+    # zwei neuen Stellen wieder aufgegangen: Die Vorlage führt jeden
+    # Namen mit leerem Wert auf, also ist im Betrieb **jede** dieser
+    # Variablen gesetzt und leer. Auf dev-marlei suchte die Anwendung
+    # ihren Stempel daraufhin im Arbeitsverzeichnis, fand keinen, und die
+    # Karte *Stand* sagte „Hier steht nichts“ über eine saubere
+    # Installation.
+    #
+    # Geprüft wird in einem eigenen Prozess und über **alle** Namen aus
+    # der Vorlage: So deckt die Prüfung auch den ab, den jemand morgen
+    # hinzufügt, und die laufende Reihe bleibt unberührt.
+    # ================================================================ #
+    namen = _re.findall(r"^(MARLEI_[A-Z_]+)=", vorlage, _re.M)
+    ablesen = (
+        "import os, sys; sys.path.insert(0, %r);"
+        "import versionsstand, einstellungen, updatewacht as u;"
+        "print(versionsstand.DATEI); print(einstellungen.DATEI);"
+        "print(u.STAND_DATEI); print(u.REPO); print(u.VERGLEICH)"
+        % str(PROJ / "webui"))
+
+    def _werte(umgebung):
+        lauf = subprocess.run([sys.executable, "-c", ablesen],
+                              capture_output=True, text=True,
+                              env=umgebung)
+        return lauf.stdout.strip().splitlines()
+
+    sauber = {k: v for k, v in os.environ.items()
+              if not k.startswith("MARLEI_")}
+    ohne = _werte(sauber)
+    leer = _werte(dict(sauber, **{n: "" for n in namen}))
+    pruefe(ohne and ohne == leer,
+           "jeder leer gesetzte Name wirkt wie ein nicht gesetzter -- "
+           "%d Name(n) geprüft" % len(namen))
+    # Und die Gegenprobe: Ein Name mit Inhalt wirkt sehr wohl.
+    gesetzt = _werte(dict(sauber, MARLEI_REPO="wer/anders"))
+    pruefe(gesetzt and "wer/anders" in gesetzt[3],
+           "ein Name mit Inhalt wirkt dagegen")
 
     # DER PORT WIRD GEMERKT, NICHT ERFRAGT. Ohne ihn nähme install.sh die
     # 80 -- und bräche auf einer Maschine mit MARLEI Boot ab, obwohl die

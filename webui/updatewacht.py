@@ -72,7 +72,12 @@ STAND_DATEI = Path(os.environ.get("MARLEI_UPDATEWACHT_STAND", "")
 # Wessen Stand verglichen wird. Ueber die Umgebung zu setzen, damit ein
 # Fork sich mit sich selbst vergleicht -- und damit der Test nicht ins
 # Netz muss.
-REPO = os.environ.get("MARLEI_REPO", "exmig/marlei-tasks").strip("/ ")
+# Auch hier: ein leeres MARLEI_REPO zaehlt als keins. Stuende hier der
+# leere String, hiesse die Adresse ".../repos//compare/..." -- eine
+# Anfrage, die immer scheitert, und die Karte sagte "GitHub hat
+# geantwortet, aber keine Auskunft gegeben". Siehe versionsstand.DATEI.
+REPO = (os.environ.get("MARLEI_REPO", "").strip().strip("/ ")
+        or "exmig/marlei-tasks")
 VERGLEICH = os.environ.get("MARLEI_VERGLEICH_ADRESSE", "") or (
     "https://api.github.com/repos/" + REPO + "/compare/{commit}...{zweig}")
 

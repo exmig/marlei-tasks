@@ -41,8 +41,18 @@ from pathlib import Path
 # Geschrieben von setup/linux/install.sh bzw. setup/windows/install.ps1,
 # gleich nach dem Kopieren. Der Pfad laesst sich umbiegen -- die Tests
 # legen sich eine eigene Datei an.
-DATEI = Path(os.environ.get("MARLEI_VERSION_DATEI",
-                            Path(__file__).resolve().parent / "VERSION"))
+#
+# **EIN LEERES MARLEI_VERSION_DATEI ZAEHLT ALS KEINS**, und das ist keine
+# Kosmetik: os.environ.get gibt bei einer leer GESETZTEN Variable den
+# leeren String zurueck und nicht die Vorgabe -- und Path("") ist
+# Path("."). Die Datei wuerde dann im Arbeitsverzeichnis des Dienstes
+# gesucht, dort liegt keine, und die Karte "Stand" saegte "Hier steht
+# nichts" ueber eine Installation, die sauber gestempelt ist. Genau so
+# passiert am 22.09.2026 auf dev-marlei, weil die Vorlage den Namen mit
+# leerem Wert auffuehrt. Dieselbe Falle wie in datenbank.ablageort(),
+# wo sie seit jeher beschrieben steht.
+DATEI = Path(os.environ.get("MARLEI_VERSION_DATEI", "").strip()
+             or Path(__file__).resolve().parent / "VERSION")
 
 # Die Datei aendert sich nur bei einer Installation, wird aber auf jeder
 # Seite gebraucht (die Fusszeile steht in base.html). Gemerkt wird deshalb
