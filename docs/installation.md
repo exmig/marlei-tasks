@@ -327,6 +327,24 @@ sonst nimmt die Sammlung nichts an.
 Alles Weitere erklärt die **Hilfe**: ein Kapitel je Reiter, ein Abschnitt
 je Karte, und das Fragezeichen in jedem Kartenkopf springt genau dorthin.
 
+### Ohne Internet betreiben
+
+**Das geht vollständig, und zwar von Haus aus.** Die Oberfläche lädt
+keine Schrift und kein Stück ihrer selbst von einem fremden Server —
+alles liegt bei der Installation daneben.
+
+Die einzige Abfrage nach außen ist die Frage, ob es eine neuere Fassung
+gibt: einmal in der Woche, bei GitHub, und es geht dabei nichts hin außer
+dem Commit, auf dem diese Installation steht. Wer auch das nicht will,
+legt den **Offline-Modus** um — *Einrichtung → Stand → Einschalten*.
+Dann fragt diese Maschine nirgends mehr nach, und die Auswahl darunter
+verschwindet.
+
+**Nicht zu verwechseln mit *nie*.** Die Auswahl *nie / wöchentlich /
+monatlich* sagt, wie oft von selbst nachgesehen wird; der Offline-Modus
+sagt, dass hier überhaupt kein Ausgang ist — und gilt damit auch für
+alles, was später einmal dazukommt.
+
 ### Das Kennwort
 
 **Das Setup fragt bei der ersten Installation danach**, verdeckt und

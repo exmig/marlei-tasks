@@ -513,13 +513,35 @@ Copy-Item -LiteralPath (Join-Path $PSScriptRoot "files\start.ps1") `
 # "safe.directory": Dieses Skript laeuft mit erhoehten Rechten, der
 # Projektordner gehoert einem normalen Benutzer. Ohne die Angabe
 # verweigert Git die Auskunft ("detected dubious ownership").
+#
+# VIER FELDER STATT EINER ZEILE, seit dem 22.09.2026. Der COMMIT ist der
+# Punkt, von dem aus gezaehlt wird: Ohne ihn kann die Karte "Stand" nicht
+# sagen, ob etwas bereitliegt -- ein "describe" wie v1.0-8-gabc1234 laesst
+# sich mit keinem Tag vergleichen, ein Commit sehr wohl. Der ZWEIG
+# entscheidet, wogegen verglichen wird. Siehe webui/updatewacht.py.
 $STAND = "ohne Git"
+$COMMIT = ""
+$ZWEIG = ""
 if (Get-Command git -ErrorAction SilentlyContinue) {
     $beschrieben = & git -C $SRC_DIR -c safe.directory="$SRC_DIR" describe --tags --always --dirty 2>$null
     if ($LASTEXITCODE -eq 0 -and $beschrieben) { $STAND = $beschrieben.Trim() }
+    $hash = & git -C $SRC_DIR -c safe.directory="$SRC_DIR" rev-parse --short HEAD 2>$null
+    if ($LASTEXITCODE -eq 0 -and $hash) { $COMMIT = $hash.Trim() }
+    $zweig = & git -C $SRC_DIR -c safe.directory="$SRC_DIR" rev-parse --abbrev-ref HEAD 2>$null
+    if ($LASTEXITCODE -eq 0 -and $zweig) { $ZWEIG = $zweig.Trim() }
 }
+# LF und nicht CRLF, und kein BOM: Dieselbe Datei wird unter Linux
+# geschrieben und von demselben Python gelesen. Ein BOM landete sonst im
+# ersten Schluesselnamen, und "stand" hiesse dann nicht mehr "stand".
+$zeilen = @(
+    "# Von install.ps1 geschrieben. Aenderungen gehen beim naechsten Lauf verloren.",
+    "stand=$STAND",
+    "commit=$COMMIT",
+    "zweig=$ZWEIG",
+    ("installiert=" + (Get-Date -Format "yyyy-MM-dd HH:mm"))
+)
 [System.IO.File]::WriteAllText((Join-Path $APP_DIR "app\VERSION"),
-                               $STAND + "`n",
+                               ($zeilen -join "`n") + "`n",
                                (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "    Stand: $STAND"
 

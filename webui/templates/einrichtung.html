@@ -26,26 +26,128 @@
     <a class="kartenhilfe" href="/hilfe#einrichtung-stand"
        title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
   </div>
-  {% if stand %}
-  <p><strong>Version</strong> <code>{{ stand }}</code></p>
+  {% if stand.da %}
+  <p>
+    <strong>Version</strong> <code>{{ stand.stand }}</code>
+    &middot;
+    <strong>Letzte Aktualisierung</strong>
+    {{ stand.installiert or "unbekannt" }}
+  </p>
+  {# Beides steht nur da, wenn es etwas zu sagen gibt. Im Normalfall
+     traegt die Karte zwei Angaben und keinen Satz -- was sie bedeuten,
+     steht in der Hilfe unter Einrichtung. #}
+  {% if "-dirty" in stand.stand %}
+  <p class="muted small warnung">
+    Im Projektordner lag beim Installieren Ungespeichertes — dieser Stand
+    entspricht keinem Commit und lässt sich nicht wiederherstellen.
+  </p>
+  {% endif %}
+  {% if stand.zweig and stand.zweig != "main" %}
+  <p class="muted small">
+    Zweig <code>{{ stand.zweig }}</code> — nicht <code>main</code>. Keine
+    Störung, aber die häufigste Erklärung dafür, dass hier etwas anderes
+    steht als erwartet.
+  </p>
+  {% endif %}
   {% else %}
   <p class="muted">
     Hier steht nichts — und das heißt nicht „Version 0", sondern: Diese
-    Anwendung ist nicht über <code>install.sh</code> hierhergekommen. Auf
-    einem Server, der so aufgesetzt wurde, liegt der Stand in
-    <code>webui/VERSION</code>. Geraten wird er nicht.
+    Anwendung ist nicht über <code>install.sh</code> bzw.
+    <code>install.ps1</code> hierhergekommen. Wo sie so aufgesetzt wurde,
+    liegt der Stand in <code>{{ stand.datei }}</code>. Geraten wird er
+    nicht.
   </p>
   {% endif %}
-  {# NACH NEUEN VERSIONEN WIRD NICHT GESUCHT, und das steht da, statt
-     einen Knopf hinzustellen, der ins Leere fragt: Dieses Produkt hat
-     mit Absicht noch kein oeffentliches Repository. Beim Bau der
-     Veroeffentlichung ist diese Zeile zu ersetzen, nicht zu vergessen. #}
-  <p class="kartenfuss">
-    <strong>Nach neuen Versionen wird nicht gesucht.</strong> Dieses
-    Produkt liegt bisher nur auf HiDrive und hat mit Absicht noch kein
-    öffentliches Repository — es gäbe nichts, wo man fragen könnte. Die
-    Suche kommt mit der Veröffentlichung.
+
+  {# DER OFFLINE-MODUS UND DIE SUCHE -- zwei Schalter, und der Unterschied
+     ist der ganze Grund, warum es zwei sind:
+
+       Offline-Modus   eine Eigenschaft der MASCHINE -- hier ist kein
+                       Ausgang. Gilt fuer alles, was nach draussen fragt,
+                       heute und kuenftig.
+       nie/woechentlich/monatlich
+                       eine Gewohnheit des BEDIENERS -- wie oft
+                       nachgesehen wird, wenn gesucht werden darf.
+
+     Zusammengelegt stuenden hier zwei Bedienelemente mit derselben
+     Wirkung, und man raet, welches gilt. Warum der Schalter ueberhaupt
+     in der Oberflaeche steht und nicht in der Umgebungsdatei wie in
+     MARLEI Boot: webui/einstellungen.py. #}
+  <hr class="kartentrenner">
+  <form method="post" action="/einrichtung/offline" class="row sichernspalte">
+    <span>
+      <strong>Offline-Modus</strong>
+      <span class="muted small">— diese Maschine fragt nie nach draußen</span>
+    </span>
+    {# Der Wert geht mit, nicht der Zustand des Kaestchens: Ein nicht
+       angehaktes Kaestchen schickt gar nichts mit, und "aus" waere dann
+       nicht von "nichts abgeschickt" zu unterscheiden. #}
+    <input type="hidden" name="offline"
+           value="{{ '0' if updatestand.offline else '1' }}">
+    <button type="submit" class="folgeknopf">
+      {{ "Ausschalten" if updatestand.offline else "Einschalten" }}
+    </button>
+  </form>
+
+  {% if updatestand.offline %}
+  <p class="muted small">
+    <strong>Es wird nicht nachgesehen.</strong> Solange der Offline-Modus
+    an ist, fragt diese Anwendung nirgends nach — auch nicht danach, ob es
+    eine neuere Fassung gibt. Das ist der Zustand, in dem sie ohne
+    Internet betrieben werden kann.
   </p>
+  {% else %}
+  <form method="post" action="/einrichtung/updatepruefung" class="row sichernspalte">
+    <span>
+      <strong>Nach neuen Versionen suchen</strong>
+      <span class="muted small">— bei GitHub, nicht bei uns</span>
+    </span>
+    {# "war" traegt den Wert beim Aufbau der Seite -- daran erkennt das
+       Skript, ob sich etwas geaendert hat. #}
+    <select name="tage" data-war="{{ updatestand.intervall }}"
+            aria-label="Wie oft nach neuen Versionen gesucht wird">
+      {% for tage, wort in updateauswahl %}
+      <option value="{{ tage }}" {{ "selected" if tage == updatestand.intervall }}>{{ wort }}</option>
+      {% endfor %}
+    </select>
+    {# Ausgeliefert wird er aktiv: Ohne JavaScript muss sich speichern
+       lassen. Grau macht ihn erst das Skript. #}
+    <button type="submit" class="folgeknopf" id="stand-speichern"
+            title="Wie oft nach neuen Versionen gesucht wird">Speichern</button>
+  </form>
+  {# Sechs Lagen, und jede sagt etwas anderes. Gezaehlt werden
+     Aenderungen und keine Versionsnummern -- warum, steht in
+     webui/updatewacht.py. #}
+  <p class="muted small">
+    {% if updatestand.laeuft %}
+    Wird gerade gesucht …
+    {% elif not updatestand.intervall %}
+    Es wird nicht gesucht.
+    {% elif updatestand.kein_stempel %}
+    Verglichen wird nicht: Diese Anwendung ist nicht über ein
+    Installationsskript hierhergekommen, es fehlt der Commit, von dem aus
+    gezählt würde.
+    {% elif updatestand.ohne_netz and updatestand.erreicht %}
+    Beim letzten Versuch hat GitHub geantwortet, aber keine Auskunft
+    gegeben. Das ist keine Störung dieser Maschine; beim nächsten Mal wird
+    es wieder versucht.
+    {% elif updatestand.ohne_netz %}
+    Beim letzten Versuch war GitHub nicht erreichbar. Das ist keine
+    Störung dieser Maschine; beim nächsten Mal wird es wieder versucht.
+    {% elif updatestand.voraus %}
+    <strong>{{ updatestand.voraus }}
+    {{ "Änderung liegt" if updatestand.voraus == 1 else "Änderungen liegen" }}
+    bereit</strong> — dazugekommen, seit diese Fassung eingespielt wurde.
+    {% elif updatestand.gesucht %}
+    Auf dem neuesten Stand{% if updatestand.zurueck %} — und
+    {{ updatestand.zurueck }}
+    {{ "Änderung" if updatestand.zurueck == 1 else "Änderungen" }} weiter,
+    die es im Repository nicht gibt{% endif %}.
+    {% else %}
+    Noch nicht gesucht.
+    {% endif %}
+  </p>
+  {% endif %}
 </section>
 
 {# ==================================================================

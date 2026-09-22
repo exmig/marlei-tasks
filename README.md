@@ -86,6 +86,13 @@ keine Kachel statt einer geschätzten Zahl.
 Maschine und kein Testfeld — eine Rückmeldung von einem anderen System
 ist deshalb mehr wert als eine Zeile Code.
 
+**Ohne Internet vollständig benutzbar.** Die Oberfläche lädt keine
+Schrift und kein Stück ihrer selbst von einem fremden Server — alles
+liegt bei der Installation daneben. Die einzige Abfrage nach außen ist
+die Frage, ob es eine neuere Fassung gibt, und die lässt sich mit dem
+**Offline-Modus** abschalten: *Einrichtung → Stand*. Dann fragt diese
+Maschine nirgends mehr nach.
+
 **Ein Mensch, ein Bestand.** Die Ablage ist SQLite, und SQLite trägt
 beliebig viele Leser, aber einen Schreiber zur Zeit. Für die Arbeit an
 einem eigenen Projekt reicht das mit großem Abstand; wo mehrere

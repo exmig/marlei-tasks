@@ -41,8 +41,11 @@ import auslastung
 import befunde
 import bericht
 import datenbank
+import einstellungen
 import export
 import firewall
+import updatewacht
+import versionsstand
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -143,11 +146,13 @@ def stand_kurz() -> str:
     Fehlt sie, steht in der Fusszeile nichts. **Lieber keine Angabe als
     eine erfundene:** Eine Versionsnummer, die niemand nachvollziehen
     kann, ist schlimmer als gar keine.
+
+    Seit dem 22.09.2026 liest das webui/versionsstand.py: Die Datei traegt
+    jetzt vier Felder statt einer Zeile, weil die Versionssuche den
+    Commit braucht. Diese Funktion bleibt als der eine Satz stehen, den
+    Fusszeile und Fehlerbericht wollen.
     """
-    try:
-        return (BASE_DIR / "VERSION").read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
+    return versionsstand.kurz()
 
 
 def gewaehltes_projekt(request: Request, conn) -> dict | None:
@@ -228,6 +233,11 @@ def ablage_anlegen() -> None:
         if not datenbank.anlegen(conn):
             print("MARLEI Tasks: SQLite ohne FTS5 -- die Suche ueber die "
                   "Sammlung steht nicht zur Verfuegung.")
+    # Die Wache laeuft immer mit und fragt stuendlich, ob sie darf. Sie
+    # haengt weder am Intervall noch am Offline-Modus -- beides ist zur
+    # Laufzeit umlegbar, und ein Schalter, der erst nach einem Neustart
+    # wirkt, ist keiner. Siehe updatewacht.wacht_starten().
+    updatewacht.wacht_starten()
 
 
 # ==================================================================== #
@@ -2002,7 +2012,10 @@ def einrichtung_seite(request: Request, fehlerbericht: int = 0,
     return html.TemplateResponse(
         request, "einrichtung.html",
         rahmen(request, "einrichtung", projekt=projekt,
-               stand=stand_kurz(), db_pfad=str(datenbank.DB_PFAD),
+               stand=versionsstand.auskunft(),
+               updatestand=updatewacht.stand(),
+               updateauswahl=updatewacht.AUSWAHL,
+               db_pfad=str(datenbank.DB_PFAD),
                db_bytes=db_bytes, export_stand=export_stand,
                export_offen=export_offen, export_dateien=export.DATEIEN,
                bestand=bestand, firewall=firewall.lage(),
@@ -2145,6 +2158,79 @@ async def export_schreiben(request: Request) -> RedirectResponse:
         ziel, "%s ausgegeben: %d Dateien nach %s."
         % (projekt["name"], geschrieben["dateien"], geschrieben["ordner"]),
         "gut")
+
+
+@app.post("/einrichtung/updatepruefung")
+async def updatepruefung_setzen(request: Request) -> RedirectResponse:
+    """Wie oft nachgesehen wird, ob es eine neuere Fassung gibt.
+
+    Eine von zwei Einstellungen, die diese Seite schreibt -- und sie
+    schreibt sie **nicht** in die Umgebungsdatei, sondern neben die
+    Ablage. Warum: siehe einstellungen.py. Sie wirkt sofort; der Waechter
+    fragt stuendlich, ob er darf.
+    """
+    formular = await request.form()
+    if updatewacht.offline():
+        # Der Offline-Modus setzt den Rahmen, die Auswahl waehlt darin --
+        # ueberstimmen kann sie ihn nicht. Erreichbar ist das nur, wer das
+        # Formular von Hand abschickt: Die Karte zeigt die Auswahl dann
+        # gar nicht erst.
+        return _meldung(
+            "/einrichtung#stand",
+            "Der Offline-Modus ist an — diese Maschine fragt nicht nach "
+            "draußen.", "schlecht")
+    erlaubt = dict(updatewacht.AUSWAHL)
+    try:
+        wert = int(str(formular.get("tage", "")))
+    except (TypeError, ValueError):
+        wert = -1
+    if wert not in erlaubt:
+        return _meldung("/einrichtung#stand",
+                        "Das ist kein gültiger Zeitraum.", "schlecht")
+    einstellungen.setze("updatepruefung", wert)
+    if not wert:
+        # Wer auf "nie" stellt, soll die Auskunft nicht behalten, bis der
+        # Waechter sie wegnimmt, den es nicht mehr gibt.
+        updatewacht.vergiss()
+    else:
+        # Und wer sie einschaltet, soll nicht bis zum naechsten
+        # Stundenschlag warten -- die Seite sieht dem Blick kurz zu, damit
+        # sie sein Ergebnis schon tragen kann. Danach laeuft er notfalls
+        # allein weiter; festhalten laesst sich die Seite nicht.
+        await run_in_threadpool(updatewacht.starte_blick, None,
+                                updatewacht.BEDENKZEIT)
+    return _meldung("/einrichtung#stand",
+                    "Nachgesehen wird jetzt %s." % erlaubt[wert], "gut")
+
+
+@app.post("/einrichtung/offline")
+async def offline_setzen(request: Request) -> RedirectResponse:
+    """Den Offline-Modus umlegen.
+
+    **Eine Eigenschaft der Maschine, keine Gewohnheit des Bedieners** --
+    der Unterschied zu "nie" steht in einstellungen.py. Ist er an, fragt
+    diese Anwendung ueberhaupt nicht mehr nach draussen.
+
+    Der gemerkte Befund faellt dabei weg. Eine Zahl, die aus einer
+    Abfrage stammt, hat auf einer Maschine nichts zu suchen, die gerade
+    erklaert hat, dass sie nicht abfragt -- und beim Ausschalten waere sie
+    von unbekanntem Alter.
+    """
+    formular = await request.form()
+    an = str(formular.get("offline", "")) in ("1", "an", "on", "true")
+    einstellungen.setze("offline", an)
+    updatewacht.vergiss()
+    if an:
+        return _meldung(
+            "/einrichtung#stand",
+            "Offline-Modus an — diese Maschine fragt nicht mehr nach "
+            "draußen.", "gut")
+    # Beim Einschalten gleich einmal nachsehen, sonst stuende die Karte
+    # bis zum naechsten Stundenschlag auf "Noch nicht gesucht".
+    await run_in_threadpool(updatewacht.starte_blick, None,
+                            updatewacht.BEDENKZEIT)
+    return _meldung("/einrichtung#stand",
+                    "Offline-Modus aus — es wird wieder nachgesehen.", "gut")
 
 
 @app.post("/einrichtung/werkseinstellung")

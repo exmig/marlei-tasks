@@ -29,6 +29,10 @@ os.environ["MARLEI_BASE_URL"] = "http://192.168.178.99"
 import app as anwendung  # noqa: E402
 import datenbank  # noqa: E402
 import bericht  # noqa: E402
+import einstellungen  # noqa: E402
+import updatewacht  # noqa: E402
+import versionsstand  # noqa: E402
+import urllib.error  # noqa: E402
 from urllib.parse import unquote  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
@@ -1240,9 +1244,109 @@ with TestClient(anwendung.app) as c:
         pruefe(True, "alle acht Karten stehen da")
     pruefe("IP-Adresse übernehmen" in seite and "gibt es hier nicht" in seite,
            "und dass es die neunte nicht gibt, steht da statt zu fehlen")
-    pruefe("wird nicht gesucht" in seite,
-           "nach neuen Versionen wird nicht gesucht, und das steht da: Es "
-           "gäbe kein Repository, wo man fragen könnte")
+    # DIE KARTE STAND, seit dem 22.09.2026. Bis dahin stand hier die
+    # Gegenprobe -- dass nicht gesucht wird, weil es kein öffentliches
+    # Repository gab. Seit dem 21.09.2026 gibt es eines.
+    pruefe("Nach neuen Versionen suchen" in seite
+           and 'action="/einrichtung/updatepruefung"' in seite,
+           "die Karte Stand bietet an, nach neuen Versionen zu suchen")
+    pruefe("Offline-Modus" in seite
+           and 'action="/einrichtung/offline"' in seite,
+           "und daneben den Offline-Modus -- eine Eigenschaft der "
+           "Maschine, keine Gewohnheit des Bedieners")
+
+    # Der Offline-Modus nimmt die Auswahl weg, statt sie stehen zu lassen
+    # und zu ignorieren. Zwei Bedienelemente mit derselben Wirkung wären
+    # ein Rätsel darüber, welches gilt.
+    r = c.post("/einrichtung/offline", data={"offline": "1"},
+               follow_redirects=False)
+    pruefe(r.status_code == 303, "der Offline-Modus lässt sich einschalten")
+    seite = c.get("/einrichtung").text
+    pruefe("Nach neuen Versionen suchen" not in seite
+           and "Es wird nicht nachgesehen" in seite,
+           "und dann steht da, dass nicht nachgesehen wird -- die Auswahl "
+           "ist weg, nicht nur wirkungslos")
+    pruefe(updatewacht.intervall_tage() == 0 and not updatewacht.erlaubt(),
+           "und der Wächter fragt nicht mehr, egal was eingestellt war")
+
+    # Überstimmen lässt er sich auch von Hand nicht: Wer das Formular
+    # direkt abschickt, bekommt eine Meldung und keine Wirkung.
+    r = c.post("/einrichtung/updatepruefung", data={"tage": "7"},
+               follow_redirects=False)
+    pruefe(r.status_code == 303 and "Offline-Modus" in unquote(
+        r.headers["location"]),
+        "das Suchintervall lässt sich im Offline-Modus nicht setzen")
+    pruefe(einstellungen.hole("updatepruefung") != 7
+           or updatewacht.intervall_tage() == 0,
+           "und die Einstellung bleibt wirkungslos, solange er an ist")
+
+    r = c.post("/einrichtung/offline", data={"offline": "0"},
+               follow_redirects=False)
+    pruefe(r.status_code == 303 and not updatewacht.offline(),
+           "und er lässt sich wieder ausschalten")
+    seite = c.get("/einrichtung").text
+    pruefe("Nach neuen Versionen suchen" in seite,
+           "danach steht die Auswahl wieder da")
+
+    # Gezählt werden Änderungen, nicht Versionsnummern -- die Antwort
+    # kommt hier aus der Hand und nicht aus dem Netz. Ohne das wäre die
+    # Testreihe von GitHub abhängig, und das wäre keine Prüfung, sondern
+    # eine Wettervorhersage.
+    einstellungen.setze("updatepruefung", 7)
+    updatewacht.vergiss()
+    versionsstand.DATEI = Path(tempfile.mkdtemp()) / "VERSION"
+    versionsstand.DATEI.write_text(
+        "stand=v1.0-8-gabc1234\ncommit=abc1234\nzweig=main\n"
+        "installiert=2026-09-22 09:00\n", encoding="utf-8")
+    versionsstand._CACHE["stand"] = None
+    pruefe(updatewacht.blick(hole=lambda: {"ahead_by": 3, "behind_by": 0}),
+           "ein Blick mit Antwort kommt zustande")
+    lage = updatewacht.stand()
+    pruefe(lage["voraus"] == 3 and lage["neuer"],
+           "und drei Änderungen liegen bereit")
+    seite = c.get("/einrichtung").text
+    pruefe("Änderungen liegen" in seite and "bereit</strong>" in seite,
+           "die Karte sagt es in der Mehrzahl")
+
+    # Ein Befund gilt für den Stand, gegen den er gezählt wurde. Wird ein
+    # anderer eingespielt, ist er keine veraltete Auskunft, sondern gar
+    # keine -- in Boot behauptete die Karte am 05.09.2026 eine Woche lang
+    # etwas, das seit dem Update nicht mehr stimmte.
+    versionsstand.DATEI.write_text(
+        "stand=v1.0-11-gdef5678\ncommit=def5678\nzweig=main\n"
+        "installiert=2026-09-22 10:00\n", encoding="utf-8")
+    versionsstand._CACHE["stand"] = None
+    pruefe(updatewacht.stand()["voraus"] == 0,
+           "nach einem Update ist der gemerkte Befund weg, nicht alt")
+    pruefe(updatewacht.faellig(),
+           "und es wird sofort wieder nachgesehen, nicht erst in einer Woche")
+
+    # Ohne Leitung ist nichts kaputt -- vermerkt, nicht gemeldet.
+    def _ohne_netz():
+        raise urllib.error.URLError("kein Netz")
+    updatewacht.blick(hole=_ohne_netz)
+    lage = updatewacht.stand()
+    pruefe(lage["ohne_netz"] and not lage["erreicht"],
+           "ein fehlgeschlagener Blick wird vermerkt, nicht gemeldet")
+    seite = c.get("/einrichtung").text
+    # Auf den Teil geprüft, der in der Vorlage auf einer Zeile steht --
+    # „keine Störung“ steht dort über einen Umbruch hinweg.
+    pruefe("nicht erreichbar" in seite
+           and "Störung dieser Maschine" in seite,
+           "und die Karte sagt, dass das keine Störung dieser Maschine ist")
+
+    # Eine Antwort, die keine Auskunft war, ist etwas anderes als keine
+    # Antwort. Beides unter "nicht erreichbar" zu führen behauptet auf
+    # einer Maschine mit tadelloser Leitung etwas Falsches.
+    def _abgewiesen():
+        raise urllib.error.HTTPError("u", 404, "weg", None, None)
+    updatewacht.blick(hole=_abgewiesen)
+    pruefe(updatewacht.stand()["erreicht"],
+           "eine Antwort ohne Auskunft wird von keiner Antwort "
+           "unterschieden")
+
+    einstellungen.setze("updatepruefung", 0)
+    updatewacht.vergiss()
 
     print("\nDer Export")
     with datenbank.verbindung() as conn:

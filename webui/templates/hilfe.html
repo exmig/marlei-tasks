@@ -1281,6 +1281,75 @@
     der Fußzeile jeder Seite steht, hier mit Datum. Die erste Frage bei
     jeder Fehlersuche und die erste Angabe in jedem
     <a href="#einrichtung-fehlerbericht">Fehlerbericht</a>.
+    <strong>Und darunter: ob etwas Neues bereitliegt.</strong>
+  </p>
+
+  <h4>Gezählt werden Änderungen, nicht Versionsnummern</h4>
+  <p class="muted">
+    Dieses Werkzeug wird über <code>git clone</code> und ein
+    Update-Skript verteilt, nicht als fertige Ausgabe. Wer der Anleitung
+    folgt, landet auf dem Kopf von <code>main</code>, und der Stand heißt
+    dann etwa <code>v1.0-8-gabc1234</code> — <strong>kein Tag, sondern
+    ein Punkt dazwischen.</strong> Zwei solche Angaben lassen sich nicht
+    vergleichen: Ob das, was im Tag steckt, in den acht Änderungen danach
+    schon enthalten ist, sagt keine von beiden.
+  </p>
+  <p class="muted">
+    Die beantwortbare Frage lautet deshalb <em>liegen Änderungen
+    bereit?</em> — und die Karte beantwortet sie, indem sie den beim
+    Installieren gestempelten Commit mit dem Zweig vergleicht. <strong>Die
+    Versionsnummer behält davon unberührt ihre Aufgabe:</strong> Sie sagt,
+    <em>was</em> drin ist, nicht, <em>ob</em> man holen soll.
+  </p>
+  <p class="hint">
+    Gefragt wird bei <strong>GitHub</strong>, nicht bei uns — und nur
+    danach, wie weit der Zweig vor dem eigenen Stand liegt. Es geht nichts
+    hin: keine Kennung, keine Angabe über diese Maschine, nichts aus Ihren
+    Projekten.
+  </p>
+
+  <h4>Offline-Modus und <em>nie</em> sind nicht dasselbe</h4>
+  <p class="muted">
+    Das ist der Unterschied, der beim ersten Hinsehen keiner zu sein
+    scheint — und der Grund, warum es zwei Schalter sind:
+  </p>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>Offline-Modus</strong></td>
+        <td class="muted">eine Aussage über <strong>die Maschine</strong>:
+          Hier ist kein Ausgang. Solange er an ist, fragt dieses Werkzeug
+          <em>nirgends</em> nach — heute betrifft das die Versionssuche,
+          und sie ist die einzige Abfrage nach draußen, die es überhaupt
+          gibt. Der Schalter gilt aber auch für alles, was dazukommt.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong><em>nie</em></strong></td>
+        <td class="muted">eine Aussage über <strong>die Gewohnheit</strong>:
+          Ich sehe selbst nach, wenn ich will. Die Maschine dürfte fragen,
+          sie soll nur nicht von sich aus.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted">
+    Ist der Offline-Modus an, <strong>verschwindet die Auswahl darunter</strong>,
+    statt wirkungslos dazustehen. Zwei Bedienelemente mit derselben Wirkung
+    wären ein Rätsel darüber, welches gilt.
+  </p>
+  <p class="hint">
+    <strong>Ohne Internet ist dieses Werkzeug vollständig benutzbar.</strong>
+    Es lädt keine Schrift und kein Stück Oberfläche von einem fremden
+    Server; alles, was die Seiten brauchen, liegt bei der Installation
+    daneben. Der Offline-Modus schaltet das Einzige ab, was hinausginge.
+  </p>
+
+  <h4>Wenn hier nichts steht</h4>
+  <p class="muted">
+    Dann heißt das nicht <em>Version 0</em>, sondern: Diese Anwendung ist
+    nicht über <code>install.sh</code> bzw. <code>install.ps1</code>
+    hierhergekommen — etwa, weil sie aus einem Projektordner läuft.
+    <strong>Geraten wird nicht.</strong> Verglichen wird dann auch nicht,
+    denn es fehlt der Commit, von dem aus gezählt würde.
   </p>
 
   <div class="abschnittskopf">

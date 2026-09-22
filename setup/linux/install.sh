@@ -202,14 +202,37 @@ git_im_projekt() {
 }
 
 if command -v git >/dev/null && git_im_projekt rev-parse --git-dir >/dev/null; then
+  # --tags   nimmt auch unannotierte Tags
+  # --always faellt auf den Kurz-Hash zurueck, solange es keinen Tag gibt
+  # --dirty  haengt "-dirty" an, wenn im Projektordner Ungespeichertes liegt
   STAND="$(git_im_projekt describe --tags --always --dirty || echo unbekannt)"
+  # DER COMMIT IST DER PUNKT, VON DEM AUS GEZAEHLT WIRD. Ohne ihn kann die
+  # Karte "Stand" nicht sagen, ob etwas bereitliegt: Ein "describe" wie
+  # v1.0-8-gabc1234 laesst sich mit keinem Tag vergleichen, ein Commit
+  # sehr wohl. Siehe webui/updatewacht.py.
+  COMMIT="$(git_im_projekt rev-parse --short HEAD || true)"
+  # Und der Zweig entscheidet, WOGEGEN verglichen wird -- wer von einem
+  # anderen Zweig installiert, will nicht gegen main gemessen werden.
+  ZWEIG="$(git_im_projekt rev-parse --abbrev-ref HEAD || true)"
 else
   # Kein Git -- etwa ein entpacktes Archiv. Kein Fehler, nur weniger
   # Auskunft. LIEBER KEINE ANGABE ALS EINE ERFUNDENE: Eine Versionsnummer,
   # die niemand nachvollziehen kann, ist schlimmer als gar keine.
   STAND="ohne Git"
+  COMMIT=""
+  ZWEIG=""
 fi
-printf '%s\n' "$STAND" > "$APP_DIR/VERSION"
+# VIER FELDER STATT EINER ZEILE, seit dem 22.09.2026. Die alte Fassung
+# wird weiter gelesen (webui/versionsstand.py) -- eine Installation von
+# vorher gilt dann als Stand ohne Commit, und die Karte sagt, dass nicht
+# verglichen werden kann.
+cat > "$APP_DIR/VERSION" <<STAND_EOF
+# Von install.sh geschrieben. Aenderungen gehen beim naechsten Lauf verloren.
+stand=$STAND
+commit=$COMMIT
+zweig=$ZWEIG
+installiert=$(date '+%Y-%m-%d %H:%M')
+STAND_EOF
 chmod 0644 "$APP_DIR/VERSION"
 echo "    Stand: $STAND"
 
