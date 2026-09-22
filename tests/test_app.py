@@ -2118,6 +2118,54 @@ with TestClient(anwendung.app) as c:
            "und es weigert sich unter sudo: git soll dem Benutzer "
            "gehören, nicht root")
 
+    # ================================================================ #
+    # DER STEMPEL VERBINDET VIER DATEIEN, und drei davon lesen ihn.
+    #
+    # install.sh und install.ps1 SCHREIBEN webui/VERSION; update.sh,
+    # update.ps1 und webui/versionsstand.py LESEN sie. Wer das Format
+    # ändert, ändert fünf Stellen -- und merkt es nicht, wenn er eine
+    # vergisst: Es geht dann nichts kaputt, die Auskünfte stimmen nur
+    # nicht mehr.
+    #
+    # Genau das ist am 22.09.2026 passiert. Die Datei bekam vier Felder,
+    # damit die Karte *Stand* den Commit vergleichen kann -- und die
+    # beiden Update-Skripte lasen weiter die ganze Datei am Stück. Danach
+    # hätte „Schon aktuell“ nie mehr gegriffen, und gezählt worden wäre
+    # vom Stand vor dem Pull. Aufgefallen ist es beim Lesen, nicht hier;
+    # deshalb steht es jetzt hier.
+    # ================================================================ #
+    ps_install = (fenster / "install.ps1").read_text(encoding="utf-8")
+    ps_akt = (fenster / "update.ps1").read_text(encoding="utf-8")
+
+    # Beide Installationsskripte schreiben jedes Feld, das
+    # versionsstand.py liest -- sonst steht in der Karte eine Lücke, die
+    # niemand als solche erkennt.
+    for name, text in (("install.sh", skript), ("install.ps1", ps_install)):
+        fehlend = [f for f in versionsstand.FELDER
+                   if ("%s=" % f) not in text]
+        pruefe(not fehlend,
+               "%s stempelt jedes Feld, das versionsstand.py liest -- %s"
+               % (name, ", ".join(fehlend) or "alle vier"))
+
+    # Und beide Update-Skripte holen sich daraus DAS FELD, nicht die
+    # Datei. Geprüft wird auf den Ausdruck, der das tut: Ein Skript, das
+    # die Datei am Stück liest, verglich Kommentar und vier Felder mit
+    # einem "git describe" -- immer ungleich, und still.
+    pruefe("s/^stand=//p" in aktualisieren
+           and 'tr -d \'[:space:]\' 2>/dev/null < "$VERSION_DATEI"'
+           not in aktualisieren,
+           "update.sh liest das Feld stand, nicht die ganze Datei")
+    pruefe("'^stand='" in ps_akt
+           and "ReadAllText($VERSION_DATEI)" not in ps_akt,
+           "update.ps1 ebenso")
+
+    # Die Rücksicht auf die alte Fassung: Eine Installation von vor dem
+    # 22.09.2026 trägt eine VERSION mit nur dem Stand darin -- und genau
+    # die will ja aktualisiert werden.
+    pruefe("alte einzeilige" in aktualisieren
+           and "alte einzeilige" in ps_akt,
+           "und beide lesen die alte einzeilige Datei weiter")
+
     # DER PORT WIRD GEMERKT, NICHT ERFRAGT. Ohne ihn nähme install.sh die
     # 80 -- und bräche auf einer Maschine mit MARLEI Boot ab, obwohl die
     # Installation längst steht. Ein zweiter Lauf soll nicht anders

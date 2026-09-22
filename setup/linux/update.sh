@@ -72,7 +72,30 @@ NACHHER="$(git rev-parse HEAD)"
 
 # Was laeuft, und was wuerde jetzt installiert? Dieselbe Formel wie in
 # install.sh, sonst sprechen die beiden Stempel nie dieselbe Sprache.
-INSTALLIERT="$(tr -d '[:space:]' 2>/dev/null < "$VERSION_DATEI" || true)"
+#
+# GELESEN WIRD DAS FELD "stand", nicht die ganze Datei. Seit dem
+# 22.09.2026 stehen dort vier Felder (stand, commit, zweig, installiert),
+# weil die Karte "Stand" in der Oberflaeche den Commit braucht. Hier stand
+# bis dahin ein "tr -d", das alle Zeichen ohne Leerraum zusammenzog -- mit
+# der neuen Datei ergaebe das eine Zeichenkette aus Kommentar und allen
+# vier Feldern, und die ist mit keinem "git describe" je gleich. Die
+# Folgen waeren still: "Schon aktuell" griffe nie mehr, und gezaehlt
+# wuerde vom Stand vor dem Pull statt vom installierten.
+#
+# Die alte einzeilige Datei wird weiter gelesen -- dieselbe Ruecksicht wie
+# in webui/versionsstand.py: Eine Installation von vor diesem Tag traegt
+# sie noch, und genau die will ja aktualisiert werden.
+INSTALLIERT=""
+if [[ -r "$VERSION_DATEI" ]]; then
+  INSTALLIERT="$(sed -n 's/^stand=//p' "$VERSION_DATEI" | head -1 \
+                 | tr -d '[:space:]')"
+  if [[ -z "$INSTALLIERT" ]]; then
+    # Keine Feldzeile gefunden: die alte Fassung, in der nur der Stand
+    # steht. Kommentarzeilen faellt sie nicht an, aber sicher ist sicher.
+    INSTALLIERT="$(grep -v '^[[:space:]]*#' "$VERSION_DATEI" \
+                   | tr -d '[:space:]' || true)"
+  fi
+fi
 JETZT="$(git describe --tags --always --dirty 2>/dev/null || echo unbekannt)"
 
 if [[ "$INSTALLIERT" == "$JETZT" && "$JETZT" != *-dirty ]]; then

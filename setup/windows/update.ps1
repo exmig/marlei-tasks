@@ -125,9 +125,30 @@ try {
 
     # Was laeuft, und was wuerde jetzt installiert? Dieselbe Formel wie in
     # install.ps1, sonst sprechen die beiden Stempel nie dieselbe Sprache.
+    #
+    # GELESEN WIRD DAS FELD "stand", nicht die ganze Datei. Seit dem
+    # 22.09.2026 stehen dort vier Felder (stand, commit, zweig,
+    # installiert), weil die Karte "Stand" in der Oberflaeche den Commit
+    # braucht. Hier stand bis dahin ein ReadAllText().Trim() ueber die
+    # ganze Datei -- mit der neuen Datei ergaebe das Kommentar und alle
+    # vier Felder am Stueck, und das ist mit keinem "git describe" je
+    # gleich. Die Folgen waeren still: "Schon aktuell" griffe nie mehr,
+    # und gezaehlt wuerde vom Stand vor dem Pull statt vom installierten.
+    #
+    # Die alte einzeilige Datei wird weiter gelesen -- dieselbe Ruecksicht
+    # wie in webui\versionsstand.py: Eine Installation von vor diesem Tag
+    # traegt sie noch, und genau die will ja aktualisiert werden.
     $INSTALLIERT = ""
     if (Test-Path -LiteralPath $VERSION_DATEI) {
-        $INSTALLIERT = ([System.IO.File]::ReadAllText($VERSION_DATEI)).Trim()
+        $zeilen = [System.IO.File]::ReadAllLines($VERSION_DATEI)
+        $feld = $zeilen | Where-Object { $_ -match '^stand=' } | Select-Object -First 1
+        if ($feld) {
+            $INSTALLIERT = ($feld -replace '^stand=', '').Trim()
+        } else {
+            $INSTALLIERT = (($zeilen | Where-Object {
+                $_.Trim() -and -not $_.TrimStart().StartsWith("#")
+            }) -join "").Trim()
+        }
     }
     $JETZT = & git describe --tags --always --dirty 2>$null
     $JETZT = if ($LASTEXITCODE -eq 0 -and $JETZT) { "$JETZT".Trim() } else { "unbekannt" }
