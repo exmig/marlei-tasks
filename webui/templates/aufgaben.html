@@ -374,28 +374,34 @@
         </div>
       </dl>
 
+      {# Die Knoepfe, die etwas abschliessen, stehen in EIGENEN Formularen:
+         Sonst schickte "Erledigt" nebenbei alle Felder mit, und ein
+         Klick taete zwei Dinge. Seit 09/2026 stehen sie trotzdem in der
+         Zeile von Speichern -- per form="...", die Formulare liegen
+         darunter. Der Abstand trennt, was sichert, von dem, was abschliesst.
+
+         "Archivieren" hiess vorher "Verwerfen". Das klang nach "Aenderungen
+         verwerfen", tut aber etwas anderes: Die Aufgabe geht ins Archiv.
+         Die Art in der Datenbank bleibt "verworfen". #}
       <div class="row kartenknoepfe">
         <button type="submit">Speichern</button>
+        <span class="knopfabstand"></span>
+        <button type="submit" form="erledigt-{{ a.id }}" class="ghost"
+                {% if not a.abnehmbar %}disabled{% endif %}
+                title="{% if a.abnehmbar %}Alle Haken der Abnahme stehen{% else %}Erst wenn alle Haken der Abnahme stehen{% endif %}">Erledigt</button>
+        <button type="submit" form="archivieren-{{ a.id }}" class="danger">Archivieren</button>
       </div>
     </form>
 
-    {# Die Knoepfe, die etwas abschliessen, stehen in EIGENEN Formularen:
-       Sonst schickte "Erledigt" nebenbei alle Felder mit, und ein
-       Klick taete zwei Dinge. #}
-    <div class="row kartenknoepfe">
-      <form method="post" action="/aufgaben/abschliessen" class="inline">
-        <input type="hidden" name="id" value="{{ a.id }}">
-        <input type="hidden" name="art" value="erledigt">
-        <button type="submit" class="ghost" {% if not a.abnehmbar %}disabled{% endif %}
-                title="{% if a.abnehmbar %}Alle Haken der Abnahme stehen{% else %}Erst wenn alle Haken der Abnahme stehen{% endif %}">Erledigt</button>
-      </form>
-      <form method="post" action="/aufgaben/abschliessen" class="inline"
-            onsubmit="return confirm('{{ a.kennung }} verwerfen? Die Aufgabe steht danach im Archiv.')">
-        <input type="hidden" name="id" value="{{ a.id }}">
-        <input type="hidden" name="art" value="verworfen">
-        <button type="submit" class="danger">Verwerfen</button>
-      </form>
-    </div>
+    <form method="post" action="/aufgaben/abschliessen" id="erledigt-{{ a.id }}">
+      <input type="hidden" name="id" value="{{ a.id }}">
+      <input type="hidden" name="art" value="erledigt">
+    </form>
+    <form method="post" action="/aufgaben/abschliessen" id="archivieren-{{ a.id }}"
+          onsubmit="return confirm('{{ a.kennung }} archivieren? Die Aufgabe steht danach im Archiv und ist nicht erledigt.')">
+      <input type="hidden" name="id" value="{{ a.id }}">
+      <input type="hidden" name="art" value="verworfen">
+    </form>
 
     <p class="kartenfuss">
       <em>Erledigt</em> wird erst dunkel, wenn alle Haken der Abnahme

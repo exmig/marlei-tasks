@@ -843,6 +843,10 @@ textarea.feld.lang:focus { outline: 2px solid var(--accent); outline-offset: 1px
 .vorher h3 { margin: 0 0 .2rem; font-size: .92rem; }
 .vorher .kartenknoepfe { margin-top: .5rem; }
 
+/* Der Abstand in der Knopfzeile der Aufgabe: links Speichern, rechts
+   davon mit Luft die Knoepfe, die die Aufgabe abschliessen. */
+.knopfabstand { width: 1.4rem; }
+
 /* Die Zwischenueberschrift in der Firewall-Karte. */
 section > h3 { margin: 1rem 0 .2rem; font-size: .92rem; }
 
