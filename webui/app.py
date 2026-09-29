@@ -1468,9 +1468,39 @@ async def aufgabe_weg(request: Request) -> RedirectResponse:
                 "schlecht")
         datenbank.aufgabe_abschliessen(conn, int(nummer), art)
 
-    wort = ("ist erledigt" if art == "erledigt" else "ist verworfen")
+    wort = ("ist erledigt" if art == "erledigt" else "ist archiviert")
     return _meldung("/aufgaben", "%s %s und steht im Archiv."
                     % (a["kennung"], wort), "gut")
+
+
+@app.post("/aufgaben/wiederaufnehmen")
+async def aufgabe_zurueck(request: Request) -> RedirectResponse:
+    """Aus dem Archiv zurueck in die Liste -- siehe
+    datenbank.aufgabe_wiederaufnehmen()."""
+    formular = await request.form()
+    nummer = str(formular.get("id", ""))
+    # Ohne "&art=A": Die Meldung traegt ihr eigenes "art", und zweimal
+    # derselbe Name in der Frage liesse den Filter auf "schlecht" fallen.
+    zurueck = "/history?ansicht=archiv"
+    if not nummer.isdigit():
+        return _meldung(zurueck, "Keine Aufgabe angegeben.", "schlecht")
+    with datenbank.verbindung() as conn:
+        projekt = _gewaehltes(request, conn)
+        a = datenbank.aufgabe(conn, int(nummer))
+        if not projekt or not a or a["projekt_id"] != projekt["id"]:
+            return _meldung(zurueck, "Diese Aufgabe gibt es nicht.",
+                            "schlecht")
+        if a["abschluss"] not in datenbank.WIEDERAUFNEHMBAR:
+            return _meldung(zurueck, "%s steht nicht als erledigt oder "
+                            "archiviert im Archiv." % a["kennung"], "schlecht")
+        stein = a.get("meilenstein")
+        geloest = datenbank.aufgabe_wiederaufnehmen(conn, int(nummer))
+
+    satz = "%s ist wieder aufgenommen." % a["kennung"]
+    if geloest and stein:
+        satz += (" Von %s ist sie gelöst: Der Meilenstein ist "
+                 "abgeschlossen." % stein["kennung"])
+    return _meldung("/aufgaben#eintrag-%s" % nummer, satz, "gut")
 
 
 # ==================================================================== #
@@ -1970,11 +2000,11 @@ async def entscheidung_weg(request: Request) -> RedirectResponse:
 # im Archiv -- und die Unterscheidung, die dahinterstand, steht in
 # datenbank.abschlussart().
 #
-# **Und einen Weg zurueck gibt es nicht.** Ein versehentlich
-# abgeschlossener Eintrag laesst sich hier nicht wiedereroeffnen; das ist
-# am 07.09.2026 aufgeschoben worden, nicht vergessen. Solange nichts
-# darin steht, ist es kein Problem; es wird eins, wenn es das erste Mal
-# passiert.
+# **Ein Weg zurueck gibt es seit 09/2026 -- fuer Aufgaben.** Am 07.09.2026
+# aufgeschoben mit der Bedingung "wenn es das erste Mal passiert"; es ist
+# passiert. Topics und Meilensteine bleiben, wo sie sind, und eine
+# Entscheidung wird durch eine neue aufgehoben. Siehe
+# datenbank.aufgabe_wiederaufnehmen().
 
 HISTORY_ANSICHTEN = ("strasse", "archiv")
 
@@ -2020,7 +2050,8 @@ def history_seite(request: Request, ansicht: str = "strasse",
         rahmen(request, "history", projekt=projekt, ansicht=ansicht,
                steine=steine, offene=offene,
                archiv=im_archiv, zahlen=zahlen, art=art, suche=suche,
-               schluss=schluss))
+               schluss=schluss,
+               wiederaufnehmbar=datenbank.WIEDERAUFNEHMBAR))
 
 
 # ==================================================================== #

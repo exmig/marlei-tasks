@@ -901,6 +901,31 @@ with TestClient(anwendung.app) as c:
                == datenbank.heute(),
                "aber mit Datum im Archiv")
 
+    print("\nWiederaufnehmen")
+    seite = c.get("/history?ansicht=archiv").text
+    pruefe("/aufgaben/wiederaufnehmen" in seite
+           and 'value="%d"' % neue["id"] in seite,
+           "im Archiv traegt die erledigte Aufgabe den Knopf")
+    r = c.post("/aufgaben/wiederaufnehmen", data={"id": neue["id"]},
+               follow_redirects=False)
+    with datenbank.verbindung() as conn:
+        zurueck = datenbank.aufgabe(conn, neue["id"])
+    pruefe("art=gut" in r.headers["location"]
+           and zurueck["abschluss"] == datenbank.STRICH
+           and zurueck["abschluss_am"] == ""
+           and any(x["id"] == neue["id"] for x in _aufgaben(projekt)),
+           "sie steht wieder in der Liste, ohne Abschluss und Datum")
+    pruefe(zurueck["eingetragen_am"] == a["eingetragen_am"]
+           and zurueck["abnehmbar"],
+           "Eintragsdatum und Haken bleiben, wie sie waren")
+    r = c.post("/aufgaben/wiederaufnehmen", data={"id": neue["id"]},
+               follow_redirects=False)
+    pruefe("art=schlecht" in r.headers["location"],
+           "eine offene Aufgabe laesst sich nicht noch einmal aufnehmen")
+    # Und zurueck, wie sie war -- das Folgende rechnet mit ihr im Archiv.
+    c.post("/aufgaben/abschliessen",
+           data={"id": neue["id"], "art": "erledigt"}, follow_redirects=False)
+
     # ================================================================ #
     print("\nDer Reiter Meilensteine")
     # ================================================================ #

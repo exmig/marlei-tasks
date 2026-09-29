@@ -1324,6 +1324,43 @@ def aufgabe_abschliessen(conn: sqlite3.Connection, aufgabe_id: int, art: str,
                      "WHERE id = ?", (art, am or heute(), aufgabe_id))
 
 
+# Was sich zurueckholen laesst: die Enden. Ein Umzug in einen Meilenstein
+# lebt dort weiter -- wer ihn zurueckholte, haette dieselbe Sache zweimal.
+WIEDERAUFNEHMBAR = ("erledigt", "verworfen")
+
+
+def aufgabe_wiederaufnehmen(conn: sqlite3.Connection,
+                            aufgabe_id: int) -> bool:
+    """Eine archivierte Aufgabe zurueck in die Liste holen.
+
+    **Der Weg zurueck, der am 07.09.2026 aufgeschoben wurde** -- mit der
+    Bedingung, ihn zu bauen, wenn es das erste Mal passiert. Das war im
+    September 2026. Nur fuer Aufgaben: Eine Entscheidung wird durch eine
+    neue aufgehoben, nicht umgeschrieben; ein Meilenstein zoege die Dauer
+    auf der Strasse mit.
+
+    **Das Eintragsdatum bleibt.** Die Arbeitsdauer zaehlt weiter vom
+    ersten Tag -- sonst schoente das Zurueckholen die Zahl.
+
+    **Ein abgeschlossener Meilenstein laesst die Aufgabe los.** Er wurde
+    mit ihr als erledigt abgenommen; eine offene Aufgabe darunter hiesse,
+    er waere es nicht. Haengt sie an einem offenen, bleibt sie dort.
+
+    Gibt zurueck, ob sie vom Meilenstein geloest wurde.
+    """
+    with conn:
+        stein = conn.execute(
+            "SELECT m.abschluss FROM aufgaben a "
+            "JOIN meilensteine m ON m.id = a.meilenstein_id "
+            "WHERE a.id = ?", (aufgabe_id,)).fetchone()
+        geloest = bool(stein) and stein[0] != STRICH
+        conn.execute("UPDATE aufgaben SET abschluss = ?, abschluss_am = '' "
+                     + (", meilenstein_id = NULL " if geloest else "")
+                     + "WHERE id = ? AND abschluss IN (?, ?)",
+                     (STRICH, aufgabe_id) + WIEDERAUFNEHMBAR)
+    return geloest
+
+
 # ==================================================================== #
 # Meilensteine (M-)
 # ==================================================================== #

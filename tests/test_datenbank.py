@@ -647,6 +647,26 @@ pruefe(datenbank.aufgabe(conn5, a_drei)["meilenstein_id"] is None
        "die Aufgabe darunter bleibt und steht wieder ohne Stein da -- "
        "verworfen ist der Termin, nicht die Arbeit")
 
+print("\nWiederaufnehmen -- und was am Stein haengt")
+pruefe(datenbank.aufgabe_wiederaufnehmen(conn5, a_zwei),
+       "unter einem abgenommenen Stein sagt es, dass sie geloest wird")
+z = datenbank.aufgabe(conn5, a_zwei)
+pruefe(z["abschluss"] == datenbank.STRICH and z["abschluss_am"] == ""
+       and z["meilenstein_id"] is None
+       and z["eingetragen_am"] == "2026-09-02",
+       "sie ist offen, ohne Stein, und das Eintragsdatum bleibt")
+a_vier = datenbank.aufgabe_anlegen(conn5, pm, "Vierte Arbeit", bm,
+                                   "2026-09-04", abnahme=["geht"])
+datenbank.aufgabe_zuschlagen(conn5, a_vier, leer)
+datenbank.aufgabe_abschliessen(conn5, a_vier, "verworfen")
+pruefe(not datenbank.aufgabe_wiederaufnehmen(conn5, a_vier)
+       and datenbank.aufgabe(conn5, a_vier)["meilenstein_id"] == leer,
+       "an einem offenen Stein bleibt sie haengen")
+datenbank.aufgabe_abschliessen(conn5, a_vier, "meilenstein")
+datenbank.aufgabe_wiederaufnehmen(conn5, a_vier)
+pruefe(datenbank.aufgabe(conn5, a_vier)["abschluss"] == "meilenstein",
+       "ein Umzug wird nicht zurueckgeholt -- er lebt anderswo weiter")
+
 conn5.commit()
 conn5.close()
 

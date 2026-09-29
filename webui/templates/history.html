@@ -346,10 +346,25 @@
     </div>
     {% endif %}
 
+    {# DER EINZIGE KNOPF IM ARCHIV, seit 09/2026. Er aendert nichts am
+       Eintrag, er holt ihn heraus -- und nur Aufgaben mit einem Ende.
+       Warum nur die: datenbank.aufgabe_wiederaufnehmen(). #}
+    {% if e.art == 'A' and e.abschluss in wiederaufnehmbar %}
+    <form method="post" action="/aufgaben/wiederaufnehmen" class="row kartenknoepfe"
+          onsubmit="return confirm('{{ e.kennung }} wieder aufnehmen? Die Aufgabe steht danach wieder unter Aufgaben.')">
+      <input type="hidden" name="id" value="{{ e.id }}">
+      <button type="submit" class="ghost">Wiederaufnehmen</button>
+    </form>
+    {% endif %}
+
     <p class="kartenfuss">
       <strong>Hier wird nichts geändert.</strong> Ein Archiv, in dem man
       nachträglich schreiben kann, ist keines — was hier steht, stand so
       da, als es abgeschlossen wurde.
+      {% if e.art == 'A' and e.abschluss in wiederaufnehmbar %}
+      Herausholen geht: <em>Wiederaufnehmen</em> stellt die Aufgabe
+      unverändert zurück in die Liste.
+      {% endif %}
     </p>
   </details>
   {% else %}
