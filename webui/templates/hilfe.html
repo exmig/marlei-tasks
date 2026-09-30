@@ -172,10 +172,10 @@
           vier Handgriffe ersetzt.</td>
       </tr>
       <tr>
-        <td class="nowrap"><strong>6. <a href="/einrichtung#export">Einrichtung</a></strong></td>
-        <td class="muted">Einmal den Ausgabeort setzen. Danach schreibt
-          <em>Jetzt ausgeben</em> den ganzen Bestand als Text weg — die
-          einzige Sicherung, die es vor dem Löschen gibt.</td>
+        <td class="nowrap"><strong>6. <a href="/einrichtung#sicherung">Einrichtung</a></strong></td>
+        <td class="muted">Einmal den Ordner der Sicherung wählen, am
+          besten auf einer anderen Platte. Danach sichert Tasks von selbst
+          — beim Start und einmal am Tag.</td>
       </tr>
     </tbody>
   </table>
@@ -242,7 +242,7 @@
   </div>
   <p class="muted">
     <strong>Es gilt für alles, was darunter steht:</strong> Sammlung,
-    Aufgaben, Meilensteine, Entscheidungen — und für den Export und die
+    Aufgaben, Meilensteine, Entscheidungen — und für die
     Werkseinstellung unter <a href="/einrichtung">Einrichtung</a>.
     Gewechselt wird es in der
     <a href="#projekte-uebersicht">Projektübersicht</a>.
@@ -607,8 +607,8 @@
   </p>
   <p class="hint">
     <strong>Ein Projekt zu löschen nimmt alles mit, was darin steht.</strong>
-    Deshalb zwei Sicherungen, die zwei verschiedene Fehler abfangen: der
-    <a href="#einrichtung-export">Export</a> davor fängt den Fehler ab, es
+    Deshalb zwei Sicherungen, die zwei verschiedene Fehler abfangen: die
+    <a href="#einrichtung-sicherung">Sicherung</a> davor fängt den Fehler ab, es
     überhaupt getan zu haben — und <strong>der Projektname als
     Losungswort</strong> den, es am falschen getan zu haben. Ein festes
     Wort wie <em>Löschen</em> bestätigt nur, dass man gelesen hat, dass
@@ -1471,9 +1471,8 @@
     ein.
   </p>
   <p class="muted small">
-    Nicht dasselbe wie der <a href="#einrichtung-export">Export</a>: Der
-    schreibt Text für Menschen und ein Repository, eingelesen werden kann
-    er nicht.
+    Wer den Bestand als Text lesen will, etwa als Markdown, baut ihn aus
+    dieser Datei — sie trägt alles.
   </p>
   <h4>Einzelne Projekte oder alle</h4>
   <p class="muted">
@@ -1505,96 +1504,23 @@
   </p>
 
   <div class="abschnittskopf">
-    <h3 id="einrichtung-export">Export</h3>
-    <p class="zurkarte"><a href="/einrichtung#export">Zur Karte &rarr;</a></p>
-  </div>
-  <h4>Wofür ist diese Karte da?</h4>
-  <p class="muted">
-    <strong>Sie schreibt den ganzen Bestand als Text weg</strong> — fünf
-    Markdown-Dateien in einem Ordner je Projekt: <code>projekt.md</code> ·
-    <code>sammlung.md</code> · <code>aufgaben.md</code> ·
-    <code>meilensteine.md</code> · <code>entscheidungen.md</code>.
-  </p>
-  <h4>Drei Zwecke, und der dritte ist der ungewöhnliche</h4>
-  <table>
-    <tbody>
-      <tr>
-        <td class="nowrap"><strong>Lesbar bleiben</strong></td>
-        <td class="muted">Was hier steht, soll auch ohne dieses Programm zu
-          lesen sein. Eine Datenbankdatei ist das nicht.</td>
-      </tr>
-      <tr>
-        <td class="nowrap"><strong>Sichern</strong></td>
-        <td class="muted">Die erste der beiden Sicherungen vor dem Löschen
-          und vor der Werkseinstellung.</td>
-      </tr>
-      <tr>
-        <td class="nowrap"><strong>Versionsgeschichte</strong></td>
-        <td class="muted">Wer den Ausgabeort in ein Git-Repository legt,
-          bekommt eine Geschichte des Bestands — <strong>wer wann was
-          geändert hat</strong>, ohne dass dieses Programm etwas davon
-          mitschreiben müsste.</td>
-      </tr>
-    </tbody>
-  </table>
-  <h4>Zweimal ausgeben ergibt zweimal dasselbe</h4>
-  <p class="hint">
-    <strong>Bei unverändertem Bestand ist die Ausgabe byteweise
-    dieselbe.</strong> Keine Zeitstempel im Kopf, feste Sortierung — sonst
-    erzeugte jeder Lauf im Repository einen Unterschied über alles, und die
-    Geschichte wäre wertlos. Die Zeile <em>Stand der Ausgabe</em> baut
-    deshalb auf, was ausgegeben würde, und vergleicht es mit dem, was auf
-    der Platte liegt: <strong>verglichen wird der Inhalt, nicht ein
-    Zähler</strong>.
-  </p>
-  <h4>Zwei Wege hinaus, und einer braucht keine Shell</h4>
-  <p class="muted">
-    <strong><em>Ausgeben</em> schreibt</strong> — an den eingerichteten
-    Ort, damit dort ein Repository mitläuft.
-    <strong><em>Als ZIP herunterladen</em> gibt mit</strong>: dieselben
-    fünf Dateien, gepackt, im Browser.
-  </p>
-  <p class="hint">
-    <strong>Der Download braucht keinen eingerichteten Ausgang und keinen
-    Zugang zur Maschine.</strong> Wer den Server nicht selbst bedienen
-    kann oder darf, kommt trotzdem an seinen Bestand — das ist die
-    eigentliche Zusage hinter <em>der Ausgang bleibt Text</em>.
-  </p>
-  <p class="muted small">
-    Er schreibt dabei nichts: Der eingerichtete Ausgang bleibt unberührt,
-    und <em>Stand der Ausgabe</em> sagt danach dasselbe wie davor. Auch
-    das Paket ist bei unverändertem Bestand byteweise dasselbe — ein ZIP
-    trägt zu jeder Datei eine Uhrzeit, und hier steht überall dieselbe,
-    damit die Zusage nicht an der Stelle bricht, an der man sie am
-    leichtesten prüft.
-  </p>
-
-  <h4>Ausgegeben wird das gewählte Projekt</h4>
-  <p class="muted">
-    Die Auswahl aus der <a href="#projekte-uebersicht">Projektübersicht</a>
-    gilt hier wie überall — der Knopf heißt deshalb nach dem Projekt. Für
-    ein anderes: erst wechseln, dann ausgeben.
-  </p>
-
-  <div class="abschnittskopf">
     <h3 id="einrichtung-ablageorte">Ablageorte</h3>
     <p class="zurkarte"><a href="/einrichtung#ablageorte">Zur Karte &rarr;</a></p>
   </div>
   <h4>Wofür ist diese Karte da?</h4>
   <p class="muted">
-    <strong>Wo liegt was</strong> — die Datenbankdatei, der Ausgabeort, die
-    Anwendung selbst. Mit Zustand: ob es da ist und ob geschrieben werden
-    kann.
+    <strong>Wo liegt was</strong> — die Datenbankdatei und der Ordner der
+    Sicherung. Mit Zustand: ob es da ist und ob geschrieben werden kann.
   </p>
   <p class="muted small">
-    Der Export steht hier und in seiner eigenen Karte, und das ist keine
+    Die Sicherung steht hier und in ihrer eigenen Karte, und das ist keine
     Doppelung: Hier steht, <em>ob es den Ort gibt und ob er beschreibbar
-    ist</em> — dort, <em>was geschrieben wird und ob es noch stimmt</em>.
+    ist</em> — dort, <em>was darin liegt und wann gesichert wurde</em>.
   </p>
   <p class="hint">
     <strong>Die Datenbankdatei ist das, was gesichert werden muss.</strong>
-    Wer sie kopiert, hat alles; wer nur den Export hat, hat den Text, aber
-    nicht den Bestand.
+    Wer sie kopiert, hat alles — genau das tut die
+    <a href="#einrichtung-sicherung">Sicherung</a>.
   </p>
 
   <div class="abschnittskopf">
@@ -1604,7 +1530,7 @@
   <h4>Wofür ist diese Karte da?</h4>
   <p class="muted">
     Was beim Start dieses Dienstes eingestellt war — Adresse, Port,
-    Ausgabeort, Kennzeichnung. <strong>Gelesen und nicht gesetzt:</strong>
+    Ablage, Kennzeichnung. <strong>Gelesen und nicht gesetzt:</strong>
     Geändert wird das dort, wo der Dienst eingerichtet ist, nicht hier.
   </p>
   <p class="muted small">
@@ -1710,12 +1636,13 @@
     ganze Unterschied zum <a href="#projekte-angaben">Löschen</a>. Die
     anderen Projekte bleiben unberührt.
   </p>
-  <h4>Sie bietet den Export an, bevor sie fragt</h4>
+  <h4>Sie bietet die Sicherung an, bevor sie fragt</h4>
   <p class="hint">
     <strong>Ein Abbild holt man erneut, einen eingetragenen Gedanken
-    nicht.</strong> Deshalb steht über der Frage, ob die letzte Ausgabe noch
-    stimmt — und wenn nicht, in wie vielen Dateien sie abweicht. Daneben
-    steht <em>Ohne Export weiter</em>: ein Ausgang, kein Zwang.
+    nicht.</strong> Deshalb steht über der Frage, ob die letzte Sicherung
+    den heutigen Bestand trägt, und darunter <em>Jetzt sichern, dann
+    weiter</em>. Daneben steht <em>Ohne Sicherung weiter</em>: ein
+    Ausgang, kein Zwang.
   </p>
   <h4>Das Losungswort ist der Projektname</h4>
   <p class="muted">
@@ -2062,10 +1989,9 @@
       selbst: beim Start und einmal am Tag eine Kopie der ganzen
       Datenbank, in einen Ordner, den Sie wählen. <strong>Wählen Sie einen
       auf einer anderen Platte oder im Netz</strong> — die Vorgabe neben
-      der Datenbank hilft nicht bei einem Plattenschaden.
-      Der <a href="#einrichtung-export">Export</a> schreibt den Bestand
-      zusätzlich als Text weg, lesbar ohne dieses Programm und geeignet
-      für ein Repository.
+      der Datenbank hilft nicht bei einem Plattenschaden. Einzelne
+      Projekte als Datei gibt es unter
+      <a href="#einrichtung-uebertragung">Daten übertragen</a>.
     </p>
   </details>
 

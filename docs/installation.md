@@ -206,12 +206,12 @@ keine im ganzen Rechner.
 - **Python muss „für alle Benutzer" installiert sein.** Ein Python im
   Profil eines Benutzers liest das Konto nicht; das Setup bricht dann ab
   und sagt es.
-- **Ein Ausgang außerhalb des Datenverzeichnisses** — etwa ein
-  Git-Repository — braucht ein Schreibrecht für das Konto. Das Setup
-  vergibt es dort nicht ungefragt, sondern nennt den Befehl:
+- **Ein Sicherungsordner außerhalb des Datenverzeichnisses** braucht
+  ein Schreibrecht für das Konto. Die Karte *Sicherung* prüft das beim
+  Übernehmen und nennt, wenn es fehlt, den Befehl:
 
 ```powershell
-icacls "D:\ablage\tasks-ausgang" /grant "marlei-tasks:(OI)(CI)M"
+icacls "D:\sicherung\tasks" /grant "marlei-tasks:(OI)(CI)M"
 ```
 
 ### Was die Anwendung startet
@@ -386,7 +386,6 @@ das des Windows-Kontos.
 | Wert | wofür |
 |---|---|
 | `MARLEI_KENNZEICHNUNG` | Steht hier ein Wort, ist dieser Server nicht die Produktion: Der Seitengrund wechselt auf Sand, und das Wort steht in der Kopfzeile. **Auf einer Entwicklungsmaschine gehört hier `Entwicklung` hinein.** |
-| `MARLEI_EXPORT` | Wohin der Export schreibt. Zeigt der Pfad in ein Git-Repository, bekommt der Bestand damit eine Versionsgeschichte — bei unverändertem Bestand ist die Ausgabe byteweise dieselbe. |
 | `MARLEI_BERICHT` | Wohin ein Fehlerbericht geht. |
 | `MARLEI_KENNWORT_HASH` | Das Kennwort der Oberfläche, als Hash. **Nicht von Hand eintragen** — das Setup schreibt ihn, siehe *Das Kennwort* oben. |
 
@@ -442,13 +441,16 @@ C:\ProgramData\MARLEI Tasks\tasks.db          Windows
 Wer sie kopiert, hat den ganzen Bestand. Unter Windows braucht das
 Administratorrechte — die Ablage ist genau deshalb so eingerichtet.
 
-**Der Export ist nicht dasselbe** — er schreibt den Text, lesbar ohne
-dieses Werkzeug und geeignet für ein Repository, aber er ist keine
-Sicherung der Ablage. Beides steht unter **Einrichtung**, mit Pfad und
-Zustand.
+**Das tut die Karte *Sicherung* unter Einrichtung von selbst** — beim
+Start und einmal am Tag, jeweils wenn sich etwas geändert hat, und auf
+Knopfdruck. Den Ordner wählen Sie dort; am besten liegt er auf einer
+anderen Platte oder im Netz. Ein Ordner außerhalb der Ablage braucht
+unter Linux eine Freigabe für den Dienst — die Karte nennt den Befehl.
+Unter `/home` geht es nicht: Diese Verzeichnisse sind für den Dienst
+unsichtbar.
 
 > **Vor dem Löschen eines Projekts und vor der Werkseinstellung: erst
-> ausgeben.** Ein Abbild holt man erneut, einen eingetragenen Gedanken
+> sichern.** Ein Abbild holt man erneut, einen eingetragenen Gedanken
 > nicht.
 
 ---
@@ -518,7 +520,7 @@ sudo ./setup/linux/uninstall.sh
 
 **Der Bestand bleibt.** Weg sind danach die Anwendung, der Dienst
 (Einheit bzw. Aufgabe) und der Weg von außen (nginx-vhost bzw.
-Firewallregel). Die Ablage, die Einstellungen und der Ausgang bleiben
+Firewallregel). Die Ablage, die Einstellungen und die Sicherungen bleiben
 liegen — und das Skript sagt am Ende, wo. **Eine erneute Installation
 nimmt alles wieder auf.**
 
@@ -605,8 +607,8 @@ getippt. Der Schalter sagt, *dass* gelöscht wird; das Wort bestätigt,
 dass Sie gelesen haben, *was* — dieselbe Überlegung wie beim Losungswort
 der Werkseinstellung in der Anwendung.
 
-> **Erst ausgeben, dann löschen.** Ein Abbild holt man erneut, einen
-> eingetragenen Gedanken nicht. Der Ausgang steht unter **Einrichtung**.
+> **Erst sichern, dann löschen.** Ein Abbild holt man erneut, einen
+> eingetragenen Gedanken nicht. Die Sicherung steht unter **Einrichtung**.
 
 Kann niemand antworten — in einer Pipeline, in einer Aufgabe —, brechen
 beide ab, statt zu fragen oder einfach zu löschen.

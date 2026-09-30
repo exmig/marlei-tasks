@@ -358,13 +358,12 @@ with TestClient(anwendung.app) as c:
            and 'name="wort" autocomplete="off"' in seite,
            "das Feld steht leer da und traegt den Namen nur als Hinweis "
            "-- vorbelegt genuegte die Eingabetaste")
-    # Bis zum Bau von Einrichtung stand hier, dass es den Ausgang noch
-    # nicht gibt. Jetzt fuehrt er hin -- UND sagt, dass er das gewaehlte
-    # Projekt meint: Sonst exportiert jemand A und loescht B.
-    pruefe('href="/einrichtung#export"' in seite
-           and "erst wählen" in _flach(seite),
-           "der Ausgang vor dem Löschen führt an sein Ziel und nennt die "
-           "Bedingung: ausgegeben wird das gewählte Projekt")
+    # VORHER SICHERN, im Schritt selbst. Die Sicherung kopiert die
+    # ganze Ablage -- welches Projekt gewaehlt ist, spielt keine Rolle.
+    pruefe('action="/einrichtung/sicherung"' in seite
+           and 'name="weiter" value="loeschen:' in seite,
+           "vor dem Löschen steht »Jetzt sichern«, und es führt in den "
+           "Schritt zurück")
     # An diesem Projekt haengt genau EIN Topic (aus der Pruefung oben) --
     # daran zeigt sich die Einzahl. Aufgefallen ist das beim ersten Blick
     # auf die gebaute Seite: Dort stand "0 Eintraege der Sammlung".
@@ -1365,14 +1364,16 @@ with TestClient(anwendung.app) as c:
     # ================================================================ #
     c.cookies.set(anwendung.COOKIE_PROJEKT, str(projekt))
     seite = c.get("/einrichtung").text
-    for karte in ("Stand", "Export", "Ablageorte", "Einstellungen",
-                  "Firewall", "Fehlerbericht", "Verbesserungen",
-                  "Werkseinstellung"):
+    for karte in ("Stand", "Sicherung", "Daten übertragen", "Ablageorte",
+                  "Einstellungen", "Firewall", "Fehlerbericht",
+                  "Verbesserungen", "Werkseinstellung"):
         if karte not in seite:
             pruefe(False, "die Karte %s steht da" % karte)
             break
     else:
-        pruefe(True, "alle acht Karten stehen da")
+        pruefe(True, "alle neun Karten stehen da")
+    pruefe('id="export"' not in seite and "MARLEI_EXPORT" not in seite,
+           "der Export als Markdown ist weg, auch aus den Einstellungen")
     pruefe("IP-Adresse übernehmen" in seite and "gibt es hier nicht" in seite,
            "und dass es die neunte nicht gibt, steht da statt zu fehlen")
     # DIE KARTE STAND, seit dem 22.09.2026. Bis dahin stand hier die
@@ -1525,75 +1526,6 @@ with TestClient(anwendung.app) as c:
     seite = c.get("/meilensteine").text
     pruefe("liegen bereit" not in seite,
            "und ohne Suche steht dort nichts mehr")
-
-    print("\nDer Export")
-    with datenbank.verbindung() as conn:
-        p = datenbank.projekt(conn, projekt)
-    ziel = Path(tempfile.mkdtemp())
-    anwendung.export.ZIEL = ziel
-    seite = c.get("/einrichtung").text
-    # Nicht auf den ganzen Satz pruefen: Die Vorlage bricht ihn um, und
-    # dann prueft man die Einrueckung statt der Aussage.
-    pruefe("byteweise" in seite,
-           "die Stabilitätszusage steht auf der Karte, nicht nur im "
-           "Quelltext")
-    pruefe("Dateien weichen ab" in seite or "weicht ab" in seite,
-           "vor dem ersten Lauf sagt die Karte, dass die Ausgabe fehlt")
-
-    r = c.post("/einrichtung/export", follow_redirects=False)
-    pruefe(r.status_code == 303 and "art=gut" in r.headers["location"],
-           "ausgeben antwortet mit 303 und meldet, was geschrieben wurde")
-    ordner = ziel / anwendung.export.verzeichnisname(p)
-    pruefe(sorted(d.name for d in ordner.glob("*.md"))
-           == sorted(anwendung.export.DATEIEN),
-           "fünf Dateien in einem Verzeichnis je Projekt")
-    pruefe("aktuell" in c.get("/einrichtung").text,
-           "und die Karte sagt danach, dass die Ausgabe aktuell ist")
-
-    # DIE STABILITAETSZUSAGE, an der laufenden Anwendung geprueft.
-    vorher = {d.name: d.read_bytes() for d in ordner.glob("*.md")}
-    c.post("/einrichtung/export", follow_redirects=False)
-    nachher = {d.name: d.read_bytes() for d in ordner.glob("*.md")}
-    pruefe(vorher == nachher,
-           "ein zweiter Lauf schreibt byteweise dasselbe -- sonst wäre "
-           "die Versionsgeschichte im Repository wertlos")
-
-    print("\nDer Ausgang zum Mitnehmen")
-    # DER WEG AN DEN BESTAND, DER KEINE SHELL BRAUCHT. Die Texte
-    # entstehen ohnehin im Speicher, bevor sie auf die Platte gehen --
-    # fuer den Download faellt nur der letzte Schritt weg.
-    import io  # noqa: E402
-    import zipfile  # noqa: E402
-
-    paket = c.get("/einrichtung/export.zip")
-    pruefe(paket.status_code == 200
-           and paket.headers["content-type"] == "application/zip",
-           "der Ausgang lässt sich als ZIP herunterladen")
-    pruefe('filename="P-' in paket.headers.get("content-disposition", ""),
-           "und heißt nach Projekt und Tag")
-    darin = zipfile.ZipFile(io.BytesIO(paket.content)).namelist()
-    pruefe(len(darin) == len(anwendung.export.DATEIEN)
-           and all("/" in n for n in darin),
-           "fünf Dateien in einem Verzeichnis, wie beim Schreiben")
-
-    # DIE STABILITAETSZUSAGE GILT AUCH FUER DAS PAKET. Ein ZIP traegt zu
-    # jeder Datei eine Uhrzeit; naehme es die echte, waeren zwei Pakete
-    # desselben Bestands verschieden -- und die Zusage waere genau dort
-    # gebrochen, wo man sie am leichtesten prueft.
-    pruefe(paket.content == c.get("/einrichtung/export.zip").content,
-           "zweimal heruntergeladen ist byteweise dasselbe Paket")
-
-    # ER SCHREIBT NICHTS. Der eingerichtete Ausgang bleibt unberuehrt.
-    vorher_stand = c.get("/einrichtung").text
-    c.get("/einrichtung/export.zip")
-    pruefe(_flach(vorher_stand) == _flach(c.get("/einrichtung").text),
-           "und er rührt den eingerichteten Ausgang nicht an -- »Stand "
-           "der Ausgabe« sagt danach dasselbe")
-
-    ohne_projekt = TestClient(anwendung.app)
-    pruefe(ohne_projekt.get("/einrichtung/export.zip",
-                            follow_redirects=False).status_code == 303,
-           "ohne gewähltes Projekt führt er dorthin, wo man eines wählt")
 
     print("\nDie Sicherung")
     import re  # noqa: E402
@@ -1854,6 +1786,17 @@ with TestClient(anwendung.app) as c:
            "und es gibt ihn als Datei zum Anhängen")
 
     print("\nDie Werkseinstellung")
+    erster = c.get("/einrichtung").text
+    pruefe("Vorher sichern" in erster
+           and 'name="weiter" value="werkseinstellung"' in erster,
+           "vor der Frage steht »Jetzt sichern, dann weiter«")
+    r = c.post("/einrichtung/sicherung", data={"weiter": "werkseinstellung"},
+               follow_redirects=False)
+    pruefe("werkseinstellung=wort" in r.headers["location"]
+           and "art=gut" in r.headers["location"],
+           "und führt nach dem Sichern in den zweiten Schritt")
+    pruefe("badge ok\">aktuell" in c.get("/einrichtung").text,
+           "danach sagt die Karte, dass die Sicherung den Bestand trägt")
     schritt = c.get("/einrichtung?werkseinstellung=wort").text
     pruefe("Zum Fortfahren" in schritt,
            "der zweite Schritt verlangt den Projektnamen")
@@ -3012,19 +2955,13 @@ with TestClient(anwendung.app) as c:
     # mit einem Port, der nicht 80 ist.
     import firewall as firewallmodul  # noqa: E402
 
-    # 1. DER AUSGANG IST EIN ORT UND HAENGT NICHT AM PROJEKT.
-    # Dort stand "nicht eingerichtet -- MARLEI_EXPORT ist leer", waehrend
-    # zwei Karten weiter unten der Pfad danebenstand. Beides kann nicht
-    # stimmen.
+    # 1. DER ORT HAENGT NICHT AM PROJEKT. Der Ordner der Sicherung steht
+    # unter Ablageorte, auch wenn keines gewaehlt ist.
     ohne_wahl = TestClient(anwendung.app)
     seite = ohne_wahl.get("/einrichtung").text
-    pruefe(str(anwendung.export.ZIEL) in seite,
-           "der Ausgang steht unter Ablageorte, auch wenn kein Projekt "
+    pruefe(str(anwendung.sicherung.ordner()) in seite,
+           "die Sicherung steht unter Ablageorte, auch wenn kein Projekt "
            "gewählt ist -- der Ort hängt nicht am Projekt")
-    pruefe("ist leer" not in _flach(seite),
-           "und er wird nicht als leer gemeldet, während er danebensteht: "
-           "Eine Karte, die einen Grund nennt, den es nicht gibt, ist "
-           "schlimmer als eine, die schweigt")
 
     # DIE KARTE SAGT, WIE MAN DEN PORT AENDERT -- UND TUT ES NICHT.
     # Ein Feld, das ihn aenderte, muesste als root in /etc/nginx

@@ -141,7 +141,7 @@ WEGWEISER = re.compile(
     r'[^>]*>.*?</a>\s*</p>', re.S)
 
 # Alles Uebrige, was auf eine Route des Servers zeigt: /sammlung,
-# /meilensteine, /einrichtung#export. Der Text bleibt, die Klammer faellt
+# /meilensteine, /einrichtung#sicherung. Der Text bleibt, die Klammer faellt
 # -- "steht unter Sammlung" liest sich ohne Verweis genauso.
 ROUTE = re.compile(r'<a\s[^>]*href="/[^"]*"[^>]*>(.*?)</a>', re.S)
 

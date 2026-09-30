@@ -3,13 +3,15 @@
 
 {# Der siebte gebaute Reiter.
 
-   ACHT KARTEN -- die sieben aus docs/uebernahme.md, Abschnitt 6, und der
-   Export als achte. In Boot gibt es ihn nicht; hier traegt er drei
-   Zwecke, und der dritte hat ihn zur eigenen Karte gemacht.
+   NEUN KARTEN -- die sieben aus docs/uebernahme.md, Abschnitt 6, und
+   seit September 2026 Sicherung und Daten uebertragen. Sie stehen
+   gleich unter Stand -- sie beantworten die Frage, die man hier am
+   dringendsten stellt: wie die Daten wieder herauskommen.
 
-   ZEHN SEIT SEPTEMBER 2026: Sicherung und Daten uebertragen stehen
-   gleich unter Stand, vor dem Export -- sie beantworten die Frage, die
-   man hier am dringendsten stellt: wie die Daten wieder herauskommen.
+   DER EXPORT ALS MARKDOWN IST IM SEPTEMBER 2026 ENTFALLEN. Er war die
+   achte Karte und schrieb fuenf Textdateien je Projekt. Was er trug,
+   traegt die Datei aus Daten uebertragen ebenso -- und die laesst sich
+   wieder einlesen.
 
    WAS NICHT MITKOMMT: *IP-Adresse uebernehmen*. Das ist Boot-eigen. #}
 {% block content %}
@@ -325,8 +327,7 @@
   <p class="muted">
     <strong>Für eine andere Installation</strong> — einen zweiten Rechner,
     eine neue Maschine. Die Datei trägt jedes Feld und lässt sich dort
-    wieder einlesen. Lesbar für Menschen ist der
-    <a href="#export">Export</a>.
+    wieder einlesen.
   </p>
 
   {% if einlesen %}
@@ -408,145 +409,6 @@
   </p>
 </section>
 
-{# ==================================================================
-   DER EXPORT -- die achte Karte, und in Boot gibt es sie nicht.
-
-   Drei Zwecke: die Zusage aus docs/datenhaltung.md (*der Ausgang bleibt
-   Text*), die erste der beiden Sicherungen vor dem Zuruecksetzen -- und
-   seit dem 07.09.2026 der Weg, auf dem der Bestand eine
-   Versionsgeschichte bekommt.
-
-   AUSGEGEBEN WIRD DAS GEWAEHLTE PROJEKT, nicht alle auf einmal: Die
-   Vorauswahl gilt fuer Sammlung, Aufgaben, Meilensteine und
-   Entscheidungen -- sie gilt hier genauso.
-   ================================================================== #}
-<section id="export">
-  <div class="kartenkopf">
-    <h2>Export</h2>
-    {% if projekt and export_stand.dateien %}
-    <span class="muted small">
-      {% if export_offen %}nicht aktuell{% else %}aktuell{% endif %}</span>
-    {% endif %}
-    <a class="kartenhilfe" href="/hilfe#einrichtung-export"
-       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
-  </div>
-
-  <p class="muted">
-    <strong>Der Ausgang bleibt Text.</strong> Was heute eine Mappe aus
-    Markdown-Dateien leistet — lesbar ohne dieses Werkzeug, gesichert
-    durch Kopieren —, leistet der Export. Geschrieben wird ein
-    Verzeichnis je Projekt, darin eine Datei je Register.
-  </p>
-
-  {% if not projekt %}
-  <p class="hint">
-    <strong>Es ist kein Projekt gewählt.</strong> Ausgegeben wird immer
-    das gewählte — gewählt wird unter <a href="/">Projekte</a>.
-  </p>
-  {% elif not export_stand.eingerichtet %}
-  <p class="hint">
-    <strong>Es ist kein Zielverzeichnis eingerichtet.</strong>
-    <code>MARLEI_EXPORT</code> sagt, wohin ausgegeben wird; solange dort
-    nichts steht, gibt es keinen Ausgang — und damit auch keine
-    Sicherung vor dem Zurücksetzen.
-  </p>
-  {% else %}
-  <table class="eng">
-    <tbody>
-      <tr><td class="nowrap muted">Projekt</td>
-        <td><code>{{ projekt.kennung }}</code> {{ projekt.name }}
-          <span class="muted small">— das gewählte, wie überall</span></td></tr>
-      <tr><td class="nowrap muted">Zielverzeichnis</td>
-        <td><code>{{ export_stand.ordner }}</code>
-          {% if export_stand.beschreibbar %}
-          <span class="badge ok">beschreibbar</span>
-          {% else %}
-          <span class="badge missing">nicht beschreibbar</span>
-          {% endif %}</td></tr>
-      <tr><td class="nowrap muted">Zuletzt ausgegeben</td>
-        <td>{% if export_stand.dateien %}
-          {{ menge(export_stand.dateien, "Datei", "Dateien") }} ·
-          {{ groesse(export_stand.bytes) }}
-          {% else %}<span class="muted">noch nie</span>{% endif %}</td></tr>
-      <tr><td class="nowrap muted">Stand der Ausgabe</td>
-        <td>{% if export_offen %}
-          <span class="warnung">{{ menge(export_offen | length, "Datei weicht ab", "Dateien weichen ab") }}</span>
-          <span class="muted small">— {{ export_offen | join(", ") }}</span>
-          {% else %}<span class="badge ok">aktuell</span>
-          <span class="muted small">— die Ausgabe entspricht der
-            Ablage</span>{% endif %}</td></tr>
-    </tbody>
-  </table>
-
-  <div class="dateiliste">
-    <h3>Was geschrieben wird
-      <span class="muted small">— {{ menge(export_dateien | length, "Datei", "Dateien") }}
-        in einem Verzeichnis</span></h3>
-    <ul class="muted small">
-      {% for name in export_dateien %}
-      <li><code>{{ name }}</code></li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  {# DIE STABILITAETSZUSAGE STEHT AUF DER KARTE, nicht nur im Quelltext:
-     Wer sie spaeter aendert, sieht, was er kaputtmacht. Und der Vergleich
-     oben beweist sie nebenbei -- er baut aus, was ausgegeben wuerde, und
-     haelt es gegen das, was dasteht. #}
-  <p class="hint">
-    <strong>Bei unverändertem Bestand ist die Ausgabe byteweise
-    dieselbe.</strong> Keine Zeitstempel im Kopf, feste Sortierung,
-    gleiche Formatierung — sonst erzeugte jeder Lauf einen Unterschied
-    über alles, und die Versionsgeschichte im Repository sagte nichts
-    mehr. <em>Die Zeile darüber prüft genau das:</em> Sie vergleicht, was
-    ausgegeben würde, mit dem, was dasteht.
-  </p>
-
-  {% endif %}
-
-  {# BEIDE WEGE HINAUS IN EINER ZEILE -- sie beantworten dieselbe Frage
-     und gehoeren nebeneinander. Der Behaelter ist der flexe .row; das
-     Formular ist darin ein Element wie der Verweis daneben.
-
-     ZWEI BEDINGUNGEN, UND SIE SIND NICHT DIESELBE. Der linke Knopf
-     haengt am eingerichteten und beschreibbaren Ausgang -- fehlt der,
-     steht er grau da. Beide haengen am GEWAEHLTEN PROJEKT, und ohne das
-     steht hier gar nichts: Ein Knopf, der nur sagen kann "waehle erst
-     ein Projekt", ist einer, der nichts tut -- und ein Kaestchen, das
-     nichts tut, ist schlimmer als keines. Die Karte sagt es eine Zeile
-     darueber im Satz.
-
-     Aufgefallen an der laufenden Installation, an einem Browser ohne
-     Merkzettel.
-
-     **Er ist der Weg an den Bestand, der keine Shell braucht.** Wer den
-     Server nicht selbst bedienen kann oder darf, kommt hier trotzdem an
-     seine Ablage. #}
-  {% if projekt %}
-  <div class="row kartenknoepfe">
-    <form method="post" action="/einrichtung/export">
-      <button type="submit"
-              {% if not export_stand.beschreibbar %}disabled{% endif %}>{{ projekt.name }} ausgeben</button>
-    </form>
-    <a class="knopf" href="/einrichtung/export.zip">Als ZIP herunterladen</a>
-  </div>
-  <p class="muted small">
-    Dasselbe, was auch geschrieben würde — fünf Dateien in einem
-    Verzeichnis, gepackt. <strong>Der Download schreibt nichts:</strong>
-    Der eingerichtete Ausgang bleibt unberührt, und <em>Stand der
-    Ausgabe</em> sagt danach dasselbe wie davor. Auch das Paket ist bei
-    unverändertem Bestand byteweise dasselbe.
-  </p>
-  {% endif %}
-
-  <p class="kartenfuss">
-    <strong>Ausgegeben wird das gewählte Projekt</strong> — dasselbe, das
-    oben im Band steht. Und der Export schreibt nur: <strong>Er committet
-    nichts.</strong> Was im Repository landet, entscheidet, wer dort
-    <code>git commit</code> tippt.
-  </p>
-</section>
-
 <section id="ablageorte">
   <div class="kartenkopf">
     <h2>Ablageorte</h2>
@@ -562,24 +424,6 @@
         <td>{% if db_bytes %}<span class="badge ok">da</span>
           <span class="muted small">— {{ groesse(db_bytes) }}</span>
           {% else %}<span class="badge missing">nicht lesbar</span>{% endif %}</td>
-      </tr>
-      {# DER ORT, NICHT DAS PROJEKT DARIN. Diese Zeile fragte bis zum
-         07.09.2026 ueber export_stand, und das braucht ein gewaehltes
-         Projekt: Ohne eines stand hier "MARLEI_EXPORT ist leer",
-         waehrend zwei Karten weiter unten der Pfad danebenstand. Eine
-         Karte, die einen Grund nennt, den es nicht gibt, ist schlimmer
-         als eine, die schweigt. #}
-      <tr>
-        <td class="nowrap">Export</td>
-        <td>{% if export_ort.eingerichtet %}<code>{{ export_ort.pfad }}</code>
-          {% else %}<span class="muted">nicht eingerichtet</span>{% endif %}</td>
-        <td>{% if not export_ort.eingerichtet %}
-          <span class="badge missing">fehlt</span>
-          <span class="muted small">— <code>MARLEI_EXPORT</code> ist
-            leer</span>
-          {% elif export_ort.beschreibbar %}
-          <span class="badge ok">da, beschreibbar</span>
-          {% else %}<span class="badge missing">nicht beschreibbar</span>{% endif %}</td>
       </tr>
       <tr>
         <td class="nowrap">Sicherung</td>
@@ -851,8 +695,8 @@
    DIE WERKSEINSTELLUNG. Sie kommt aus Boot mit -- aber sie ist hier
    GEFAEHRLICHER, und das muss die Karte zeigen: Boot raeumt
    Wiederholbares weg, ein Abbild holt man erneut. Hier loescht derselbe
-   Knopf die Eintraege, und die gibt es nirgends sonst -- ausser im
-   Export, und deshalb steht der davor.
+   Knopf die Eintraege, und die gibt es nirgends sonst -- ausser in der
+   Sicherung, und deshalb steht die davor.
    ================================================================== #}
 <section id="werkseinstellung">
   <div class="kartenkopf">
@@ -892,38 +736,29 @@
       gewählte</li>
   </ul>
 
-  {# DER EXPORT STEHT VOR DER FRAGE, nicht danach: Ein Knopf, der
+  {# DIE SICHERUNG STEHT VOR DER FRAGE, nicht danach: Ein Knopf, der
      unwiederbringliche Arbeit loescht, muss den Weg zurueck anbieten,
      BEVOR er fragt. #}
   <div class="vorher">
-    <h3>Vorher ausgeben</h3>
-    {% if not export_stand.eingerichtet %}
+    <h3>Vorher sichern</h3>
+    {% if sicherung.aktuell %}
     <p class="muted small">
-      <strong>Es gibt keinen Ausgang.</strong>
-      <code>MARLEI_EXPORT</code> ist nicht gesetzt — was hier gelöscht
-      wird, ist danach weg. Ohne Zielverzeichnis lässt sich das nicht
-      abfedern.
-    </p>
-    {% elif export_offen %}
-    <p class="muted small">
-      Die letzte Ausgabe weicht in
-      {{ menge(export_offen | length, "Datei", "Dateien") }} ab. Ohne
-      einen frischen Export ist das, was seither entstanden ist, nach dem
-      Zurücksetzen weg.
+      <span class="badge ok">aktuell</span> Die letzte Sicherung,
+      <code>{{ sicherung.letzte.name }}</code>, trägt den heutigen Bestand
+      — es geht nichts verloren, was dort nicht schon steht.
     </p>
     {% else %}
     <p class="muted small">
-      <span class="badge ok">aktuell</span> Die Ausgabe unter
-      <code>{{ export_stand.ordner }}</code> entspricht der Ablage — es
-      geht nichts verloren, was dort nicht schon steht.
+      Seit der letzten Sicherung hat sich etwas geändert. Ohne eine
+      frische ist das, was seither entstanden ist, nach dem Zurücksetzen
+      weg.
     </p>
     {% endif %}
-    <form method="post" action="/einrichtung/export" class="row kartenknoepfe">
+    <form method="post" action="/einrichtung/sicherung" class="row kartenknoepfe">
       <input type="hidden" name="weiter" value="werkseinstellung">
-      <button type="submit"
-              {% if not export_stand.beschreibbar %}disabled{% endif %}>Jetzt ausgeben, dann weiter</button>
+      <button type="submit">Jetzt sichern, dann weiter</button>
       <a href="/einrichtung?werkseinstellung=wort#werkseinstellung"
-         class="muted small">Ohne Export weiter</a>
+         class="muted small">Ohne Sicherung weiter</a>
     </form>
   </div>
 

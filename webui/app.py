@@ -47,7 +47,6 @@ import befunde
 import bericht
 import datenbank
 import einstellungen
-import export
 import firewall
 import sicherung
 import uebertragung
@@ -2106,12 +2105,6 @@ def einrichtung_seite(request: Request, fehlerbericht: int = 0,
     text = ""
     with datenbank.verbindung() as conn:
         projekt = _gewaehltes(request, conn)
-        export_stand = export.stand(projekt) if projekt else {}
-        # DER ORT HAENGT NICHT AM PROJEKT: Ablageorte fragt, ob der
-        # Ausgang da und beschreibbar ist -- diese Frage hat auch ohne
-        # gewaehltes Projekt eine Antwort.
-        export_ort = export.ort()
-        export_offen = export.aktuell(conn, projekt) if projekt else []
         bestand = projekt["bestand"] if projekt else {}
         db_bytes = 0
         try:
@@ -2137,10 +2130,8 @@ def einrichtung_seite(request: Request, fehlerbericht: int = 0,
                updatestand=updatewacht.stand(),
                updateauswahl=updatewacht.AUSWAHL,
                db_pfad=str(datenbank.DB_PFAD),
-               db_bytes=db_bytes, export_stand=export_stand,
-               export_offen=export_offen, export_dateien=export.DATEIEN,
+               db_bytes=db_bytes,
                bestand=bestand, firewall=firewall.lage(),
-               export_ort=export_ort,
                oberflaechenport=_oberflaechenport(),
                ports=firewall.ports(_oberflaechenport()),
                nicht_oeffnen=firewall.nicht_oeffnen(_oberflaechenport()),
@@ -2148,13 +2139,20 @@ def einrichtung_seite(request: Request, fehlerbericht: int = 0,
                bericht_umgebung=bool(umgebung_mit),
                werkseinstellung=werkseinstellung,
                einstellungen=_einstellungen(),
-               sicherung=_sicherung_angaben(rechte),
+               sicherung=_sicherung_angaben(
+                   rechte, vergleichen=bool(projekt)
+                   and werkseinstellung != "wort"),
                alle_projekte=alle_projekte,
                einlesen=einlesen, einlesen_vorschau=einlesen_vorschau))
 
 
-def _sicherung_angaben(rechte: str = "") -> dict:
-    """Was die Karte Sicherung zeigt."""
+def _sicherung_angaben(rechte: str = "", vergleichen: bool = False) -> dict:
+    """Was die Karte Sicherung zeigt.
+
+    ``vergleichen`` fragt zusaetzlich, ob die juengste Sicherung den
+    heutigen Bestand traegt -- das braucht nur der Schritt vor der
+    Werkseinstellung, und es liest die ganze Ablage.
+    """
     vorhanden = sicherung.liste()
     ordner = sicherung.ordner()
     # Wie beim Export: Den Ordner gibt es und er laesst sich beschreiben
@@ -2175,6 +2173,7 @@ def _sicherung_angaben(rechte: str = "") -> dict:
         "zustand": sicherung.zustand(),
         "rechte_ordner": "",
         "rechte_befehl": "",
+        "aktuell": vergleichen and not sicherung.geaendert(),
     }
     # Der Befehl wird hier gebaut, nicht aus der Adresse uebernommen: Dort
     # steht nur der Pfad. Ein Befehl, den jemand in eine Konsole als
@@ -2227,13 +2226,6 @@ def _einstellungen() -> list[dict]:
                    "man redet."},
         {"name": "MARLEI_DB", "wert": str(datenbank.DB_PFAD),
          "wofuer": "Wo die Ablage liegt."},
-        # NICHT str(export.ZIEL): Ohne eingerichteten Ausgang ist das
-        # None, und str(None) ist "None" -- ein Wort, das wie ein Pfad
-        # aussieht. Leer heisst hier leer, und die Vorlage schreibt dann
-        # "nicht gesetzt" hin.
-        {"name": "MARLEI_EXPORT",
-         "wert": str(export.ZIEL) if export.ZIEL else "",
-         "wofuer": "Wohin der Export schreibt."},
         {"name": "MARLEI_KENNZEICHNUNG", "wert": KENNZEICHNUNG,
          "wofuer": "Steht hier ein Wort, ist dieser Server nicht die "
                    "Produktion — der Seitengrund wechselt dazu auf Sand."},
@@ -2265,58 +2257,6 @@ def bericht_datei(request: Request, umgebung_mit: int = 0) -> PlainTextResponse:
                        'attachment; filename="marlei-tasks-bericht.txt"'})
 
 
-@app.get("/einrichtung/export.zip")
-def export_paket(request: Request):
-    """Der Ausgang als Paket -- der Weg an den Bestand ohne Shell.
-
-    **Er schreibt nichts.** Die Texte entstehen im Speicher, der
-    eingerichtete Ausgang bleibt unberuehrt, und *Stand der Ausgabe*
-    sagt danach dasselbe wie davor. Wer den Bestand sichern will, braucht
-    damit weder einen Zugang zur Maschine noch einen eingerichteten
-    Ausgang.
-
-    **Das gewaehlte Projekt**, wie ueberall: Ein Paket mit allen dreien
-    waere die zweite Ausnahme neben den Befunden.
-    """
-    with datenbank.verbindung() as conn:
-        projekt = _gewaehltes(request, conn)
-        if not projekt:
-            return _ohne_projekt("/einrichtung#export")
-        daten = export.als_zip(conn, projekt)
-    name = "%s-%s.zip" % (export.verzeichnisname(projekt), datenbank.heute())
-    return Response(
-        content=daten, media_type="application/zip",
-        headers={"content-disposition": 'attachment; filename="%s"' % name})
-
-
-@app.post("/einrichtung/export")
-async def export_schreiben(request: Request) -> RedirectResponse:
-    """Das gewaehlte Projekt ausgeben.
-
-    **Nicht alle auf einmal** (entschieden im September 2026): Die
-    Vorauswahl gilt fuer Sammlung, Aufgaben, Meilensteine und
-    Entscheidungen -- sie gilt hier genauso.
-    """
-    formular = await request.form()
-    weiter = str(formular.get("weiter", ""))
-    with datenbank.verbindung() as conn:
-        projekt = _gewaehltes(request, conn)
-        if not projekt:
-            return _ohne_projekt("/")
-        try:
-            geschrieben = export.schreiben(conn, projekt)
-        except (ValueError, OSError) as warum:
-            return _meldung("/einrichtung#export",
-                            "Ausgeben ging nicht: %s" % warum, "schlecht")
-
-    ziel = ("/einrichtung?werkseinstellung=wort#werkseinstellung"
-            if weiter == "werkseinstellung" else "/einrichtung#export")
-    return _meldung(
-        ziel, "%s ausgegeben: %d Dateien nach %s."
-        % (projekt["name"], geschrieben["dateien"], geschrieben["ordner"]),
-        "gut")
-
-
 # ==================================================================== #
 # Sicherung und Daten uebertragen
 # ==================================================================== #
@@ -2336,13 +2276,24 @@ async def sicherung_jetzt(request: Request) -> RedirectResponse:
 
     Wer den Knopf drueckt, will eine Kopie sehen. Die Pruefung auf
     Aenderung gilt nur fuer das, was von selbst passiert.
+
+    ``weiter`` fuehrt zurueck in den Schritt, aus dem gesichert wurde:
+    vor der Werkseinstellung und vor dem Loeschen eines Projekts. Dort
+    steht der Knopf VOR der Frage -- wer unwiederbringliche Arbeit
+    loescht, bekommt den Weg zurueck angeboten, bevor er gefragt wird.
     """
+    formular = await request.form()
+    weiter = str(formular.get("weiter", ""))
+    ziel = "/einrichtung#sicherung"
+    if weiter == "werkseinstellung":
+        ziel = "/einrichtung?werkseinstellung=wort#werkseinstellung"
+    elif weiter.startswith("loeschen:") and weiter[9:].isdigit():
+        ziel = "/?loeschen=%s#eintrag-%s" % (weiter[9:], weiter[9:])
     try:
         ergebnis = await run_in_threadpool(sicherung.sichern)
     except sicherung.SicherungsFehler as fehler:
         return _sicherungsfehler(fehler)
-    return _meldung("/einrichtung#sicherung",
-                    "Gesichert: %s." % ergebnis["name"], "gut")
+    return _meldung(ziel, "Gesichert: %s." % ergebnis["name"], "gut")
 
 
 @app.post("/einrichtung/sicherung/ordner")
@@ -2401,7 +2352,7 @@ def uebertragung_hinaus(request: Request, alle: int = 0):
             return _meldung("/einrichtung#uebertragung",
                             "Es ist kein Projekt ausgewählt.", "schlecht")
         daten = uebertragung.exportieren(conn, ids, stand_kurz())
-    teil = (export.verzeichnisname(vorhanden[ids[0]]) if len(ids) == 1
+    teil = (uebertragung.dateiname(vorhanden[ids[0]]) if len(ids) == 1
             else "%d-projekte" % len(ids))
     name = "marlei-tasks-%s-%s.json" % (teil, datenbank.heute())
     return Response(

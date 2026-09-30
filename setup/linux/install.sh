@@ -246,7 +246,7 @@ fi
 log "Einstellungen schreiben"
 # --------------------------------------------------------------------------
 # Eine vorhandene Datei wird nur in der Basis-URL angepasst, damit eigene
-# Aenderungen (Ausgang, Kennzeichnung) einen erneuten Lauf ueberleben.
+# Aenderungen (etwa die Kennzeichnung) einen erneuten Lauf ueberleben.
 VORLAGE="$SRC_DIR/setup/linux/files/marlei-tasks.env.example"
 ADRESSE="http://$SERVER_IP"
 [[ "$PORT" == "80" ]] || ADRESSE="http://$SERVER_IP:$PORT"
@@ -350,31 +350,8 @@ else
   unset KW1 KW2
 fi
 
-# Der Ausgang des Exports. Er steht in der Umgebungsdatei und darf
-# woanders liegen -- etwa in einem Git-Repository; dann bekommt der
-# Bestand eine Versionsgeschichte. Angelegt wird er hier nur, wenn er
-# unterhalb des Datenverzeichnisses liegt: Ein fremder Pfad gehoert
-# jemand anderem, und dieses Skript legt dort nichts an.
-AUSGANG="$(sed -n 's|^MARLEI_EXPORT=||p' "$ENV_DATEI" | head -1)"
-if [[ -n "$AUSGANG" && "$AUSGANG" == "$DATA_DIR"/* ]]; then
-  mkdir -p "$AUSGANG"
-  chown -R "$DIENST:$DIENST" "$AUSGANG"
-elif [[ -n "$AUSGANG" && ! -d "$AUSGANG" ]]; then
-  warn "Der Ausgang $AUSGANG gibt es nicht -- er gehoert nicht unter
-    $DATA_DIR, deshalb legt dieses Skript ihn nicht an. Die Karte
-    'Ablageorte' sagt es ebenfalls."
-fi
-
-# Liegt der Ausgang ausserhalb, muss die Einheit ihn ausdruecklich
-# freigeben: ProtectSystem=strict macht sonst alles ausser
-# /var/lib/marlei-tasks schreibgeschuetzt.
 install -m 0644 "$SRC_DIR/setup/linux/files/marlei-tasks.service" \
         /etc/systemd/system/$DIENST.service
-if [[ -n "$AUSGANG" && "$AUSGANG" != "$DATA_DIR"/* ]]; then
-  sed -i "s|^ReadWritePaths=-.*|ReadWritePaths=-$AUSGANG|" \
-      /etc/systemd/system/$DIENST.service
-  echo "    Ausgang ausserhalb der Ablage -- freigegeben: $AUSGANG"
-fi
 
 # --------------------------------------------------------------------------
 log "nginx einrichten"

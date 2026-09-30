@@ -186,7 +186,7 @@
        stehen: Wer hier ist, hat genau eine Frage zu beantworten.
 
        ZWEI SICHERUNGEN, UND SIE FANGEN VERSCHIEDENE FEHLER AB -- der
-       Ausgang den, es ueberhaupt getan zu haben; der Name den, es am
+       Sicherung den, es ueberhaupt getan zu haben; der Name den, es am
        falschen getan zu haben. Warum so: docs/aufbau.md, Abschnitt 2.
        --------------------------------------------------------------- #}
     {% set liegt_drin = p.bestand.values() | sum %}
@@ -203,19 +203,18 @@
       Vision und seine Bereiche.
       {% endif %}
     </p>
-    {# HIER STAND, DASS ES DEN AUSGANG NOCH NICHT GIBT. Seit dem
-       07.09.2026 gibt es ihn, und damit ist dieser Satz der, den
-       docs/aufbau.md Abschnitt 6 zu ersetzen verlangt hat -- nicht zu
-       vergessen, sondern zu ersetzen.
-
-       Der Hinweis auf das WAEHLEN ist kein Beiwerk: Geloescht wird hier
-       jedes Projekt, ausgegeben aber immer nur das gewaehlte. Ohne den
-       Satz exportiert jemand A und loescht B. #}
-    <p class="muted small">
-      Vorher sichern: <a href="/einrichtung#export">Jetzt ausgeben</a>
-      schreibt den ganzen Bestand als Text weg — der Export gilt für das
-      <strong>gewählte</strong> Projekt, dieses hier also erst wählen.
-    </p>
+    {# VORHER SICHERN, UND ZWAR HIER. Bis September 2026 stand hier der
+       Verweis auf den Export -- der galt nur fuer das GEWAEHLTE Projekt,
+       und ohne den Satz dazu haette jemand A ausgegeben und B geloescht.
+       Die Sicherung kopiert die ganze Ablage; welches Projekt gewaehlt
+       ist, spielt keine Rolle mehr. Danach geht es in diesen Schritt
+       zurueck. #}
+    <form method="post" action="/einrichtung/sicherung" class="row">
+      <input type="hidden" name="weiter" value="loeschen:{{ p.id }}">
+      <span class="muted small">Vorher sichern — eine Kopie der ganzen
+        Datenbank, mit allen Projekten:</span>
+      <button type="submit" class="folgeknopf">Jetzt sichern</button>
+    </form>
     <form method="post" action="/projekte/loeschen" class="row">
       <input type="hidden" name="id" value="{{ p.id }}">
       <label for="losung-{{ p.id }}" class="muted small">

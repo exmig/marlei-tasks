@@ -205,16 +205,12 @@ Und der **Reiter Einrichtung**, seit dem 07.09.2026:
   da:** Dass die IP-Übernahme aus Boot es hier nicht gibt und dass nach
   neuen Versionen nicht gesucht wird, prüft die Suite als Text auf der
   Seite — beides sind Aussagen, keine Lücken.
-- **Die Stabilitätszusage wird zweimal geprüft**, gegen die Datenbank
-  (`export.dateien` zweimal aufgerufen) und gegen die laufende Anwendung
-  (zweimal `POST /einrichtung/export`, dann Byte für Byte). Ohne sie
-  erzeugte jeder Lauf im Repository einen Unterschied über alles.
-- **Verglichen wird der Inhalt, nicht ein Zähler:** Ein neuer Eintrag
-  lässt genau eine Datei abweichen, ein zweiter Lauf gleicht sie an.
-- **`Path("")` ist `Path(".")`** — die Prüfung *ohne Zielverzeichnis*
-  gibt deshalb `Path(".")` mit, nicht `Path("")`, sonst prüfte sie
-  nichts.
-- **Der Ordnername:** Kennung vorn (sie ändert sich nie), Umlaute
+- **Die Sicherung kopiert den Inhalt, nicht die Datei** — geprüft über
+  einen Abdruck des Inhalts, und ohne Änderung wird von selbst nicht
+  gesichert. Die letzten N bleiben, die vor einem Import immer.
+- **Ein Projekt kommt vollständig wieder herein**, als neues: mit neuen
+  Kennungen, und jeder Verweis zieht mit — auch im Text.
+- **Der Dateiname:** Kennung vorn (sie ändert sich nie), Umlaute
   umschrieben statt zerlegt — aus *Völlig* wird `voellig`, nicht
   `vollig`.
 - **Der Fehlerbericht zählt, statt abzuschreiben:** Die Prüfung holt

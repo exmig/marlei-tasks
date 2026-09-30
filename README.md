@@ -60,10 +60,10 @@ auf dem Server ein nginx davor.
 - **Entscheidungen mit Weg und Ergebnis.** Oben steht, was entschieden
   wurde; darunter, wie man dahin kam. Der Weg zeigt, wie gründlich eine
   Entscheidung war.
-- **Der Ausgang bleibt Text.** Jedes Projekt lässt sich als Markdown
-  ausgeben — bei unverändertem Bestand byteweise dieselbe Ausgabe. Damit
-  bekommt der Bestand eine Versionsgeschichte, wenn man ihn in ein
-  Repository legt.
+- **Sicherung und Umzug.** Eine Kopie der ganzen Datenbank beim Start,
+  einmal am Tag und auf Knopfdruck, in einen Ordner Ihrer Wahl. Projekte
+  lassen sich als Datei exportieren und in einer anderen Installation
+  wieder einlesen — einzeln oder alle.
 - **Server Health.** Was die Maschine tut und was der Dienst selbst
   braucht. Wo es keine Quelle gibt, wird nichts behauptet.
 

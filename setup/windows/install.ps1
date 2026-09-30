@@ -629,41 +629,8 @@ if (Test-Path -LiteralPath $ENV_DATEI) {
 } else {
     $zeilen = Setze-Wert $vorlage_zeilen "MARLEI_BASE_URL" $ADRESSE
     $zeilen = Setze-Wert $zeilen "MARLEI_DB" (Join-Path $DATA_DIR "tasks.db")
-    $zeilen = Setze-Wert $zeilen "MARLEI_EXPORT" (Join-Path $DATA_DIR "ausgang")
     Schreib-Datei $ENV_DATEI (($zeilen -join "`r`n") + "`r`n")
     Write-Host "    $ENV_DATEI -- neu angelegt."
-}
-
-# Der Ausgang des Exports. Er darf woanders liegen -- etwa in einem
-# Git-Repository; dann bekommt der Bestand eine Versionsgeschichte.
-# Angelegt wird er hier nur, wenn er unterhalb des Datenverzeichnisses
-# liegt: Ein fremder Pfad gehoert jemand anderem.
-$AUSGANG = ""
-foreach ($z in @(Get-Content -LiteralPath $ENV_DATEI -Encoding UTF8)) {
-    if ($z -match "^MARLEI_EXPORT=(.*)$") { $AUSGANG = $Matches[1].Trim() }
-}
-if ($AUSGANG) {
-    if ($AUSGANG.StartsWith($DATA_DIR, [StringComparison]::OrdinalIgnoreCase)) {
-        New-Item -ItemType Directory -Force -Path $AUSGANG | Out-Null
-    } elseif (-not (Test-Path -LiteralPath $AUSGANG)) {
-        Warnung @"
-Den Ausgang $AUSGANG gibt es nicht -- er gehoert nicht unter
-    $DATA_DIR, deshalb legt dieses Skript ihn nicht an. Die Karte
-    "Ablageorte" sagt es ebenfalls.
-"@
-    } else {
-        # **Er ist da, aber darf das Konto dort schreiben?** Solange die
-        # Aufgabe als SYSTEM lief, war das keine Frage. Jetzt schon -- und
-        # die Rechte vergibt dieses Skript an einem fremden Ort nicht
-        # ungefragt; es nennt den Befehl.
-        Warnung @"
-Der Ausgang liegt ausserhalb des Datenverzeichnisses:
-      $AUSGANG
-    Das Konto $KONTO darf dort nur schreiben, wenn es jemand erlaubt:
-      icacls "$AUSGANG" /grant "${KONTO}:(OI)(CI)M"
-    Ob es geht, sagt danach die Karte "Ablageorte" unter Einrichtung.
-"@
-    }
 }
 
 # **Die Einstellungen darf das Konto lesen, nicht aendern.** Das

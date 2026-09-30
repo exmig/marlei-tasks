@@ -45,8 +45,8 @@ from pathlib import Path
 
 import auslastung
 import datenbank
-import export
 import firewall
+import sicherung
 import windows
 
 # Welches System hier antwortet -- wie in auslastung.py und firewall.py
@@ -288,12 +288,7 @@ def _umgebung(conn) -> list[str]:
         zeilen.append(_zeile("Größe der Ablage", "%d Bytes" % db.stat().st_size))
     except OSError:
         zeilen.append(_zeile("Größe der Ablage", "nicht lesbar"))
-    # str(None) waere "None" und damit wahr -- dieselbe Falle wie bei
-    # Path(""), nur eine Ebene spaeter. In einem Fehlerbericht ist
-    # "Export: None" die unbrauchbarste Zeile von allen: Sie sieht aus wie
-    # eine Angabe.
-    zeilen.append(_zeile("Export", str(export.ZIEL) if export.ZIEL
-                         else "nicht eingerichtet"))
+    zeilen.append(_zeile("Sicherung", str(sicherung.ordner())))
 
     lage = firewall.lage()
     zeilen.append(_zeile(

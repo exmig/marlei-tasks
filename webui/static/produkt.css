@@ -816,7 +816,7 @@ textarea.feld.lang:focus { outline: 2px solid var(--accent); outline-offset: 1px
    Der Reiter Einrichtung
    ========================================================================== */
 
-/* Die Liste der Dateien, die der Export schreibt. */
+/* Die Liste der Sicherungen im Ordner. */
 .dateiliste { margin: .8rem 0; }
 .dateiliste h3 { margin: 0 0 .2rem; font-size: .92rem; }
 .dateiliste ul { margin: .2rem 0; padding-left: 1.2rem; }
@@ -832,7 +832,7 @@ textarea.feld.lang:focus { outline: 2px solid var(--accent); outline-offset: 1px
 /* Eine Anzahl, keine Adresse: so breit wie drei Ziffern und die Pfeile. */
 .zahlfeld { width: 5rem; }
 
-/* Der Export vor der Werkseinstellung.
+/* Die Sicherung vor der Werkseinstellung.
    ------------------------------------------------------------------------
 
    Abgesetzt, damit er nicht wie ein Hinweis aussieht, sondern wie ein

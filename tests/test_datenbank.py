@@ -872,10 +872,10 @@ pruefe(zahlen["steine"] == 1 and zahlen["umwege"] == 1
 conn7.commit()
 conn7.close()
 
-print("\nDer Export")
+print("\nDaten uebertragen")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "webui"))
-import export  # noqa: E402
+import uebertragung  # noqa: E402
 
 conn8 = datenbank.verbindung(tmp / "ausgang.db")
 datenbank.anlegen(conn8)
@@ -900,80 +900,41 @@ datenbank.entscheidung_anlegen(conn8, px, "Die Firewall wird gemeldet",
 conn8.commit()
 pjx = datenbank.projekt(conn8, px)
 
-pruefe(export.verzeichnisname(pjx) == "P-001-marlei-boot",
-       "der Ordner heisst nach Kennung und Name -- die Kennung vorn, "
+pruefe(uebertragung.dateiname(pjx) == "P-001-marlei-boot",
+       "die Datei heisst nach Kennung und Name -- die Kennung vorn, "
        "weil sie sich nie aendert")
 umbenannt = dict(pjx, name="Völlig anders benannt")
-pruefe(export.verzeichnisname(umbenannt).startswith("P-001-"),
-       "und bleibt beim Umbenennen erkennbar")
-pruefe("ö" not in export.verzeichnisname(umbenannt)
-       and export.verzeichnisname(umbenannt).endswith("voellig-anders-benannt"),
-       "Umlaute werden umschrieben, Grossbuchstaben klein -- nur die\n       Kennung bleibt, wie sie ist")
+pruefe("ö" not in uebertragung.dateiname(umbenannt)
+       and uebertragung.dateiname(umbenannt).endswith(
+           "voellig-anders-benannt"),
+       "Umlaute werden umschrieben, Grossbuchstaben klein")
 
-dateien = export.dateien(conn8, pjx)
-pruefe(sorted(dateien) == sorted(export.DATEIEN),
-       "es sind genau die fuenf Dateien")
-pruefe(all(t.endswith(chr(10)) and not t.endswith(chr(10) * 2)
-           for t in dateien.values()),
-       "jede endet mit genau einem Zeilenumbruch")
-
-# DIE STABILITAETSZUSAGE, und sie ist der Grund fuer diese Pruefung:
-# Bei unveraendertem Bestand byteweise dieselbe Ausgabe.
-pruefe(export.dateien(conn8, pjx) == dateien,
-       "zweimal aufgerufen liefert zweimal dieselben Zeichen -- ohne das "
-       "erzeugte jeder Lauf einen Unterschied ueber alles")
-
-# DIE AUSGABE IST LF, auch wenn in der Ablage CRLF steht: Ein
-# Browser schickt in einem Formularfeld CRLF, und gemischte
-# Umbrueche in einer Datei brechen die Stabilitaetszusage beim
-# ersten Auschecken -- Git schriebe sie um, und der naechste
-# Export saehe in jeder Zeile geaendert aus.
-datenbank.topic_aendern(conn8, 1,
-                        beschreibung='Erste' + chr(13) + chr(10)
-                        + 'Zweite')
-conn8.commit()
-pruefe(chr(13) not in export.dateien(conn8, pjx)['sammlung.md'],
-       'die Ausgabe traegt nur LF, auch wenn im Feld CRLF steht')
-
-print("\nWas in den Dateien steht")
-pruefe("# P-001 MARLEI Boot" in dateien["projekt.md"]
-       and "Netz rein, fertig." in dateien["projekt.md"],
-       "das Projekt mit Kennung, Beschreibung und Vision")
-pruefe("## B-001 Kein Weg zurueck" in dateien["sammlung.md"]
-       and "### Beschreibung" in dateien["sammlung.md"],
-       "die Sammlung mit Kennung und Abschnitten")
-pruefe("- [x] Dienste abschalten" not in dateien["aufgaben.md"]
-       and "- [ ] Dienste abschalten" in dateien["aufgaben.md"],
-       "die Haekchenlisten als Markdown-Kaestchen, ungehakt was offen ist")
-pruefe("Was dazwischenkam" in dateien["meilensteine.md"]
-       and "Der Pi war nicht da." in dateien["meilensteine.md"],
-       "die Umwege am Meilenstein")
-pruefe("### Was entschieden wurde" in dateien["entscheidungen.md"]
-       and "### Der Verlauf" in dateien["entscheidungen.md"],
-       "Entschluss und Verlauf getrennt, wie in der Karte")
-
-print("\nSchreiben und vergleichen")
-ziel = tmp / "ausgang"
-pruefe(export.aktuell(conn8, pjx, ziel) == list(export.DATEIEN),
-       "vor dem ersten Lauf weichen alle fuenf ab")
-export.schreiben(conn8, pjx, ziel)
-pruefe(export.aktuell(conn8, pjx, ziel) == [],
-       "danach keine mehr -- verglichen wird der Inhalt, nicht ein "
-       "Zaehler")
-datenbank.topic_anlegen(conn8, px, "Noch etwas", bx, "2026-09-07")
-pruefe(export.aktuell(conn8, pjx, ziel) == ["sammlung.md"],
-       "ein neuer Eintrag laesst genau eine Datei abweichen")
-export.schreiben(conn8, pjx, ziel)
-pruefe(export.aktuell(conn8, pjx, ziel) == [],
-       "und ein zweiter Lauf gleicht sie wieder an")
-
-stand = export.stand(pjx, ziel)
-pruefe(stand["dateien"] == 5 and stand["bytes"] > 0
-       and stand["beschreibbar"],
-       "der Stand nennt Dateien, Groesse und ob geschrieben werden kann")
-pruefe(export.stand(pjx, Path("."))["eingerichtet"] is False,
-       "ohne Zielverzeichnis sagt der Stand das, statt irgendwohin zu "
-       "zeigen")
+# IN EINE ANDERE INSTALLATION: eine zweite Ablage, in der die Nummern
+# schon vergeben sind. Genau der Fall, fuer den die Datei da ist.
+daten = uebertragung.lesen(uebertragung.als_json(
+    uebertragung.exportieren(conn8, [px], "test")))
+conn9 = datenbank.verbindung(tmp / "anderswo.db")
+datenbank.anlegen(conn9)
+schon = datenbank.projekt_anlegen(conn9, "Schon da", "2026-09-01")
+datenbank.bereich_anlegen(conn9, schon, "x")
+datenbank.topic_anlegen(conn9, schon, "belegt B-001", datenbank.bereiche(
+    conn9, schon)[0]["id"], "2026-09-01")
+conn9.commit()
+angelegt = uebertragung.importieren(conn9, daten)
+neu = datenbank.projekt(conn9, angelegt[0]["id"])
+pruefe(neu["name"] == "MARLEI Boot" and neu["id"] != px,
+       "in der anderen Ablage kommt das Projekt als neues an")
+pruefe(neu["bestand"] == pjx["bestand"]
+       and neu["vision"] == "Netz rein, fertig.",
+       "mit allem, was darin stand")
+pruefe(datenbank.topics(conn9, neu["id"], offen_nur=False)[0]["kennung"]
+       != "B-001",
+       "und neuen Kennungen, wo die alten schon vergeben sind")
+pruefe(datenbank.topics(conn9, schon, offen_nur=False)[0]["titel"]
+       == "belegt B-001",
+       "was dort schon stand, bleibt unberuehrt -- auch eine Kennung im "
+       "Text, die zufaellig passt")
+conn9.close()
 
 print("\nDie Werkseinstellung")
 vorher = datenbank.projekt(conn8, px)["bestand"]

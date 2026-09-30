@@ -237,3 +237,18 @@ Unterschied über alles, und die Versionsgeschichte sagt nichts mehr.
 Erwogen und am 07.09.2026 verworfen: Tasks wird fertig, der Bestand aus
 Boot wird übernommen, dann exportiert Tasks dorthin. Drei Mappen zu
 pflegen, kurz bevor das Werkzeug sie ersetzt, wäre die Arbeit zweimal.*
+
+**Nachgetragen am 30.09.2026: Der Export als Markdown ist entfallen —
+und mit ihm die Zusage, dass der Ausgang Text bleibt.**
+
+Weiter oben steht: *Wer den Export streicht, streicht die Zusage.* Das
+ist geschehen, und zwar bewusst. An seine Stelle sind zwei Karten
+getreten: die **Sicherung**, eine Kopie der ganzen Datenbank, und
+**Daten übertragen**, eine JSON-Datei mit jedem Feld, die sich in einer
+anderen Installation wieder einlesen lässt.
+
+**Lesbar ohne das Werkzeug ist damit nur noch die JSON-Datei** — für
+Menschen mühsam, aber vollständig. Wer den Bestand als Markdown braucht,
+baut ihn daraus. Die Versionsgeschichte in `marlei-internal` endet mit
+dem Export; die Mappe dort ist gelöscht, ihr letzter Stand steht in der
+Git-Geschichte des Repositorys.

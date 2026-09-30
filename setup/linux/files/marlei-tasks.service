@@ -16,18 +16,15 @@ ExecStart=/opt/marlei-tasks/venv/bin/uvicorn app:app --host 127.0.0.1 --port 180
 Restart=on-failure
 RestartSec=3
 
-# Absicherung: Die Anwendung braucht Schreibzugriff auf ihre eigene Ablage
-# und auf den Ausgang des Exports. Sonst nichts.
+# Absicherung: Die Anwendung braucht Schreibzugriff auf ihre eigene Ablage.
+# Sonst nichts. Ein Sicherungsordner woanders wird in einer eigenen Datei
+# unter marlei-tasks.service.d freigegeben -- die Karte Sicherung nennt
+# den Befehl, und ein Update laesst die Datei stehen.
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 ReadWritePaths=/var/lib/marlei-tasks
-# Der Ausgang darf woanders liegen -- etwa in einem Git-Repository, damit
-# der Bestand eine Versionsgeschichte bekommt. Das Minus heisst: Fehlt der
-# Pfad, ist das kein Grund, den Dienst nicht zu starten. install.sh traegt
-# hier nach, was in MARLEI_EXPORT steht.
-ReadWritePaths=-/var/lib/marlei-tasks/ausgang
 ProtectKernelTunables=yes
 ProtectControlGroups=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

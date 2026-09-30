@@ -1,16 +1,20 @@
 """
 Daten uebertragen: Projekte als eine Datei hinaus und wieder herein.
 
-**Nicht der Export.** Der Export schreibt Text fuer Menschen und fuer ein
-Repository; eingelesen werden kann er nicht. Diese Datei ist fuer die
-andere Installation -- einen zweiten Rechner, eine frische Maschine nach
-einem Umzug. Sie traegt jede Spalte, auch die, die keine Karte zeigt.
+Die Datei ist fuer die andere Installation -- einen zweiten Rechner,
+eine frische Maschine nach einem Umzug. Sie traegt jede Spalte, auch
+die, die keine Karte zeigt.
+
+**Sie ist seit September 2026 der einzige Weg hinaus.** Bis dahin gab
+es daneben einen Export als Markdown, fuenf Dateien je Projekt, stabil
+fuer ein Repository. Er ist entfallen: Wer den Bestand als Text lesen
+will, kann ihn aus dieser Datei bauen -- sie traegt alles, was er trug.
 
 **Ausgewaehlt werden die Projekte hier, nicht vorausgewaehlt.** Die
-Vorauswahl aus dem Reiter Projekte gilt sonst ueberall, auch im Export.
-Hier nicht: Wer umzieht, zieht mit allem um, und ein Knopf je Projekt
-waere ein Umzug in Raten (so entschieden im September 2026 -- die
-zweite Ausnahme neben den Befunden).
+Vorauswahl aus dem Reiter Projekte gilt sonst ueberall. Hier nicht: Wer
+umzieht, zieht mit allem um, und ein Knopf je Projekt waere ein Umzug in
+Raten (so entschieden im September 2026 -- die zweite Ausnahme neben den
+Befunden).
 
 **Eingelesen wird immer als neues Projekt.** Nichts wird ueberschrieben.
 Die Kennungen sind die Nummern der Ablage und gelten ueber alle Projekte
@@ -26,12 +30,35 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+import unicodedata
 from datetime import datetime
 
 import datenbank
 
 FORMAT = "marlei-tasks-daten"
 VERSION = 1
+
+_UNSAUBER = re.compile(r"[^a-z0-9]+")
+
+
+def dateiname(projekt: dict) -> str:
+    """``P-001-marlei-boot`` -- Kennung voran, Name dahinter.
+
+    Fuer den Namen der Datei, wenn nur ein Projekt darin steht.
+
+    ERST UMSCHREIBEN, DANN ZERLEGEN -- die Reihenfolge ist der ganze
+    Punkt. NFKD macht aus "ö" ein "o" mit angehaengtem Zeichen; wer
+    danach nach "ö" sucht, findet nichts mehr, und aus "Völlig" wird
+    "vollig" statt "voellig".
+    """
+    roh = projekt["name"].lower()
+    for davor, danach in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"),
+                          ("ß", "ss")):
+        roh = roh.replace(davor, danach)
+    roh = unicodedata.normalize("NFKD", roh)
+    roh = "".join(z for z in roh if not unicodedata.combining(z))
+    kurz = _UNSAUBER.sub("-", roh).strip("-")[:40]
+    return "%s-%s" % (projekt["kennung"], kurz) if kurz else projekt["kennung"]
 
 # Die Tabellen eines Projekts, in der Reihenfolge, in der sie eingelesen
 # werden. **Die Reihenfolge ist der Punkt:** Eine Zeile kann erst
