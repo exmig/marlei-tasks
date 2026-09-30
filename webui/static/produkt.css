@@ -832,6 +832,31 @@ textarea.feld.lang:focus { outline: 2px solid var(--accent); outline-offset: 1px
 /* Eine Anzahl, keine Adresse: so breit wie drei Ziffern und die Pfeile. */
 .zahlfeld { width: 5rem; }
 
+/* Ein Knopf am rechten Ende einer Tabellenzeile -- in der Karte
+   Sicherung "Jetzt sichern" neben dem Namen der letzten Sicherung. */
+.zeilenknopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+/* Beschriftung, Feld, Knopf -- mehrere Formulare in einem Raster, damit
+   Felder und Knoepfe untereinander an derselben Kante beginnen. Die
+   Formulare geben ihre Teile per "display: contents" an das Raster
+   weiter; was ueber alle Spalten gehen soll, traegt .rasterbreit. */
+.feldraster {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  column-gap: .5rem;
+  row-gap: .45rem;
+}
+.feldraster > form { display: contents; }
+.feldraster > form > input { justify-self: start; }
+.feldraster > .rasterbreit { grid-column: 1 / -1; }
+
 /* Die Sicherung vor der Werkseinstellung.
    ------------------------------------------------------------------------
 
@@ -1002,4 +1027,10 @@ main.anmeldung { max-width: 28rem; margin-top: 2.5rem; }
 #archiv .bezeichnung .titelzeile {
   font-weight: 400;
   font-size: .82rem;
+}
+
+/* Schmal untereinander statt nebeneinander -- das Pfadfeld braucht
+   seine Breite, und drei Spalten ueber einem Telefon quetschen es. */
+@media (max-width: 640px) {
+  .feldraster { grid-template-columns: 1fr; }
 }

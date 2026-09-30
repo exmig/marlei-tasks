@@ -223,10 +223,18 @@
         <td><code>{{ sicherung.ordner }}</code>
           <span class="muted small">— {{ "gewählt" if sicherung.gewaehlt
             else "die Vorgabe, neben der Datenbank" }}</span></td></tr>
+      {# DER KNOPF STEHT IN DER ZEILE, DIE ER VERAENDERT: Nach dem Druck
+         steht hier eine neue Datei. Rechtsbuendig, damit der Name links
+         die ganze Breite behaelt. #}
       <tr><td class="nowrap muted">Letzte</td>
-        <td>{% if sicherung.letzte %}<code>{{ sicherung.letzte.name }}</code>
-          <span class="muted small">— {{ groesse(sicherung.letzte.bytes) }}</span>
-          {% else %}<span class="muted">noch keine</span>{% endif %}</td></tr>
+        <td><div class="zeilenknopf">
+          <span>{% if sicherung.letzte %}<code>{{ sicherung.letzte.name }}</code>
+            <span class="muted small">— {{ groesse(sicherung.letzte.bytes) }}</span>
+            {% else %}<span class="muted">noch keine</span>{% endif %}</span>
+          <form method="post" action="/einrichtung/sicherung">
+            <button type="submit">Jetzt sichern</button>
+          </form>
+        </div></td></tr>
       <tr><td class="nowrap muted">Vorhanden</td>
         <td>{{ menge(sicherung.staende | length, "Sicherung", "Sicherungen") }}
           <span class="muted small">— behalten werden die letzten
@@ -234,14 +242,14 @@
     </tbody>
   </table>
 
-  <div class="row kartenknoepfe">
-    <form method="post" action="/einrichtung/sicherung">
-      <button type="submit">Jetzt sichern</button>
-    </form>
-  </div>
-
   <hr class="kartentrenner">
-  <form method="post" action="/einrichtung/sicherung/ordner" class="row sichernspalte">
+  {# EIN RASTER FUER ZWEI FORMULARE: Beschriftung, Feld, Knopf. Die
+     Formulare selbst tragen "display: contents" und geben ihre Teile an
+     das Raster weiter -- so beginnen beide Felder und beide Knoepfe an
+     derselben Kante, obwohl sie verschieden breit sind. Was dazwischen
+     steht (der Befehl bei fehlendem Recht), spannt ueber alle Spalten. #}
+  <div class="feldraster">
+  <form method="post" action="/einrichtung/sicherung/ordner">
     <span>
       <label for="sicherung-ordner"><strong>Ordner</strong></label>
       <span class="muted small">— {{ "ein UNC-Pfad für ein Netzlaufwerk"
@@ -253,32 +261,36 @@
            spellcheck="false" autocomplete="off"
            value="{{ sicherung.rechte_ordner or (sicherung.ordner if sicherung.gewaehlt else '') }}"
            placeholder="{{ sicherung.vorgabe }}">
-    <button type="submit" class="folgeknopf">Übernehmen</button>
-    {% if sicherung.gewaehlt %}
-    <button type="submit" name="aktion" value="vorgabe"
-            class="folgeknopf">Vorgabe</button>
-    {% endif %}
+    <span class="row">
+      <button type="submit" class="folgeknopf">Übernehmen</button>
+      {% if sicherung.gewaehlt %}
+      <button type="submit" name="aktion" value="vorgabe"
+              class="folgeknopf">Vorgabe</button>
+      {% endif %}
+    </span>
   </form>
 
   {% if sicherung.rechte_befehl %}
   {# DER BEFEHL WIRD GENANNT, NICHT AUSGEFUEHRT. Die Anwendung darf einem
      Dienst keinen fremden Ordner freigeben, und sie soll es auch nicht
      duerfen -- wer das tut, soll sehen, was er tut. #}
-  <p class="hint">
-    <strong>Der Dienst darf in diesen Ordner nicht schreiben.</strong>
-    {% if windows %}In einer PowerShell <strong>als Administrator</strong>
-    ausführen, dann den Ordner noch einmal übernehmen:
-    {% else %}Auf der Maschine ausführen, dann den Ordner noch einmal
-    übernehmen — der Dienst startet dabei neu:{% endif %}
-  </p>
-  <div class="befehlszeile">
-    <pre id="sicherungsbefehl">{{ sicherung.rechte_befehl }}</pre>
-    <button type="button" class="kopierknopf" data-quelle="sicherungsbefehl"
-            title="Befehl kopieren" aria-label="Befehl kopieren">kopieren</button>
+  <div class="rasterbreit">
+    <p class="hint">
+      <strong>Der Dienst darf in diesen Ordner nicht schreiben.</strong>
+      {% if windows %}In einer PowerShell <strong>als Administrator</strong>
+      ausführen, dann den Ordner noch einmal übernehmen:
+      {% else %}Auf der Maschine ausführen, dann den Ordner noch einmal
+      übernehmen — der Dienst startet dabei neu:{% endif %}
+    </p>
+    <div class="befehlszeile">
+      <pre id="sicherungsbefehl">{{ sicherung.rechte_befehl }}</pre>
+      <button type="button" class="kopierknopf" data-quelle="sicherungsbefehl"
+              title="Befehl kopieren" aria-label="Befehl kopieren">kopieren</button>
+    </div>
   </div>
   {% endif %}
 
-  <form method="post" action="/einrichtung/sicherung/behalten" class="row sichernspalte">
+  <form method="post" action="/einrichtung/sicherung/behalten">
     <span>
       <label for="sicherung-behalten"><strong>Behalten</strong></label>
       <span class="muted small">— die letzten so vielen; die vor einem
@@ -287,8 +299,11 @@
     <input type="number" id="sicherung-behalten" name="anzahl" class="zahlfeld"
            min="{{ sicherung.behalten_min }}" max="{{ sicherung.behalten_max }}"
            value="{{ sicherung.behalten }}">
-    <button type="submit" class="folgeknopf">Speichern</button>
+    <span class="row">
+      <button type="submit" class="folgeknopf">Speichern</button>
+    </span>
   </form>
+  </div>
 
   {% if sicherung.staende %}
   <details class="dateiliste">
