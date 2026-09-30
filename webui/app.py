@@ -25,7 +25,11 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
+import secrets
 import sqlite3
+import tempfile
+import time
 from datetime import date
 from pathlib import Path
 from urllib.parse import quote
@@ -45,6 +49,8 @@ import datenbank
 import einstellungen
 import export
 import firewall
+import sicherung
+import uebertragung
 import updatewacht
 import versionsstand
 
@@ -239,6 +245,10 @@ def ablage_anlegen() -> None:
     # Laufzeit umlegbar, und ein Schalter, der erst nach einem Neustart
     # wirkt, ist keiner. Siehe updatewacht.wacht_starten().
     updatewacht.wacht_starten()
+    # Die Sicherung beim Start -- im Hintergrund, damit ein langsamer
+    # Netzordner den Start nicht aufhaelt. Danach fragt dieselbe Wache
+    # stuendlich, ob die Tagessicherung faellig ist.
+    sicherung.wache_starten()
 
 
 # ==================================================================== #
@@ -2080,13 +2090,18 @@ def _stand_kurz_oder_leer() -> str:
 @app.get("/einrichtung", response_class=HTMLResponse)
 def einrichtung_seite(request: Request, fehlerbericht: int = 0,
                       umgebung_mit: int = 0,
-                      werkseinstellung: str = "") -> HTMLResponse:
-    """Acht Karten -- Stand, Export, Ablageorte, Einstellungen, Firewall,
-    Fehlerbericht, Verbesserungen, Werkseinstellung.
+                      werkseinstellung: str = "", einlesen: str = "",
+                      rechte: str = "") -> HTMLResponse:
+    """Zehn Karten -- Stand, Sicherung, Daten uebertragen, Export,
+    Ablageorte, Einstellungen, Firewall, Fehlerbericht, Verbesserungen,
+    Werkseinstellung.
 
     ``werkseinstellung`` traegt den Schritt, in dem die Karte gerade
     steht -- wie der Loeschschritt unter Projekte in der Adresse und
-    nicht im Server: Er ist eine Ansicht, kein Zustand.
+    nicht im Server: Er ist eine Ansicht, kein Zustand. Dasselbe gilt
+    fuer ``einlesen`` (eine hochgeladene Datei, die auf Bestaetigung
+    wartet) und ``rechte`` (der Ordner, fuer den die Karte Sicherung den
+    Befehl zeigt, der das Schreiben erlaubt).
     """
     text = ""
     with datenbank.verbindung() as conn:
@@ -2105,6 +2120,15 @@ def einrichtung_seite(request: Request, fehlerbericht: int = 0,
             pass
         if fehlerbericht:
             text = bericht.text(conn, stand_kurz(), bool(umgebung_mit))
+        alle_projekte = datenbank.projekte(conn)
+
+    einlesen_vorschau = []
+    if einlesen:
+        try:
+            einlesen_vorschau = uebertragung.vorschau(
+                uebertragung.lesen(_einlesedatei(einlesen).read_bytes()))
+        except (OSError, ValueError, uebertragung.UebertragungsFehler):
+            einlesen = ""
 
     return html.TemplateResponse(
         request, "einrichtung.html",
@@ -2123,7 +2147,43 @@ def einrichtung_seite(request: Request, fehlerbericht: int = 0,
                bericht_adresse=BERICHT_ADRESSE, bericht_text=text,
                bericht_umgebung=bool(umgebung_mit),
                werkseinstellung=werkseinstellung,
-               einstellungen=_einstellungen()))
+               einstellungen=_einstellungen(),
+               sicherung=_sicherung_angaben(rechte),
+               alle_projekte=alle_projekte,
+               einlesen=einlesen, einlesen_vorschau=einlesen_vorschau))
+
+
+def _sicherung_angaben(rechte: str = "") -> dict:
+    """Was die Karte Sicherung zeigt."""
+    vorhanden = sicherung.liste()
+    ordner = sicherung.ordner()
+    # Wie beim Export: Den Ordner gibt es und er laesst sich beschreiben
+    # -- oder es gibt ihn noch nicht, aber den darueber. Die erste
+    # Sicherung legt ihn an.
+    pruefen = ordner if ordner.is_dir() else ordner.parent
+    angaben = {
+        "ordner": str(ordner),
+        "beschreibbar": pruefen.is_dir() and os.access(pruefen, os.W_OK),
+        "bytes": sum(s["bytes"] for s in vorhanden),
+        "gewaehlt": sicherung.gewaehlt(),
+        "vorgabe": str(sicherung.vorgabe_ordner()),
+        "behalten": sicherung.behalten(),
+        "behalten_min": sicherung.BEHALTEN_MIN,
+        "behalten_max": sicherung.BEHALTEN_MAX,
+        "staende": vorhanden,
+        "letzte": vorhanden[0] if vorhanden else None,
+        "zustand": sicherung.zustand(),
+        "rechte_ordner": "",
+        "rechte_befehl": "",
+    }
+    # Der Befehl wird hier gebaut, nicht aus der Adresse uebernommen: Dort
+    # steht nur der Pfad. Ein Befehl, den jemand in eine Konsole als
+    # Administrator kopiert, soll aus dieser Anwendung stammen und aus
+    # nichts sonst.
+    if rechte and sicherung._ist_absolut(rechte) and '"' not in rechte:
+        angaben["rechte_ordner"] = rechte
+        angaben["rechte_befehl"] = sicherung.rechte_befehl(Path(rechte))
+    return angaben
 
 
 def _oberflaechenport() -> int:
@@ -2255,6 +2315,209 @@ async def export_schreiben(request: Request) -> RedirectResponse:
         ziel, "%s ausgegeben: %d Dateien nach %s."
         % (projekt["name"], geschrieben["dateien"], geschrieben["ordner"]),
         "gut")
+
+
+# ==================================================================== #
+# Sicherung und Daten uebertragen
+# ==================================================================== #
+
+def _sicherungsfehler(fehler: "sicherung.SicherungsFehler") -> RedirectResponse:
+    """Zurueck zur Karte -- mit dem Befehl, wenn einer das Recht nachtraegt."""
+    if fehler.befehl:
+        return _meldung("/einrichtung?rechte=%s#sicherung"
+                        % quote(fehler.ordner, safe=""),
+                        str(fehler), "schlecht")
+    return _meldung("/einrichtung#sicherung", str(fehler), "schlecht")
+
+
+@app.post("/einrichtung/sicherung")
+async def sicherung_jetzt(request: Request) -> RedirectResponse:
+    """Jetzt sichern -- auch wenn sich nichts geaendert hat.
+
+    Wer den Knopf drueckt, will eine Kopie sehen. Die Pruefung auf
+    Aenderung gilt nur fuer das, was von selbst passiert.
+    """
+    try:
+        ergebnis = await run_in_threadpool(sicherung.sichern)
+    except sicherung.SicherungsFehler as fehler:
+        return _sicherungsfehler(fehler)
+    return _meldung("/einrichtung#sicherung",
+                    "Gesichert: %s." % ergebnis["name"], "gut")
+
+
+@app.post("/einrichtung/sicherung/ordner")
+async def sicherung_ordner(request: Request) -> RedirectResponse:
+    """Den Ordner waehlen -- oder zur Vorgabe zurueck.
+
+    Uebernommen wird erst nach der Schreibprobe. Scheitert sie an einem
+    fehlenden Recht, steht danach der Befehl auf der Karte, der es
+    nachtraegt.
+    """
+    formular = await request.form()
+    text = ("" if formular.get("aktion") == "vorgabe"
+            else str(formular.get("ordner", "")))
+    try:
+        ziel = await run_in_threadpool(sicherung.ordner_setzen, text)
+    except sicherung.SicherungsFehler as fehler:
+        return _sicherungsfehler(fehler)
+    return _meldung("/einrichtung#sicherung",
+                    "Gesichert wird jetzt nach %s." % ziel, "gut")
+
+
+@app.post("/einrichtung/sicherung/behalten")
+async def sicherung_behalten(request: Request) -> RedirectResponse:
+    formular = await request.form()
+    try:
+        anzahl = int(str(formular.get("anzahl", "")))
+        sicherung.behalten_setzen(anzahl)
+    except ValueError:
+        return _meldung("/einrichtung#sicherung",
+                        "Das ist keine Zahl.", "schlecht")
+    except sicherung.SicherungsFehler as fehler:
+        return _meldung("/einrichtung#sicherung", str(fehler), "schlecht")
+    return _meldung("/einrichtung#sicherung",
+                    "Behalten werden jetzt die letzten %d Sicherungen."
+                    % anzahl, "gut")
+
+
+@app.get("/einrichtung/uebertragung.json")
+def uebertragung_hinaus(request: Request, alle: int = 0):
+    """Die gewaehlten Projekte als eine Datei.
+
+    **Ein GET, denn er schreibt nichts** -- die Datei entsteht im
+    Speicher und geht in den Browser.
+    """
+    with datenbank.verbindung() as conn:
+        vorhanden = {p["id"]: p for p in datenbank.projekte(conn)}
+        if alle:
+            ids = sorted(vorhanden)
+        else:
+            ids = []
+            for roh in request.query_params.getlist("projekt"):
+                if (roh.isdigit() and int(roh) in vorhanden
+                        and int(roh) not in ids):
+                    ids.append(int(roh))
+        if not ids:
+            return _meldung("/einrichtung#uebertragung",
+                            "Es ist kein Projekt ausgewählt.", "schlecht")
+        daten = uebertragung.exportieren(conn, ids, stand_kurz())
+    teil = (export.verzeichnisname(vorhanden[ids[0]]) if len(ids) == 1
+            else "%d-projekte" % len(ids))
+    name = "marlei-tasks-%s-%s.json" % (teil, datenbank.heute())
+    return Response(
+        content=uebertragung.als_json(daten), media_type="application/json",
+        headers={"content-disposition": 'attachment; filename="%s"' % name})
+
+
+# Eine hochgeladene Datei wartet hier auf ihre Bestaetigung. Nicht in der
+# Ablage: Was nicht eingelesen wird, soll dort keine Spur hinterlassen.
+EINLESE_PRAEFIX = "marlei-tasks-einlesen-"
+EINLESE_GRENZE = 50 * 1024 * 1024
+EINLESE_FRIST = 24 * 3600
+
+
+def _einlesedatei(schluessel: str) -> Path:
+    """Der Ort zum Schluessel -- und nur zu einem, der so aussieht.
+
+    Der Schluessel kommt aus der Adresse. Ohne die Pruefung waere er ein
+    Weg, eine beliebige Datei auf dem Server zu lesen.
+    """
+    if not re.fullmatch(r"[0-9a-f]{32}", schluessel):
+        raise ValueError("Kein gueltiger Schluessel.")
+    return Path(tempfile.gettempdir()) / (EINLESE_PRAEFIX + schluessel
+                                          + ".json")
+
+
+def _alte_einlesedateien_weg() -> None:
+    """Was einen Tag lang nicht bestaetigt wurde, wird es nicht mehr."""
+    grenze = time.time() - EINLESE_FRIST
+    for datei in Path(tempfile.gettempdir()).glob(EINLESE_PRAEFIX + "*.json"):
+        try:
+            if datei.stat().st_mtime < grenze:
+                datei.unlink()
+        except OSError:
+            pass
+
+
+@app.post("/einrichtung/uebertragung/pruefen")
+async def uebertragung_pruefen(request: Request) -> RedirectResponse:
+    """Die Datei annehmen und pruefen -- eingelesen wird noch nichts.
+
+    **Zwei Schritte, weil der zweite in die Ablage schreibt.** Erst
+    steht auf der Karte, was in der Datei ist; dann wird gewaehlt und
+    bestaetigt.
+    """
+    formular = await request.form()
+    datei = formular.get("datei")
+    if datei is None or isinstance(datei, str):
+        return _meldung("/einrichtung#uebertragung",
+                        "Es ist keine Datei gewählt.", "schlecht")
+    roh = await datei.read(EINLESE_GRENZE + 1)
+    if len(roh) > EINLESE_GRENZE:
+        return _meldung("/einrichtung#uebertragung",
+                        "Die Datei ist größer als 50 MB — das ist keine "
+                        "aus »Daten übertragen«.", "schlecht")
+    try:
+        uebertragung.lesen(roh)
+    except uebertragung.UebertragungsFehler as fehler:
+        return _meldung("/einrichtung#uebertragung", str(fehler), "schlecht")
+    _alte_einlesedateien_weg()
+    schluessel = secrets.token_hex(16)
+    _einlesedatei(schluessel).write_bytes(roh)
+    return RedirectResponse(
+        "/einrichtung?einlesen=%s#uebertragung" % schluessel, status_code=303)
+
+
+@app.post("/einrichtung/uebertragung/einlesen")
+async def uebertragung_einlesen(request: Request) -> RedirectResponse:
+    """Die gewaehlten Projekte als neue anlegen.
+
+    **Vorher wird gesichert**, und scheitert das, wird nicht eingelesen.
+    Der Import legt nur an und ueberschreibt nichts -- aber wer nach
+    einem Fehlgriff zwanzig fremde Projekte in seiner Liste findet, soll
+    einen Stand haben, zu dem er zurueckkann.
+    """
+    formular = await request.form()
+    schluessel = str(formular.get("schluessel", ""))
+    zurueck = "/einrichtung?einlesen=%s#uebertragung" % quote(schluessel)
+    if formular.get("aktion") == "verwerfen":
+        try:
+            _einlesedatei(schluessel).unlink(missing_ok=True)
+        except ValueError:
+            pass
+        return _meldung("/einrichtung#uebertragung",
+                        "Die Datei ist verworfen, eingelesen wurde nichts.",
+                        "gut")
+    try:
+        daten = uebertragung.lesen(_einlesedatei(schluessel).read_bytes())
+    except (OSError, ValueError, uebertragung.UebertragungsFehler):
+        return _meldung("/einrichtung#uebertragung",
+                        "Die Datei ist nicht mehr da — bitte noch einmal "
+                        "hochladen.", "schlecht")
+    auswahl = [int(n) for n in formular.getlist("nummer")
+               if str(n).isdigit()]
+    if not auswahl:
+        return _meldung(zurueck, "Es ist kein Projekt ausgewählt.",
+                        "schlecht")
+    try:
+        vorher = await run_in_threadpool(sicherung.sichern, "vor-import")
+    except sicherung.SicherungsFehler as fehler:
+        return _meldung(
+            zurueck, "Vor dem Einlesen wird gesichert, und das ging nicht: "
+            "%s — eingelesen wurde deshalb nichts." % fehler, "schlecht")
+    try:
+        with datenbank.verbindung() as conn:
+            angelegt = uebertragung.importieren(conn, daten, auswahl)
+    except uebertragung.UebertragungsFehler as fehler:
+        return _meldung(zurueck, str(fehler), "schlecht")
+    _einlesedatei(schluessel).unlink(missing_ok=True)
+    namen = ", ".join(
+        "%s %s" % (a["kennung"], a["name"])
+        + (" (hieß %s)" % a["alt_name"] if a["name"] != a["alt_name"] else "")
+        for a in angelegt)
+    return _meldung("/einrichtung#uebertragung",
+                    "Eingelesen: %s. Vorher gesichert als %s."
+                    % (namen, vorher["name"]), "gut")
 
 
 @app.post("/einrichtung/updatepruefung")

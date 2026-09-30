@@ -7,6 +7,10 @@
    Export als achte. In Boot gibt es ihn nicht; hier traegt er drei
    Zwecke, und der dritte hat ihn zur eigenen Karte gemacht.
 
+   ZEHN SEIT SEPTEMBER 2026: Sicherung und Daten uebertragen stehen
+   gleich unter Stand, vor dem Export -- sie beantworten die Frage, die
+   man hier am dringendsten stellt: wie die Daten wieder herauskommen.
+
    WAS NICHT MITKOMMT: *IP-Adresse uebernehmen*. Das ist Boot-eigen. #}
 {% block content %}
 
@@ -181,6 +185,230 @@
 </section>
 
 {# ==================================================================
+   DIE SICHERUNG -- eine Kopie der Datenbank in einem Ordner, den man
+   waehlt. Seit September 2026, nach dem Vorbild von MEL Financial.
+
+   NICHT DER EXPORT: Der schreibt Text fuer Menschen und ein Repository;
+   die Sicherung schreibt die Ablage selbst, vollstaendig und in einem
+   Zug zurueckzulegen. Wann gesichert wird, steht in webui/sicherung.py.
+   ================================================================== #}
+<section id="sicherung">
+  <div class="kartenkopf">
+    <h2>Sicherung</h2>
+    {% if sicherung.letzte %}
+    <span class="muted small">zuletzt {{ sicherung.letzte.am_deutsch }}</span>
+    {% endif %}
+    <a class="kartenhilfe" href="/hilfe#einrichtung-sicherung"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  <p class="muted">
+    <strong>Eine Kopie der ganzen Datenbank</strong> — beim Start, einmal
+    am Tag und auf Knopfdruck. Beim Start und am Tag nur, wenn sich seit
+    der letzten Sicherung etwas geändert hat.
+  </p>
+
+  {% if sicherung.zustand.fehler %}
+  <p class="hint">
+    <strong>Die letzte Sicherung im Hintergrund ist fehlgeschlagen.</strong>
+    {{ sicherung.zustand.fehler }}
+  </p>
+  {% endif %}
+
+  <table class="eng">
+    <tbody>
+      <tr><td class="nowrap muted">Ordner</td>
+        <td><code>{{ sicherung.ordner }}</code>
+          <span class="muted small">— {{ "gewählt" if sicherung.gewaehlt
+            else "die Vorgabe, neben der Datenbank" }}</span></td></tr>
+      <tr><td class="nowrap muted">Letzte</td>
+        <td>{% if sicherung.letzte %}<code>{{ sicherung.letzte.name }}</code>
+          <span class="muted small">— {{ groesse(sicherung.letzte.bytes) }}</span>
+          {% else %}<span class="muted">noch keine</span>{% endif %}</td></tr>
+      <tr><td class="nowrap muted">Vorhanden</td>
+        <td>{{ menge(sicherung.staende | length, "Sicherung", "Sicherungen") }}
+          <span class="muted small">— behalten werden die letzten
+            {{ sicherung.behalten }}</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="row kartenknoepfe">
+    <form method="post" action="/einrichtung/sicherung">
+      <button type="submit">Jetzt sichern</button>
+    </form>
+  </div>
+
+  <hr class="kartentrenner">
+  <form method="post" action="/einrichtung/sicherung/ordner" class="row sichernspalte">
+    <span>
+      <label for="sicherung-ordner"><strong>Ordner</strong></label>
+      <span class="muted small">— {{ "ein UNC-Pfad für ein Netzlaufwerk"
+        if windows else "etwa unter /srv oder /mnt" }}</span>
+    </span>
+    {# Leer, solange die Vorgabe gilt -- die steht grau darin. Ein
+       vorbelegtes Feld saehe aus, als habe jemand gewaehlt. #}
+    <input type="text" id="sicherung-ordner" name="ordner" size="34"
+           spellcheck="false" autocomplete="off"
+           value="{{ sicherung.rechte_ordner or (sicherung.ordner if sicherung.gewaehlt else '') }}"
+           placeholder="{{ sicherung.vorgabe }}">
+    <button type="submit" class="folgeknopf">Übernehmen</button>
+    {% if sicherung.gewaehlt %}
+    <button type="submit" name="aktion" value="vorgabe"
+            class="folgeknopf">Vorgabe</button>
+    {% endif %}
+  </form>
+
+  {% if sicherung.rechte_befehl %}
+  {# DER BEFEHL WIRD GENANNT, NICHT AUSGEFUEHRT. Die Anwendung darf einem
+     Dienst keinen fremden Ordner freigeben, und sie soll es auch nicht
+     duerfen -- wer das tut, soll sehen, was er tut. #}
+  <p class="hint">
+    <strong>Der Dienst darf in diesen Ordner nicht schreiben.</strong>
+    {% if windows %}In einer PowerShell <strong>als Administrator</strong>
+    ausführen, dann den Ordner noch einmal übernehmen:
+    {% else %}Auf der Maschine ausführen, dann den Ordner noch einmal
+    übernehmen — der Dienst startet dabei neu:{% endif %}
+  </p>
+  <div class="befehlszeile">
+    <pre id="sicherungsbefehl">{{ sicherung.rechte_befehl }}</pre>
+    <button type="button" class="kopierknopf" data-quelle="sicherungsbefehl"
+            title="Befehl kopieren" aria-label="Befehl kopieren">kopieren</button>
+  </div>
+  {% endif %}
+
+  <form method="post" action="/einrichtung/sicherung/behalten" class="row sichernspalte">
+    <span>
+      <label for="sicherung-behalten"><strong>Behalten</strong></label>
+      <span class="muted small">— die letzten so vielen; die vor einem
+        Import bleiben immer</span>
+    </span>
+    <input type="number" id="sicherung-behalten" name="anzahl" class="zahlfeld"
+           min="{{ sicherung.behalten_min }}" max="{{ sicherung.behalten_max }}"
+           value="{{ sicherung.behalten }}">
+    <button type="submit" class="folgeknopf">Speichern</button>
+  </form>
+
+  {% if sicherung.staende %}
+  <details class="dateiliste">
+    <summary class="muted small">Alle Sicherungen im Ordner</summary>
+    <ul class="muted small">
+      {% for s in sicherung.staende %}
+      <li><code>{{ s.name }}</code> — {{ groesse(s.bytes) }}
+        {% if s.zusatz == "vor-import" %}<span class="muted">· vor einem Import</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  <p class="kartenfuss">
+    <strong>Ein Ordner auf derselben Platte schützt vor einem Fehler im
+    Programm, nicht vor einem Plattenschaden.</strong> Wer mehr will, wählt
+    einen Ordner auf einer anderen Platte oder im Netz.
+  </p>
+</section>
+
+{# ==================================================================
+   DATEN UEBERTRAGEN -- Projekte als eine Datei hinaus und wieder herein.
+   Seit September 2026.
+
+   HIER GILT DIE VORAUSWAHL NICHT: Wer umzieht, zieht mit allem um.
+   Gewaehlt wird in der Karte -- einzelne Projekte oder alle. Warum, und
+   warum eingelesen immer als neues Projekt: webui/uebertragung.py.
+   ================================================================== #}
+<section id="uebertragung">
+  <div class="kartenkopf">
+    <h2>Daten übertragen</h2>
+    <a class="kartenhilfe" href="/hilfe#einrichtung-uebertragung"
+       title="Hilfe zu dieser Karte" aria-label="Hilfe zu dieser Karte">?</a>
+  </div>
+
+  <p class="muted">
+    <strong>Für eine andere Installation</strong> — einen zweiten Rechner,
+    eine neue Maschine. Die Datei trägt jedes Feld und lässt sich dort
+    wieder einlesen. Lesbar für Menschen ist der
+    <a href="#export">Export</a>.
+  </p>
+
+  {% if einlesen %}
+  {# DER ZWEITE SCHRITT: Die Datei ist geprueft, eingelesen ist noch
+     nichts. Erst hier wird gewaehlt und bestaetigt. #}
+  <div class="vorher">
+    <h3>Einlesen</h3>
+    <p class="muted small">
+      In der Datei {{ "steht ein Projekt" if einlesen_vorschau | length == 1
+      else "stehen %d Projekte" % (einlesen_vorschau | length) }}.
+      <strong>Jedes wird als neues Projekt angelegt</strong> — nichts
+      wird überschrieben. Die Einträge bekommen neue Kennungen, und
+      Verweise darauf ziehen mit, auch im Text. Vorher wird gesichert.
+    </p>
+    <form method="post" action="/einrichtung/uebertragung/einlesen">
+      <input type="hidden" name="schluessel" value="{{ einlesen }}">
+      <ul class="projektwahl">
+        {% for p in einlesen_vorschau %}
+        <li><label>
+          <input type="checkbox" name="nummer" value="{{ p.nummer }}" checked>
+          <code>{{ p.kennung }}</code> {{ p.name }}
+          <span class="muted small">— {{ menge(p.sammlung, "Eintrag", "Einträge") }},
+            {{ menge(p.aufgaben, "Aufgabe", "Aufgaben") }},
+            {{ menge(p.meilensteine, "Meilenstein", "Meilensteine") }},
+            {{ menge(p.entscheidungen, "Entscheidung", "Entscheidungen") }}</span>
+        </label></li>
+        {% endfor %}
+      </ul>
+      <div class="row">
+        <button type="submit">Einlesen</button>
+        <button type="submit" name="aktion" value="verwerfen"
+                class="folgeknopf">Verwerfen</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if alle_projekte %}
+  <h3>Exportieren</h3>
+  {# EIN GET, denn es schreibt nichts: Die Datei entsteht im Speicher und
+     geht in den Browser. Das gewaehlte Projekt ist vorangehakt -- das
+     haeufigste --, die anderen lassen sich dazunehmen. #}
+  <form method="get" action="/einrichtung/uebertragung.json">
+    <ul class="projektwahl">
+      {% for p in alle_projekte %}
+      <li><label>
+        <input type="checkbox" name="projekt" value="{{ p.id }}"
+               {{ "checked" if projekt and p.id == projekt.id }}>
+        <code>{{ p.kennung }}</code> {{ p.name }}
+      </label></li>
+      {% endfor %}
+    </ul>
+    <div class="row">
+      <button type="submit">Ausgewählte exportieren</button>
+      <button type="submit" name="alle" value="1"
+              class="folgeknopf">Alle exportieren</button>
+    </div>
+  </form>
+  {% endif %}
+
+  <h3>Einlesen</h3>
+  <form method="post" action="/einrichtung/uebertragung/pruefen"
+        enctype="multipart/form-data" class="row">
+    <input type="file" name="datei" accept=".json,application/json"
+           aria-label="Datei aus »Daten übertragen«">
+    <button type="submit" class="folgeknopf">Prüfen …</button>
+  </form>
+  <p class="muted small">
+    Geprüft wird zuerst, eingelesen erst danach — die Karte zeigt, was in
+    der Datei steht, und fragt dann.
+  </p>
+
+  <p class="kartenfuss">
+    <strong>Eingelesen wird immer als neues Projekt.</strong> Die
+    Kennungen sind die Nummern dieser Datenbank und gelten über alle
+    Projekte hinweg; in einer anderen Installation sind sie meist schon
+    vergeben. Gibt es den Namen schon, bekommt das neue Projekt den
+    Zusatz <em>(übernommen)</em>.
+  </p>
+</section>
+
+{# ==================================================================
    DER EXPORT -- die achte Karte, und in Boot gibt es sie nicht.
 
    Drei Zwecke: die Zusage aus docs/datenhaltung.md (*der Ausgang bleibt
@@ -351,6 +579,14 @@
             leer</span>
           {% elif export_ort.beschreibbar %}
           <span class="badge ok">da, beschreibbar</span>
+          {% else %}<span class="badge missing">nicht beschreibbar</span>{% endif %}</td>
+      </tr>
+      <tr>
+        <td class="nowrap">Sicherung</td>
+        <td><code>{{ sicherung.ordner }}</code></td>
+        <td>{% if sicherung.beschreibbar %}
+          <span class="badge ok">da, beschreibbar</span>
+          {% if sicherung.bytes %}<span class="muted small">— {{ groesse(sicherung.bytes) }}</span>{% endif %}
           {% else %}<span class="badge missing">nicht beschreibbar</span>{% endif %}</td>
       </tr>
     </tbody>

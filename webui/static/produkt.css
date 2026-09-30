@@ -821,6 +821,16 @@ textarea.feld.lang:focus { outline: 2px solid var(--accent); outline-offset: 1px
 .dateiliste h3 { margin: 0 0 .2rem; font-size: .92rem; }
 .dateiliste ul { margin: .2rem 0; padding-left: 1.2rem; }
 .dateiliste li { margin: .1rem 0; }
+.dateiliste summary { cursor: pointer; }
+
+/* Die Projekte zum Ankreuzen in Daten uebertragen -- eine Zeile je
+   Projekt, ohne Aufzaehlungszeichen: Das Kaestchen ist das Zeichen. */
+.projektwahl { list-style: none; margin: .4rem 0 .6rem; padding: 0; }
+.projektwahl li { margin: .15rem 0; }
+.projektwahl input { margin-right: .35rem; }
+
+/* Eine Anzahl, keine Adresse: so breit wie drei Ziffern und die Pfeile. */
+.zahlfeld { width: 5rem; }
 
 /* Der Export vor der Werkseinstellung.
    ------------------------------------------------------------------------

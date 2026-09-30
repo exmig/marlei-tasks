@@ -59,9 +59,19 @@ DATEI = Path(os.environ.get("MARLEI_EINSTELLUNGEN", "")
 #                    der er ohnehin Administrator ist. Ein Schalter in
 #                    einer Datei, die nur er aendern koennte, bewachte
 #                    nichts -- er machte bloss Arbeit.
+#
+#   sicherung_ordner   Wohin die Sicherung schreibt. Leer heisst: neben
+#                      die Ablage. Steht hier und nicht in der Datenbank,
+#                      damit das Zurueckspielen einer alten Sicherung den
+#                      Ordner nicht gleich mit zuruecksetzt.
+#
+#   sicherung_behalten Wie viele Sicherungen bleiben. Vierzehn sind bei
+#                      einer am Tag zwei Wochen.
 VORGABEN: dict = {
     "updatepruefung": 7,
     "offline": False,
+    "sicherung_ordner": "",
+    "sicherung_behalten": 14,
 }
 
 

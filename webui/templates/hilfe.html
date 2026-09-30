@@ -1380,6 +1380,131 @@
   </p>
 
   <div class="abschnittskopf">
+    <h3 id="einrichtung-sicherung">Sicherung</h3>
+    <p class="zurkarte"><a href="/einrichtung#sicherung">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Sie legt eine Kopie der ganzen Datenbank in einen Ordner</strong>
+    — alle Projekte, jedes Feld, in einer Datei. Eine Sicherung heißt
+    etwa <code>tasks-2026-09-30_081500.db</code>.
+  </p>
+  <h4>Wann gesichert wird</h4>
+  <table>
+    <tbody>
+      <tr>
+        <td class="nowrap"><strong>Beim Start</strong></td>
+        <td class="muted">Wenn sich seit der letzten Sicherung etwas
+          geändert hat.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Einmal am Tag</strong></td>
+        <td class="muted">Ebenso nur bei einer Änderung. Der Dienst startet
+          selten, oft erst nach Wochen — ohne den Tagestakt gäbe es so
+          lange keine neue Kopie.</td>
+      </tr>
+      <tr>
+        <td class="nowrap"><strong>Auf Knopfdruck</strong></td>
+        <td class="muted">Immer, auch ohne Änderung.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted small">
+    <strong>Warum nur bei einer Änderung?</strong> Behalten werden die
+    letzten N Sicherungen. Schöbe jeder Neustart eine gleiche Kopie nach,
+    drängte sie eine ältere, verschiedene aus dem Ordner — nach ein paar
+    Updates stünden dort vierzehn Mal derselbe Stand.
+  </p>
+  <h4>Der Ordner</h4>
+  <p class="muted">
+    Ohne Wahl liegt er neben der Datenbank. <strong>Das schützt vor einem
+    Fehler im Programm, nicht vor einem Plattenschaden.</strong> Wer mehr
+    will, trägt einen Ordner auf einer anderen Platte oder im Netz ein.
+    Beim Übernehmen wird geprüft, ob sich dort schreiben lässt.
+  </p>
+  {% if windows %}
+  <p class="hint">
+    <strong>Der Dienst läuft unter einem eigenen Konto</strong>,
+    <code>marlei-tasks</code>. Ein Laufwerksbuchstabe, den ein
+    angemeldeter Mensch verbunden hat, ist für ihn nicht da — ein
+    Netzordner wird deshalb als UNC-Pfad angegeben
+    (<code>\\server\freigabe\ordner</code>). Darf das Konto dort nicht
+    schreiben, nennt die Karte den Befehl, der es erlaubt; er gehört in
+    eine PowerShell als Administrator.
+  </p>
+  {% else %}
+  <p class="hint">
+    <strong>Der Dienst darf nur in seine eigene Ablage schreiben</strong>
+    — so ist er eingerichtet. Für einen Ordner woanders nennt die Karte
+    den Befehl, der ihn freigibt: Er legt den Ordner für das Konto
+    <code>marlei-tasks</code> an und trägt ihn in einer eigenen Datei
+    neben der Dienst-Einheit ein, die ein Update stehen lässt.
+    <strong>Unter <code>/home</code> geht es nicht</strong> — diese
+    Verzeichnisse sind für den Dienst unsichtbar.
+  </p>
+  {% endif %}
+  <h4>Was bleibt</h4>
+  <p class="muted">
+    Die letzten N, einstellbar zwischen 2 und 365; vorgegeben sind 14.
+    <strong>Die Sicherung vor einem Import bleibt immer</strong> — sie ist
+    der Weg zurück von einem bestimmten Schritt, und den soll kein
+    Tagestakt wegschieben. Was im Ordner sonst liegt und nicht von hier
+    stammt, wird nicht angefasst.
+  </p>
+  <h4>Und zurück?</h4>
+  <p class="muted">
+    Eine Sicherung ist eine vollständige Datenbank. Zurückgelegt wird sie,
+    indem man den Dienst anhält, sie an den Ort kopiert, der unter
+    <a href="#einrichtung-ablageorte">Ablageorte</a> steht, und ihn wieder
+    startet.
+  </p>
+
+  <div class="abschnittskopf">
+    <h3 id="einrichtung-uebertragung">Daten übertragen</h3>
+    <p class="zurkarte"><a href="/einrichtung#uebertragung">Zur Karte &rarr;</a></p>
+  </div>
+  <h4>Wofür ist diese Karte da?</h4>
+  <p class="muted">
+    <strong>Projekte in eine andere Installation bringen</strong> — auf
+    einen zweiten Rechner, eine neue Maschine. Hinaus geht eine
+    JSON-Datei mit jedem Feld; die andere Installation liest sie wieder
+    ein.
+  </p>
+  <p class="muted small">
+    Nicht dasselbe wie der <a href="#einrichtung-export">Export</a>: Der
+    schreibt Text für Menschen und ein Repository, eingelesen werden kann
+    er nicht.
+  </p>
+  <h4>Einzelne Projekte oder alle</h4>
+  <p class="muted">
+    Angehakt ist das gewählte Projekt; die anderen lassen sich dazunehmen.
+    <strong>Hier gilt die Vorauswahl nicht</strong> wie sonst überall — wer
+    umzieht, zieht mit allem um, und ein Knopf je Projekt wäre ein Umzug
+    in Raten.
+  </p>
+  <h4>Eingelesen wird als neues Projekt</h4>
+  <p class="muted">
+    Erst wird die Datei geprüft, und die Karte zeigt, was darin steht.
+    Eingelesen wird erst danach — <strong>vorher wird gesichert</strong>,
+    und geht das nicht, wird nicht eingelesen.
+  </p>
+  <p class="hint">
+    <strong>Nichts wird überschrieben.</strong> Die Kennungen sind die
+    Nummern dieser Datenbank und gelten über alle Projekte hinweg; in
+    einer anderen Installation sind sie meist schon vergeben. Jeder
+    Eintrag bekommt deshalb eine neue Kennung, und Verweise ziehen mit —
+    <strong>auch im Text</strong>: Steht in einer Aufgabe
+    <em>siehe B-065</em>, steht dort danach die neue Kennung desselben
+    Eintrags. Gibt es den Projektnamen schon, bekommt das neue Projekt den
+    Zusatz <em>(übernommen)</em>.
+  </p>
+  <p class="muted small">
+    Eine Datei aus einer neueren Fassung wird abgewiesen, wenn sie ein
+    Feld trägt, das diese nicht kennt — sonst ginge es beim Umzug
+    verloren, ohne dass es jemand merkt. Dann erst hier aktualisieren.
+  </p>
+
+  <div class="abschnittskopf">
     <h3 id="einrichtung-export">Export</h3>
     <p class="zurkarte"><a href="/einrichtung#export">Zur Karte &rarr;</a></p>
   </div>
@@ -1933,9 +2058,11 @@
   <details class="frage">
     <summary>Wie sichere ich meine Daten?</summary>
     <p class="muted">
-      Zwei Dinge, und sie sind nicht dasselbe: <strong>Die Datenbankdatei
-      kopieren</strong> — ihr Pfad steht unter
-      <a href="#einrichtung-ablageorte">Ablageorte</a> — sichert alles.
+      Das tut die <a href="#einrichtung-sicherung">Sicherung</a> von
+      selbst: beim Start und einmal am Tag eine Kopie der ganzen
+      Datenbank, in einen Ordner, den Sie wählen. <strong>Wählen Sie einen
+      auf einer anderen Platte oder im Netz</strong> — die Vorgabe neben
+      der Datenbank hilft nicht bei einem Plattenschaden.
       Der <a href="#einrichtung-export">Export</a> schreibt den Bestand
       zusätzlich als Text weg, lesbar ohne dieses Programm und geeignet
       für ein Repository.

@@ -1595,6 +1595,241 @@ with TestClient(anwendung.app) as c:
                             follow_redirects=False).status_code == 303,
            "ohne gewähltes Projekt führt er dorthin, wo man eines wählt")
 
+    print("\nDie Sicherung")
+    import re  # noqa: E402
+    import sicherung  # noqa: E402
+
+    seite = c.get("/einrichtung").text
+    pruefe('id="sicherung"' in seite and "Jetzt sichern" in seite,
+           "die Karte Sicherung steht unter Einrichtung")
+    pruefe(str(sicherung.vorgabe_ordner()) in seite,
+           "ohne Wahl gilt der Ordner neben der Datenbank")
+
+    r = c.post("/einrichtung/sicherung", follow_redirects=False)
+    pruefe(r.status_code == 303 and "art=gut" in r.headers["location"],
+           "jetzt sichern antwortet mit 303 und meldet den Namen")
+    staende = sicherung.liste()
+    pruefe(staende and re.fullmatch(
+               r"tasks-\d{4}-\d{2}-\d{2}_\d{6}\.db", staende[0]["name"]),
+           "die Sicherung heißt nach Datenbank und Zeitpunkt")
+    pruefe(not list(sicherung.ordner().glob("*.teil"))
+           and not list(sicherung.ordner().glob("*-wal")),
+           "keine Zwischendatei und kein WAL daneben -- die Kopie steht "
+           "für sich")
+    pruefe(sicherung.fingerabdruck(Path(datenbank.DB_PFAD))
+           == sicherung.fingerabdruck(staende[0]["pfad"]),
+           "die Kopie trägt denselben Inhalt wie die Ablage")
+
+    # BEIM START UND AM TAG NUR, WENN SICH ETWAS GEAENDERT HAT. Sonst
+    # schoebe jeder Neustart eine gleiche Kopie nach, die eine aeltere,
+    # verschiedene aus dem Ordner draengt.
+    pruefe(not sicherung.geaendert()
+           and sicherung.wenn_geaendert() is None,
+           "unverändert wird von selbst nicht gesichert")
+    with datenbank.verbindung() as conn:
+        datenbank.projekt_aendern(conn, projekt, beschreibung="geändert "
+                                  "für die Sicherung")
+    pruefe(sicherung.geaendert()
+           and sicherung.wenn_geaendert() is not None,
+           "nach einer Änderung schon")
+
+    # Die Aufbewahrung: die letzten N, und die vor einem Import bleiben.
+    ordner = sicherung.ordner()
+    from datetime import datetime as _dt, timedelta as _td  # noqa: E402
+    for tag in range(5):
+        sicherung.sichern(jetzt=_dt(2026, 1, 1) + _td(days=tag))
+    sicherung.sichern(zusatz="vor-import", jetzt=_dt(2025, 1, 1))
+    (ordner / "fremd.db").write_bytes(b"x")
+    sicherung.aufraeumen(anzahl=3)
+    regulaer = [s for s in sicherung.liste() if not s["zusatz"]]
+    pruefe(len(regulaer) == 3,
+           "aufgeräumt wird bis auf die letzten N")
+    pruefe(any(s["zusatz"] == "vor-import" for s in sicherung.liste()),
+           "die Sicherung vor einem Import bleibt, auch wenn sie alt ist")
+    pruefe((ordner / "fremd.db").exists(),
+           "und was nicht von hier stammt, bleibt ebenfalls liegen")
+
+    r = c.post("/einrichtung/sicherung/behalten", data={"anzahl": "1"},
+               follow_redirects=False)
+    pruefe("art=schlecht" in r.headers["location"],
+           "eine einzige Sicherung zu behalten wird abgewiesen")
+    c.post("/einrichtung/sicherung/behalten", data={"anzahl": "20"})
+    pruefe(sicherung.behalten() == 20, "zwanzig werden übernommen")
+
+    r = c.post("/einrichtung/sicherung/ordner", data={"ordner": "relativ"},
+               follow_redirects=False)
+    pruefe("art=schlecht" in r.headers["location"]
+           and sicherung.ordner() == sicherung.vorgabe_ordner(),
+           "ein unvollständiger Pfad wird nicht übernommen")
+    anderswo = Path(tempfile.mkdtemp()) / "sicherung"
+    r = c.post("/einrichtung/sicherung/ordner",
+               data={"ordner": '"%s"' % anderswo}, follow_redirects=False)
+    pruefe("art=gut" in r.headers["location"]
+           and sicherung.ordner() == anderswo and anderswo.is_dir(),
+           "ein Ordner wird übernommen, angelegt und von Anführungszeichen "
+           "befreit")
+    pruefe(not (anderswo / ".schreibprobe").exists(),
+           "die Schreibprobe räumt hinter sich auf")
+    c.post("/einrichtung/sicherung/ordner", data={"aktion": "vorgabe"})
+    pruefe(sicherung.ordner() == sicherung.vorgabe_ordner(),
+           "»Vorgabe« kehrt zum Ordner neben der Datenbank zurück")
+
+    # Fehlt das Recht, steht der Befehl auf der Karte, der es nachtraegt.
+    ziel = "C:\\Sicherung" if os.name == "nt" else "/srv/sicherung"
+    seite = c.get("/einrichtung", params={"rechte": ziel}).text
+    pruefe('id="sicherungsbefehl"' in seite
+           and ("icacls" in seite if os.name == "nt"
+                else "ReadWritePaths" in seite),
+           "fehlt das Recht, nennt die Karte den Befehl dazu")
+    pruefe('id="sicherungsbefehl"' not in c.get(
+               "/einrichtung", params={"rechte": "relativ"}).text,
+           "aber nur für einen vollständigen Pfad")
+    pruefe(sicherung._ist_absolut("C:\\x") and sicherung._ist_absolut(
+               "\\\\server\\f") and sicherung._ist_absolut("/srv")
+           and not sicherung._ist_absolut("x/y"),
+           "Laufwerk, UNC und Unix-Pfad gelten auf beiden Systemen als "
+           "vollständig")
+
+    print("\nDaten übertragen")
+    import json as _json  # noqa: E402
+    import uebertragung  # noqa: E402
+
+    with datenbank.verbindung() as conn:
+        quelle = datenbank.projekt_anlegen(conn, "Umzug", "2026-09-01")
+        datenbank.bereich_anlegen(conn, quelle, "kern")
+        bereich = datenbank.bereiche(conn, quelle)[0]["id"]
+        b = datenbank.topic_anlegen(conn, quelle, "Ein Gedanke", bereich,
+                                    "2026-09-02")
+        m = datenbank.meilenstein_anlegen(conn, quelle, "Stein",
+                                          "2026-09-03")
+        m2 = datenbank.meilenstein_anlegen(conn, quelle, "Zweiter Stein",
+                                           "2026-09-03")
+        datenbank.vorgaenger_setzen(conn, m2, [m])
+        a = datenbank.aufgabe_anlegen(
+            conn, quelle, "Arbeit", bereich, "2026-09-04",
+            abnahme=["läuft"], arbeit=["tun"], topic_ids=[b],
+            dahinter="siehe %s und %s, nicht B-999"
+                     % (datenbank.kennung("B", b),
+                        datenbank.kennung("M", m)))
+        datenbank.aufgabe_zuschlagen(conn, a, m)
+        datenbank.dazwischen_anlegen(conn, m, "2026-09-05", "ein Umweg")
+        datenbank.entscheidung_anlegen(conn, quelle, "Warum", "2026-09-06",
+                                       bezug_art="A", bezug_id=a)
+        vorher_bestand = datenbank.projekt(conn, quelle)["bestand"]
+
+    seite = c.get("/einrichtung").text
+    pruefe('id="uebertragung"' in seite and "Alle exportieren" in seite,
+           "die Karte Daten übertragen steht unter Einrichtung")
+
+    einzeln = c.get("/einrichtung/uebertragung.json",
+                    params={"projekt": quelle})
+    daten = _json.loads(einzeln.content)
+    pruefe(einzeln.status_code == 200
+           and daten["format"] == uebertragung.FORMAT
+           and [p["projekt"]["name"] for p in daten["projekte"]] == ["Umzug"],
+           "ein einzelnes Projekt lässt sich exportieren")
+    pruefe('filename="marlei-tasks-P-' in einzeln.headers.get(
+               "content-disposition", ""),
+           "und die Datei heißt nach dem Projekt")
+    with datenbank.verbindung() as conn:
+        anzahl = len(datenbank.projekte(conn))
+    alle = _json.loads(c.get("/einrichtung/uebertragung.json",
+                             params={"alle": 1}).content)
+    pruefe(len(alle["projekte"]) == anzahl,
+           "»Alle exportieren« nimmt jedes Projekt mit")
+    r = c.get("/einrichtung/uebertragung.json", follow_redirects=False)
+    pruefe(r.status_code == 303 and "art=schlecht" in r.headers["location"],
+           "ohne Auswahl gibt es keine leere Datei, sondern einen Satz")
+
+    r = c.post("/einrichtung/uebertragung/pruefen",
+               files={"datei": ("x.json", b'{"format": "fremd"}',
+                                "application/json")},
+               follow_redirects=False)
+    pruefe("art=schlecht" in r.headers["location"],
+           "eine fremde Datei wird schon beim Prüfen abgewiesen")
+    neuer = _json.loads(einzeln.content)
+    neuer["projekte"][0]["tabellen"]["aufgaben"][0]["zukunft"] = "x"
+    with datenbank.verbindung() as conn:
+        try:
+            uebertragung.importieren(conn, neuer)
+            abgewiesen = False
+        except uebertragung.UebertragungsFehler:
+            abgewiesen = True
+    pruefe(abgewiesen,
+           "ein Feld, das diese Fassung nicht kennt, wird nicht "
+           "stillschweigend weggelassen")
+
+    r = c.post("/einrichtung/uebertragung/pruefen",
+               files={"datei": ("x.json", einzeln.content,
+                                "application/json")},
+               follow_redirects=False)
+    schluessel = re.search(r"einlesen=([0-9a-f]{32})",
+                           r.headers["location"]).group(1)
+    seite = c.get(r.headers["location"]).text
+    pruefe('name="schluessel"' in seite and "Umzug" in seite,
+           "nach dem Prüfen zeigt die Karte, was in der Datei steht")
+    with datenbank.verbindung() as conn:
+        pruefe(len(datenbank.projekte(conn)) == anzahl,
+               "und eingelesen ist noch nichts")
+    pruefe('name="schluessel"' not in c.get(
+               "/einrichtung", params={"einlesen": "../../etc/passwd"}).text,
+           "ein Schlüssel, der kein Schlüssel ist, zeigt nichts")
+
+    vor_import = len([s for s in sicherung.liste()
+                      if s["zusatz"] == "vor-import"])
+    r = c.post("/einrichtung/uebertragung/einlesen",
+               data={"schluessel": schluessel, "nummer": "0"},
+               follow_redirects=False)
+    pruefe("art=gut" in r.headers["location"],
+           "einlesen meldet, was angelegt wurde")
+    pruefe(len([s for s in sicherung.liste()
+                if s["zusatz"] == "vor-import"]) == vor_import + 1,
+           "vorher wurde gesichert")
+    with datenbank.verbindung() as conn:
+        neu = [p for p in datenbank.projekte(conn)
+               if p["name"] == "Umzug (übernommen)"]
+        pruefe(len(neu) == 1,
+               "ein vorhandener Name bekommt den Zusatz »(übernommen)«")
+        n = neu[0]
+        pruefe(n["bestand"] == vorher_bestand,
+               "Sammlung, Aufgaben, Meilensteine und Entscheidungen sind "
+               "vollständig da")
+        na = datenbank.aufgaben(conn, n["id"], offen_nur=False)[0]
+        nb = datenbank.topics(conn, n["id"], offen_nur=False)[0]
+        steine = {s["benennung"]: s for s in
+                  datenbank.meilensteine(conn, n["id"], offen_nur=False)}
+        pruefe(na["id"] != a and nb["id"] != b,
+               "jeder Eintrag bekommt eine neue Kennung")
+        pruefe([u["id"] for u in na["ursprung"]] == [nb["id"]]
+               and na["meilenstein"]["id"] == steine["Stein"]["id"],
+               "Ursprung und Meilenstein zeigen auf die neuen Einträge")
+        pruefe([v["id"] for v in steine["Zweiter Stein"]["vorgaenger"]]
+               == [steine["Stein"]["id"]]
+               and steine["Stein"]["dazwischen"],
+               "Vorgänger und Umwege ziehen mit")
+        pruefe(len(na["arbeit"]) == 1 and len(na["abnahme"]) == 1,
+               "die Häkchenlisten der Aufgabe ziehen mit")
+        e = datenbank.entscheidungen(conn, n["id"])[0]
+        pruefe(e["bezug"] and e["bezug"]["id"] == na["id"],
+               "der Bezug einer Entscheidung zeigt auf die neue Aufgabe")
+        pruefe(na["dahinter"] == "siehe %s und %s, nicht B-999"
+               % (nb["kennung"], steine["Stein"]["kennung"]),
+               "eine Kennung im Text wird umgeschrieben -- eine fremde "
+               "bleibt, wie sie war")
+    pruefe(not anwendung._einlesedatei(schluessel).exists(),
+           "die hochgeladene Datei ist danach weg")
+
+    r = c.post("/einrichtung/uebertragung/pruefen",
+               files={"datei": ("x.json", einzeln.content,
+                                "application/json")},
+               follow_redirects=False)
+    schluessel = re.search(r"einlesen=([0-9a-f]{32})",
+                           r.headers["location"]).group(1)
+    c.post("/einrichtung/uebertragung/einlesen",
+           data={"schluessel": schluessel, "aktion": "verwerfen"})
+    pruefe(not anwendung._einlesedatei(schluessel).exists(),
+           "»Verwerfen« löscht die Datei, ohne einzulesen")
+
     print("\nDer Fehlerbericht")
     ohne = c.get("/einrichtung?fehlerbericht=1").text
     pruefe("MARLEI Tasks — Fehlerbericht" in ohne,
