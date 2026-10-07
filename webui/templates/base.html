@@ -334,6 +334,15 @@
     if (!ziel) { return; }
     var karte = ziel.closest("details");
     if (!karte) { return; }
+    // Wo der Abschnitt data-eine-offen traegt, ist immer nur die
+    // angesprungene Karte offen: Die vorige klappt zu.
+    var abschnitt = karte.closest("[data-eine-offen]");
+    if (abschnitt) {
+      var offene = abschnitt.querySelectorAll("details.eintragskarte[open]");
+      for (var i = 0; i < offene.length; i++) {
+        if (offene[i] !== karte) { offene[i].open = false; }
+      }
+    }
     karte.open = true;
     var oben = 0;
     var leiste = document.querySelector(".reiterleiste");

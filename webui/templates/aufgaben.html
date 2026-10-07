@@ -122,7 +122,7 @@
 </section>
 
 {% if aufgaben %}
-<section id="aufgaben">
+<section id="aufgaben" data-eine-offen>
   <div class="kartenkopf">
     <h2>Aufgaben</h2>
     <form method="get" action="/aufgaben" class="inline">
@@ -135,10 +135,11 @@
   </div>
 
   {% for a in aufgaben %}
-  {# Offen ist, woran gerade jemand sitzt. Eine Liste, in der die Haelfte
-     der Karten aufgeklappt ist, hat keine geschlossene mehr. #}
-  <details class="eintragskarte" id="eintrag-{{ a.id }}"
-           {% if a.status == 'AKTIV' %}open{% endif %}>
+  {# Alle Karten fangen zu an. Frueher klappte auf, was AKTIV ist -- mit
+     mehreren aktiven Aufgaben war dann wieder die Haelfte offen. Offen
+     ist jetzt nur die eine, die man in der Uebersicht angeklickt hat;
+     data-eine-offen sagt dem Sprung in base.html, die vorige zu schliessen. #}
+  <details class="eintragskarte" id="eintrag-{{ a.id }}">
     <summary>
       <div class="bezeichnung">
         <code class="projektkennung">{{ a.kennung }}</code>
